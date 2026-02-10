@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { getAgents, getMissions, getEvents, getStats, getProjects, getDynastyStats } from "@/lib/queries";
 import type { AgentStatus, Mission, Event, DashboardStats, Project, DynastyStats } from "@/lib/types";
 import { StatsBar } from "@/components/stats-bar";
 import { AgentSidebar } from "@/components/agent-sidebar";
-import { KanbanBoard } from "@/components/kanban-board";
 import { EventFeed } from "@/components/event-feed";
 import { StealthCard } from "@/components/stealth-card";
 import { ProjectCard } from "@/components/project-card";
@@ -26,23 +25,11 @@ const defaultDynastyStats: DynastyStats = {
   activeTasks: 0,
 };
 
-type StatusFilter = "all" | Project["status"];
-type SortKey = "priority" | "name" | "status" | "updated";
-
-const STATUS_FILTERS: { label: string; value: StatusFilter }[] = [
-  { label: "All", value: "all" },
-  { label: "In Progress", value: "inprogress" },
-  { label: "Todo", value: "todo" },
-  { label: "On Hold", value: "onhold" },
-  { label: "Someday", value: "someday" },
-  { label: "Done", value: "done" },
-];
-
-const SORT_OPTIONS: { label: string; value: SortKey }[] = [
-  { label: "Priority", value: "priority" },
-  { label: "Name", value: "name" },
-  { label: "Status", value: "status" },
-  { label: "Updated", value: "updated" },
+const KANBAN_COLUMNS: { key: string; label: string; statuses: string[]; accent: string }[] = [
+  { key: "queued", label: "Queued", statuses: ["todo", "someday"], accent: "#6b7280" },
+  { key: "running", label: "Running", statuses: ["inprogress"], accent: "#3b82f6" },
+  { key: "completed", label: "Completed", statuses: ["done"], accent: "#10b981" },
+  { key: "failed", label: "On Hold", statuses: ["onhold"], accent: "#eab308" },
 ];
 
 function ConnectPrompt() {
@@ -67,14 +54,39 @@ function ConnectPrompt() {
   );
 }
 
-function ProjectGrid({ projects }: { projects: Project[] }) {
+function MissionsKanban({ projects }: { projects: Project[] }) {
   const liveProjects = useRealtimeProjects(projects);
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {liveProjects.map((project) => (
-        <ProjectCard key={project.id} project={project} />
-      ))}
+    <div className="flex h-full gap-3">
+      {KANBAN_COLUMNS.map((col) => {
+        const cards = liveProjects.filter((p) =>
+          col.statuses.includes(p.status)
+        );
+        return (
+          <div key={col.key} className="flex min-w-0 flex-1 flex-col">
+            {/* Column header */}
+            <div className="mb-2 flex items-center gap-2 px-1">
+              <span
+                className="inline-block size-2 rounded-full"
+                style={{ backgroundColor: col.accent }}
+              />
+              <span className="font-[family-name:var(--font-space-grotesk)] text-xs font-semibold uppercase tracking-wider text-[rgba(255,255,255,0.5)]">
+                {col.label}
+              </span>
+              <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] tabular-nums text-[rgba(255,255,255,0.3)]">
+                {cards.length}
+              </span>
+            </div>
+            {/* Cards */}
+            <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
+              {cards.map((project) => (
+                <ProjectCard key={project.id} project={project} />
+              ))}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -86,36 +98,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats>(defaultStats);
   const [projects, setProjects] = useState<Project[]>([]);
   const [dynastyStats, setDynastyStats] = useState<DynastyStats>(defaultDynastyStats);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [sortKey, setSortKey] = useState<SortKey>("priority");
   const [loading, setLoading] = useState(true);
-
-  const filteredSortedProjects = useMemo(() => {
-    let result = projects;
-
-    // Filter
-    if (statusFilter !== "all") {
-      result = result.filter((p) => p.status === statusFilter);
-    }
-
-    // Sort
-    result = [...result].sort((a, b) => {
-      switch (sortKey) {
-        case "priority":
-          return (a.priority ?? 99) - (b.priority ?? 99);
-        case "name":
-          return a.title.localeCompare(b.title);
-        case "status":
-          return a.status.localeCompare(b.status);
-        case "updated":
-          return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
-        default:
-          return 0;
-      }
-    });
-
-    return result;
-  }, [projects, statusFilter, sortKey]);
 
   useEffect(() => {
     async function fetchData() {
@@ -177,50 +160,13 @@ export default function DashboardPage() {
           <span className="text-xs text-[rgba(255,255,255,0.4)]">
             Dynasty Command Center
           </span>
-          <span className="ml-auto font-[family-name:var(--font-jetbrains-mono)] text-xs text-[rgba(255,255,255,0.3)]">
-            {dynastyStats.activeProjects}/{dynastyStats.totalProjects} projects
+          <span className="ml-auto font-[family-name:var(--font-jetbrains-mono)] text-xs tabular-nums text-[rgba(255,255,255,0.3)]">
+            {dynastyStats.activeProjects}/{dynastyStats.totalProjects} missions
             {" \u00B7 "}
             {dynastyStats.activeTasks}/{dynastyStats.totalTasks} tasks
           </span>
         </div>
         <StatsBar stats={stats} />
-
-        {/* Filter & Sort Controls */}
-        <div className="mt-3 flex items-center gap-4">
-          <div className="flex gap-1">
-            {STATUS_FILTERS.map((f) => (
-              <button
-                key={f.value}
-                onClick={() => setStatusFilter(f.value)}
-                className={`rounded-sm px-3 py-1.5 font-[family-name:var(--font-space-grotesk)] text-xs font-semibold uppercase tracking-wider transition-colors ${
-                  statusFilter === f.value
-                    ? "bg-emerald-500/15 text-emerald-400"
-                    : "text-[rgba(255,255,255,0.4)] hover:text-[rgba(255,255,255,0.6)]"
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-          <div className="ml-auto flex items-center gap-1">
-            <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.3)]">
-              Sort
-            </span>
-            {SORT_OPTIONS.map((s) => (
-              <button
-                key={s.value}
-                onClick={() => setSortKey(s.value)}
-                className={`rounded-sm px-2 py-1 font-[family-name:var(--font-space-grotesk)] text-[10px] font-semibold uppercase tracking-wider transition-colors ${
-                  sortKey === s.value
-                    ? "bg-emerald-500/15 text-emerald-400"
-                    : "text-[rgba(255,255,255,0.4)] hover:text-[rgba(255,255,255,0.6)]"
-                }`}
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
 
       {/* Main Content */}
@@ -230,9 +176,9 @@ export default function DashboardPage() {
           <AgentSidebar agents={agents} />
         </div>
 
-        {/* Center - Projects */}
-        <div className="flex-1 overflow-auto">
-          <ProjectGrid projects={filteredSortedProjects} />
+        {/* Center - Missions Kanban */}
+        <div className="flex-1 overflow-hidden">
+          <MissionsKanban projects={projects} />
         </div>
 
         {/* Right - Event Feed */}
