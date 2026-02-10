@@ -17,14 +17,16 @@ interface ProjectDetailProps {
 export function ProjectDetail({ project, boards }: ProjectDetailProps) {
   const prefersReducedMotion = useReducedMotion();
   const accent = PROJECT_STATUS_COLORS[project.status] ?? "#6b7280";
-  const [showHistory, setShowHistory] = useState(false);
+  const [showHistory, setShowHistory] = useState(true);
 
-  const activeBoards = boards.map((board) => ({
-    ...board,
-    tasks: showHistory
-      ? board.tasks
-      : board.tasks.filter((t) => t.status !== "done"),
-  }));
+  const activeBoards = boards
+    .map((board) => ({
+      ...board,
+      tasks: showHistory
+        ? board.tasks
+        : board.tasks.filter((t) => t.status !== "done"),
+    }))
+    .filter((board) => showHistory || board.tasks.length > 0);
 
   const totalTasks = boards.reduce((sum, b) => sum + b.tasks.length, 0);
   const doneTasks = boards.reduce(
@@ -131,7 +133,7 @@ export function ProjectDetail({ project, boards }: ProjectDetailProps) {
           onClick={() => setShowHistory(!showHistory)}
           className="text-xs text-[rgba(255,255,255,0.4)] transition-colors hover:text-[#E5E5E5]"
         >
-          {showHistory ? "Hide Completed" : "Show History"}
+          {showHistory ? `Hide Completed (${doneTasks})` : "Show All"}
         </button>
       </div>
 

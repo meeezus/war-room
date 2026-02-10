@@ -46,6 +46,14 @@ export function TaskRow({ task }: { task: Task }) {
         >
           {task.status}
         </span>
+
+        {/* Expand/collapse chevron */}
+        <span
+          className="shrink-0 text-xs text-[rgba(255,255,255,0.3)] transition-transform duration-150"
+          style={{ transform: expanded ? "rotate(0)" : "rotate(-90deg)" }}
+        >
+          ▾
+        </span>
       </button>
 
       {/* Expanded notes */}

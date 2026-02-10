@@ -149,7 +149,7 @@ INSERT INTO tasks (board_id, project_id, title, status, priority, goal, type, ow
 INSERT INTO tasks (board_id, project_id, title, status, priority, goal, type, owner, notes, completed_at) VALUES
 ('folio-platform-ux', 'folio', 'Conversation Persistence Across Pages', 'done', NULL, 'Chat state persists across navigations', 'enhancement', 'Development', NULL, '2026-02-06');
 INSERT INTO tasks (board_id, project_id, title, status, priority, goal, type, owner, notes) VALUES
-('folio-platform-ux', 'folio', 'Sidebar Restructure', 'todo', 1, 'Icon-only collapsed sidebar with 3 flat sections', 'enhancement', 'Development', 'Kill parent categories. Notion-style minimal icons.'),
+('folio-platform-ux', 'folio', 'Sidebar Restructure', 'done', 1, 'Icon-only collapsed sidebar with 3 flat sections', 'enhancement', 'Development', 'Kill parent categories. Notion-style minimal icons.'),
 ('folio-platform-ux', 'folio', 'Suggestion Whitespace Cleanup', 'todo', 3, 'Strip leading/trailing whitespace in suggestion content', 'bug-fix', 'Development', 'Extra space appears above after accepting replacement.');
 
 -- Folio > Community tasks (2 tasks — someday)
