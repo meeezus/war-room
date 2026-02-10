@@ -1,6 +1,9 @@
 """Shogunate Engine CLI."""
 
 import click
+import os
+import subprocess
+import sys
 
 
 @click.group()
@@ -209,7 +212,9 @@ def wr_approve(task_id):
 @wr.command("propose")
 @click.argument("title")
 @click.option("--council", is_flag=True, help="Route through Daimyo council review")
-def wr_propose(title, council):
+@click.option("--domain", default=None, help="Domain: engineering, product, commerce, influence, operations, coordination")
+@click.option("--risk", default=None, help="Risk level: low, medium, high")
+def wr_propose(title, council, domain, risk):
     """Create a proposal."""
     from engine.config import supabase
 
@@ -225,6 +230,10 @@ def wr_propose(title, council):
     }
     if council:
         data["council_review"] = True
+    if domain:
+        data["domain"] = domain
+    if risk:
+        data["risk_level"] = risk
 
     result = supabase.table("proposals").insert(data).execute()
     if result.data:
@@ -249,6 +258,53 @@ def wr_event(message):
         {"type": "user_request", "message": message}
     ).execute()
     click.echo(click.style(f"Event logged: {message}", fg="green"))
+
+
+@wr.command("dispatch")
+@click.argument("mission_id", required=False, default=None)
+def wr_dispatch(mission_id):
+    """Trigger engine execution. Optionally specify a mission ID."""
+    engine_dir = os.path.expanduser("~/Code/shogunate-engine")
+
+    if mission_id:
+        click.echo(click.style(f"Dispatching mission {mission_id}...", fg="cyan"))
+        result = subprocess.run(
+            [sys.executable, "cli.py", "execute-mission", mission_id],
+            cwd=engine_dir,
+            capture_output=True,
+            text=True,
+        )
+    else:
+        # First: create missions from approved proposals
+        click.echo(click.style("Running pending mission creation...", fg="cyan"))
+        result = subprocess.run(
+            [sys.executable, "-c", "from engine.mission import run_pending; run_pending()"],
+            cwd=engine_dir,
+            capture_output=True,
+            text=True,
+        )
+        if result.stdout:
+            click.echo(result.stdout.strip())
+        if result.returncode != 0 and result.stderr:
+            click.echo(click.style(f"Warning: {result.stderr.strip()}", fg="yellow"))
+
+        # Then: execute next queued step
+        click.echo(click.style("Executing next queued step...", fg="cyan"))
+        result = subprocess.run(
+            [sys.executable, "cli.py", "execute-next"],
+            cwd=engine_dir,
+            capture_output=True,
+            text=True,
+        )
+
+    if result.stdout:
+        click.echo(result.stdout.strip())
+    if result.returncode != 0:
+        if result.stderr:
+            click.echo(click.style(f"Engine error: {result.stderr.strip()}", fg="red"))
+        click.echo(click.style("Dispatch failed", fg="red"))
+    else:
+        click.echo(click.style("Dispatch complete", fg="green"))
 
 
 if __name__ == "__main__":

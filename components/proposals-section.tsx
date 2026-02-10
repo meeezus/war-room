@@ -22,14 +22,25 @@ export function ProposalsSection({ proposals, projectId, onUpdate }: ProposalsSe
   const [localProposals, setLocalProposals] = useState(proposals);
   const [acting, setActing] = useState<string | null>(null);
   const [duplicateWarning, setDuplicateWarning] = useState<{ proposalId: string; existingTitle: string } | null>(null);
+  const [dispatchFeedback, setDispatchFeedback] = useState<{ proposalId: string; daimyo: string } | null>(null);
 
   if (localProposals.length === 0) return null;
 
   async function proceedApprove(proposalId: string) {
     setDuplicateWarning(null);
     setActing(proposalId);
-    await approveProposal(proposalId, projectId);
-    setLocalProposals((prev) => prev.filter((p) => p.id !== proposalId));
+    const result = await approveProposal(proposalId, projectId);
+    if (result && 'mission' in result) {
+      const daimyoName = result.mission.assigned_to.charAt(0).toUpperCase() + result.mission.assigned_to.slice(1);
+      setDispatchFeedback({ proposalId, daimyo: daimyoName });
+      // Flash for 2 seconds then remove the card
+      setTimeout(() => {
+        setDispatchFeedback(null);
+        setLocalProposals((prev) => prev.filter((p) => p.id !== proposalId));
+      }, 2000);
+    } else {
+      setLocalProposals((prev) => prev.filter((p) => p.id !== proposalId));
+    }
     setActing(null);
     onUpdate?.();
   }
@@ -166,6 +177,11 @@ export function ProposalsSection({ proposals, projectId, onUpdate }: ProposalsSe
                         Cancel
                       </button>
                     </div>
+                  </div>
+                )}
+                {dispatchFeedback?.proposalId === proposal.id && (
+                  <div className="mt-2 rounded bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-400">
+                    Dispatched to {dispatchFeedback.daimyo}
                   </div>
                 )}
               </StealthCard>

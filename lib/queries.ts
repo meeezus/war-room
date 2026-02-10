@@ -1,6 +1,16 @@
 import { supabase } from '@/lib/supabase'
 import type { AgentStatus, Mission, Step, Event, DashboardStats, Project, ProjectWithMetrics, Board, Task, DynastyStats, Proposal } from '@/lib/types'
 
+// Domain → Daimyo routing (matches engine/config.py DOMAIN_TO_DAIMYO)
+export const DOMAIN_TO_DAIMYO: Record<string, string> = {
+  engineering: 'ed',
+  product: 'light',
+  commerce: 'toji',
+  influence: 'power',
+  operations: 'major',
+  coordination: 'pip',
+}
+
 export async function getAgents(): Promise<AgentStatus[]> {
   if (!supabase) return []
   const { data, error } = await supabase
@@ -250,7 +260,7 @@ export async function getProjectProposals(projectId: string): Promise<Proposal[]
   return (data as Proposal[]) ?? []
 }
 
-export async function approveProposal(proposalId: string, projectId: string): Promise<Task | null> {
+export async function approveProposal(proposalId: string, projectId: string): Promise<{ task: Task; mission: { id: string; assigned_to: string } } | null> {
   if (!supabase) return null
 
   const { data: proposal } = await supabase.from('proposals').select('*').eq('id', proposalId).single()
@@ -264,7 +274,7 @@ export async function approveProposal(proposalId: string, projectId: string): Pr
     approved_by: 'sensei',
   }).eq('id', proposalId)
 
-  const { data: task, error } = await supabase.from('tasks').insert({
+  const { data: task, error: taskError } = await supabase.from('tasks').insert({
     project_id: projectId,
     proposal_id: proposalId,
     title: proposal.title,
@@ -274,8 +284,32 @@ export async function approveProposal(proposalId: string, projectId: string): Pr
     priority: proposal.risk_level === 'high' ? 1 : proposal.risk_level === 'medium' ? 2 : 3,
   }).select().single()
 
-  if (error) { console.error('approveProposal task creation error:', error); return null }
-  return task as Task
+  if (taskError) { console.error('approveProposal task creation error:', taskError); return null }
+
+  // Route to daimyo based on domain (default: ed/engineering)
+  const daimyoId = DOMAIN_TO_DAIMYO[proposal.domain ?? 'engineering'] ?? 'ed'
+
+  const { data: mission, error: missionError } = await supabase.from('missions').insert({
+    proposal_id: proposalId,
+    title: proposal.title,
+    assigned_to: daimyoId,
+    status: 'queued',
+  }).select('id, assigned_to').single()
+
+  if (missionError) { console.error('approveProposal mission creation error:', missionError) }
+
+  // Emit event
+  const daimyoName = daimyoId.charAt(0).toUpperCase() + daimyoId.slice(1)
+  await supabase.from('events').insert({
+    type: 'proposal_approved',
+    source_id: proposalId,
+    message: `Dispatched to ${daimyoName}: ${proposal.title}`,
+  })
+
+  return {
+    task: task as Task,
+    mission: mission ? { id: mission.id, assigned_to: mission.assigned_to } : { id: '', assigned_to: daimyoId },
+  }
 }
 
 export async function rejectProposal(proposalId: string): Promise<void> {

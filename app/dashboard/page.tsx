@@ -132,7 +132,7 @@ export default function DashboardPage() {
         <div className={`transition-all duration-150 flex-shrink-0 overflow-hidden ${sidebarOpen ? "w-64" : "w-10"}`}>
           {sidebarOpen ? (
             <div className="flex h-full flex-col">
-              <div className="mb-2 flex items-center justify-between">
+              <div className="mb-2 flex h-6 items-center justify-between">
                 <span className="font-[family-name:var(--font-space-grotesk)] text-xs font-medium uppercase tracking-wider text-[rgba(255,255,255,0.4)]">
                   Daimyo Council
                 </span>
@@ -160,7 +160,7 @@ export default function DashboardPage() {
 
         {/* Center - Project Overview */}
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          <div className="mb-2 flex items-center">
+          <div className="mb-2 flex h-6 items-center">
             <span className="font-[family-name:var(--font-space-grotesk)] text-xs font-medium uppercase tracking-wider text-[rgba(255,255,255,0.4)]">
               Projects
             </span>
@@ -174,16 +174,16 @@ export default function DashboardPage() {
         <div className={`transition-all duration-150 flex-shrink-0 overflow-hidden ${feedOpen ? "w-80" : "w-10"}`}>
           {feedOpen ? (
             <div className="flex h-full flex-col">
-              <div className="mb-2 flex items-center justify-between">
+              <div className="mb-2 flex h-6 items-center justify-between">
+                <span className="font-[family-name:var(--font-space-grotesk)] text-xs font-medium uppercase tracking-wider text-[rgba(255,255,255,0.4)]">
+                  Event Feed
+                </span>
                 <button
                   onClick={() => setFeedOpen(false)}
                   className="text-[rgba(255,255,255,0.4)] font-[family-name:var(--font-space-grotesk)] text-xs hover:text-[rgba(255,255,255,0.6)]"
                 >
                   &raquo;
                 </button>
-                <span className="font-[family-name:var(--font-space-grotesk)] text-xs font-medium uppercase tracking-wider text-[rgba(255,255,255,0.4)]">
-                  Event Feed
-                </span>
               </div>
               <div className="flex-1 overflow-hidden">
                 <EventFeed events={events} />
