@@ -1,36 +1,110 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# War Room
 
-## Getting Started
+Real-time dashboard for the Shogunate AI council - mission control for multi-agent orchestration.
 
-First, run the development server:
+## What It Does
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Visual command center for monitoring and managing AI agent operations:
+- **Dashboard**: Real-time mission status, agent activity, cost tracking
+- **Agents**: Daimyo council health, workload distribution, capability overview
+- **Missions**: Active tasks, step execution timeline, completion rates
+- **Projects**: High-level project tracking and resource allocation
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  War Room (Next.js 16 + PWA)                                    │
+├──────────────────┬─────────────────┬────────────────────────────┤
+│  Dashboard       │  Agents         │  Missions                  │
+│  - Live metrics  │  - Daimyo grid  │  - Step timeline           │
+│  - Cost graphs   │  - Status cards │  - Execution logs          │
+│  - Activity feed │  - Capabilities │  - Success rates           │
+└────────┬─────────┴────────┬────────┴─────────────┬──────────────┘
+         │                  │                      │
+         └──────────────────┼──────────────────────┘
+                            │
+                    ┌───────┴───────┐
+                    │   Supabase    │
+                    │  (Realtime)   │
+                    └───────────────┘
+                            │
+                    ┌───────┴───────┐
+                    │   Shogunate   │
+                    │    Engine     │
+                    └───────────────┘
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Daimyo Council Visualization
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Agent | Domain | Role |
+|-------|--------|------|
+| **Pip** | Coordination | Primary orchestrator, proposal routing |
+| **Edward Wong** | Engineering | Code execution, technical tasks |
+| **Light Yagami** | Product | Feature planning, prioritization |
+| **Toji Fushiguro** | Commerce | Revenue, business operations |
+| **Power** | Influence | Social, content, marketing |
+| **Major Kusanagi** | Operations | Infrastructure, monitoring |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Key Features
 
-## Learn More
+### Real-Time Updates
+- Supabase Realtime subscriptions
+- Live mission progress streaming
+- Agent status heartbeats
 
-To learn more about Next.js, take a look at the following resources:
+### PWA Support
+- Installable on desktop/mobile
+- Offline capability
+- Push notifications for mission events
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Cap Gate Monitoring
+- Cost tracking against daily limits
+- Auto-approval threshold visualization
+- Risk level indicators
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Tech Stack
 
-## Deploy on Vercel
+| Layer | Tech |
+|-------|------|
+| Framework | Next.js 16 (App Router) |
+| UI | Tailwind + shadcn/ui |
+| Database | Supabase (Postgres + Realtime) |
+| Deploy | Vercel |
+| PWA | next-pwa |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Project Structure
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+war-room/
+├── app/
+│   ├── dashboard/    # Main command center
+│   ├── agents/       # Daimyo council view
+│   ├── missions/     # Mission tracking
+│   ├── projects/     # Project overview
+│   └── offline/      # PWA offline page
+├── components/       # Shared UI components
+└── lib/             # Supabase client, utilities
+```
+
+## Local Development
+
+```bash
+npm install
+
+cp .env.example .env.local
+# Add: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+npm run dev
+```
+
+## Integration
+
+War Room connects to the Shogunate Engine via shared Supabase database:
+- Engine writes mission/step/event data
+- War Room subscribes to Realtime changes
+- Same RLS policies ensure consistent access
+
+## Status
+
+Active development. Visualization layer for Shogunate multi-agent system.
