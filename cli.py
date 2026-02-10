@@ -211,10 +211,11 @@ def wr_approve(task_id):
 
 @wr.command("propose")
 @click.argument("title")
+@click.option("--project", default=None, help="Project ID to attach proposal to")
 @click.option("--council", is_flag=True, help="Route through Daimyo council review")
 @click.option("--domain", default=None, help="Domain: engineering, product, commerce, influence, operations, coordination")
 @click.option("--risk", default=None, help="Risk level: low, medium, high")
-def wr_propose(title, council, domain, risk):
+def wr_propose(title, project, council, domain, risk):
     """Create a proposal."""
     from engine.config import supabase
 
@@ -228,6 +229,8 @@ def wr_propose(title, council, domain, risk):
         "requested_by": "sensei",
         "status": "pending",
     }
+    if project:
+        data["project_id"] = project
     if council:
         data["council_review"] = True
     if domain:
@@ -238,6 +241,8 @@ def wr_propose(title, council, domain, risk):
     result = supabase.table("proposals").insert(data).execute()
     if result.data:
         click.echo(click.style(f"Proposal created: {title}", fg="cyan"))
+        if project:
+            click.echo(f"  → Linked to project: {project}")
         if council:
             click.echo("  → Flagged for council review")
     else:

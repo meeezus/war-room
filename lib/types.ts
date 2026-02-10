@@ -15,6 +15,7 @@ export interface Proposal {
   reviews: { agent: string; verdict: 'approve' | 'concern' | 'reject'; note: string }[]
   approved_at: string | null
   approved_by: string | null
+  project_id: string | null
   status: 'pending' | 'approved' | 'rejected' | 'completed' | 'failed'
   created_at: string
   updated_at: string

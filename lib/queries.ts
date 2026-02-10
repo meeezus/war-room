@@ -126,12 +126,12 @@ export async function getProjectsWithMetrics(): Promise<ProjectWithMetrics[]> {
   const [projectsRes, tasksRes, proposalsRes] = await Promise.all([
     supabase.from('projects').select('*').order('priority', { ascending: true }),
     supabase.from('tasks').select('id, project_id, status, updated_at'),
-    supabase.from('proposals').select('id, domain', { count: 'exact' }).eq('status', 'pending'),
+    supabase.from('proposals').select('id, project_id').eq('status', 'pending'),
   ])
 
   const projects = (projectsRes.data as Project[]) ?? []
   const tasks = (tasksRes.data ?? []) as { id: number; project_id: string | null; status: string; updated_at: string }[]
-  const pendingProposalCount = proposalsRes.count ?? 0
+  const pendingProposals = (proposalsRes.data ?? []) as { id: string; project_id: string | null }[]
 
   const STATUS_ORDER: Record<string, number> = { inprogress: 0, todo: 1, onhold: 2, done: 3, someday: 4 }
 
@@ -158,7 +158,7 @@ export async function getProjectsWithMetrics(): Promise<ProjectWithMetrics[]> {
       totalTasks,
       activeTasks,
       lastActivity,
-      pendingProposals: pendingProposalCount,
+      pendingProposals: pendingProposals.filter(p => p.project_id === project.id).length,
     }
   }).sort((a, b) => {
     const sa = STATUS_ORDER[a.status] ?? 99
@@ -255,6 +255,7 @@ export async function getProjectProposals(projectId: string): Promise<Proposal[]
     .from('proposals')
     .select('*')
     .eq('status', 'pending')
+    .or(`project_id.eq.${projectId},project_id.is.null`)
     .order('created_at', { ascending: false })
   if (error) { console.error('getProjectProposals error:', error); return [] }
   return (data as Proposal[]) ?? []
@@ -272,6 +273,7 @@ export async function approveProposal(proposalId: string, projectId: string): Pr
     status: 'approved',
     approved_at: now,
     approved_by: 'sensei',
+    project_id: projectId,
   }).eq('id', proposalId)
 
   const { data: task, error: taskError } = await supabase.from('tasks').insert({
@@ -298,14 +300,6 @@ export async function approveProposal(proposalId: string, projectId: string): Pr
 
   if (missionError) { console.error('approveProposal mission creation error:', missionError) }
 
-  // Emit event
-  const daimyoName = daimyoId.charAt(0).toUpperCase() + daimyoId.slice(1)
-  await supabase.from('events').insert({
-    type: 'proposal_approved',
-    source_id: proposalId,
-    message: `Dispatched to ${daimyoName}: ${proposal.title}`,
-  })
-
   return {
     task: task as Task,
     mission: mission ? { id: mission.id, assigned_to: mission.assigned_to } : { id: '', assigned_to: daimyoId },
@@ -315,6 +309,17 @@ export async function approveProposal(proposalId: string, projectId: string): Pr
 export async function rejectProposal(proposalId: string): Promise<void> {
   if (!supabase) return
   await supabase.from('proposals').update({ status: 'rejected' }).eq('id', proposalId)
+}
+
+export async function startMission(missionId: string): Promise<boolean> {
+  if (!supabase) return false
+  const now = new Date().toISOString()
+  const { error } = await supabase.from('missions').update({
+    status: 'running',
+    started_at: now,
+  }).eq('id', missionId).eq('status', 'queued')
+  if (error) { console.error('startMission error:', error); return false }
+  return true
 }
 
 export async function getStaleTasks(): Promise<Task[]> {

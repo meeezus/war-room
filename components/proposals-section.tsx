@@ -23,6 +23,7 @@ export function ProposalsSection({ proposals, projectId, onUpdate }: ProposalsSe
   const [acting, setActing] = useState<string | null>(null);
   const [duplicateWarning, setDuplicateWarning] = useState<{ proposalId: string; existingTitle: string } | null>(null);
   const [dispatchFeedback, setDispatchFeedback] = useState<{ proposalId: string; daimyo: string } | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   if (localProposals.length === 0) return null;
 
@@ -134,6 +135,32 @@ export function ProposalsSection({ proposals, projectId, onUpdate }: ProposalsSe
                         by {proposal.requested_by}
                       </span>
                     </div>
+                    {proposal.description && (
+                      <div className="mt-2">
+                        {expandedId === proposal.id ? (
+                          <>
+                            <p className="whitespace-pre-wrap text-xs leading-relaxed text-[rgba(255,255,255,0.5)]">
+                              {proposal.description}
+                            </p>
+                            <button
+                              onClick={() => setExpandedId(null)}
+                              className="mt-1 text-[10px] text-white/30 hover:text-white/50"
+                            >
+                              Show less
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => setExpandedId(proposal.id)}
+                            className="text-[10px] text-white/30 hover:text-white/50"
+                          >
+                            {proposal.description.length > 80
+                              ? `${proposal.description.slice(0, 80)}... Show more`
+                              : proposal.description}
+                          </button>
+                        )}
+                      </div>
+                    )}
                     {proposal.reviews && proposal.reviews.length > 0 && (
                       <div className="mt-2 space-y-1">
                         {proposal.reviews.map((review, i) => {

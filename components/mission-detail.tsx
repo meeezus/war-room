@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { motion } from "motion/react";
 import type { Mission, Step } from "@/lib/types";
+import { startMission } from "@/lib/queries";
 import { StealthCard } from "./stealth-card";
 import { StepCard } from "./step-card";
 import { staggerContainer } from "@/lib/motion";
@@ -44,8 +46,17 @@ export function MissionDetail({
   mission: Mission;
   steps: Step[];
 }) {
+  const [missionStatus, setMissionStatus] = useState(mission.status);
+  const [starting, setStarting] = useState(false);
   const liveSteps = useRealtimeSteps(mission.id, steps);
-  const accent = STATUS_ACCENT[mission.status] ?? "#6b7280";
+  const accent = STATUS_ACCENT[missionStatus] ?? "#6b7280";
+
+  async function handleStart() {
+    setStarting(true);
+    const ok = await startMission(mission.id);
+    if (ok) setMissionStatus("running");
+    setStarting(false);
+  }
   const completedSteps = liveSteps.filter((s) => s.status === "completed").length;
   const totalSteps = liveSteps.length;
   const progressPct = totalSteps > 0 ? (completedSteps / totalSteps) * 100 : 0;
@@ -72,19 +83,30 @@ export function MissionDetail({
           <h1 className="font-[family-name:var(--font-space-grotesk)] text-xl font-bold text-[#E5E5E5]">
             {mission.title}
           </h1>
-          <span
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 font-[family-name:var(--font-jetbrains-mono)] text-xs font-medium"
-            style={{
-              backgroundColor: `${accent}20`,
-              color: accent,
-            }}
-          >
+          <div className="flex shrink-0 items-center gap-2">
+            {missionStatus === "queued" && (
+              <button
+                onClick={handleStart}
+                disabled={starting}
+                className="rounded bg-blue-500/15 px-2.5 py-1 font-[family-name:var(--font-jetbrains-mono)] text-xs font-medium text-blue-400 transition-colors hover:bg-blue-500/25 disabled:opacity-50"
+              >
+                {starting ? "Starting..." : "Execute"}
+              </button>
+            )}
             <span
-              className="inline-block size-2 rounded-full"
-              style={{ backgroundColor: accent }}
-            />
-            {mission.status}
-          </span>
+              className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-[family-name:var(--font-jetbrains-mono)] text-xs font-medium"
+              style={{
+                backgroundColor: `${accent}20`,
+                color: accent,
+              }}
+            >
+              <span
+                className="inline-block size-2 rounded-full"
+                style={{ backgroundColor: accent }}
+              />
+              {missionStatus}
+            </span>
+          </div>
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[rgba(255,255,255,0.4)]">
