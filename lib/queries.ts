@@ -160,6 +160,16 @@ export async function getBoardWithTasks(id: string): Promise<{
   }
 }
 
+export async function getAllTasks() {
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*, projects(title)')
+    .order('updated_at', { ascending: false })
+  if (error) { console.error('getAllTasks error:', error); return [] }
+  return data ?? []
+}
+
 export async function getDynastyStats(): Promise<DynastyStats> {
   const defaults: DynastyStats = { totalProjects: 0, activeProjects: 0, totalTasks: 0, activeTasks: 0 }
   if (!supabase) return defaults

@@ -18,6 +18,10 @@ const statusLabels: Record<string, string> = {
 export function AgentSidebar({ agents }: { agents: AgentStatus[] }) {
   const liveAgents = useRealtimeAgents(agents);
   const prefersReducedMotion = useReducedMotion();
+  const statusOrder: Record<string, number> = { busy: 0, online: 1, idle: 2, offline: 3 };
+  const sorted = [...liveAgents].sort((a, b) =>
+    (statusOrder[a.status] ?? 9) - (statusOrder[b.status] ?? 9)
+  );
 
   return (
     <div className="flex h-full flex-col gap-2 overflow-y-auto pr-2">
@@ -30,7 +34,7 @@ export function AgentSidebar({ agents }: { agents: AgentStatus[] }) {
         initial="hidden"
         animate="show"
       >
-        {liveAgents.map((agent) => (
+        {sorted.map((agent) => (
           <motion.div
             key={agent.id}
             variants={prefersReducedMotion ? undefined : staggerItem}

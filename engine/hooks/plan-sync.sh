@@ -10,9 +10,9 @@ INPUT=$(cat)
 # Source the API utility
 source /Users/michaelenriquez/Code/war-room/engine/war-room-api.sh 2>/dev/null
 
-# Find the most recent plan file
+# Find the most recent plan file (skip agent sub-plans)
 PLAN_DIR="/Users/michaelenriquez/.claude/plans"
-PLAN_FILE=$(ls -t "$PLAN_DIR"/*.md 2>/dev/null | head -1)
+PLAN_FILE=$(ls -t "$PLAN_DIR"/*.md 2>/dev/null | grep -v '\-agent-' | head -1)
 
 if [[ -z "${PLAN_FILE:-}" ]]; then
   exit 0
