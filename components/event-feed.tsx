@@ -21,6 +21,8 @@ const EVENT_TYPE_COLORS: Record<string, string> = {
   heartbeat: "#6b7280",
   agent_action: "#3b82f6",
   user_request: "#a855f7",
+  task_created: "#8b5cf6",
+  task_updated: "#f59e0b",
 };
 
 function formatRelativeTime(dateStr: string): string {
