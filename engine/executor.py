@@ -56,8 +56,27 @@ def _spawn_claude(
     return result.stdout, result.stderr, result.returncode
 
 
+def _update_linked_task(mission_id: str, task_status: str, now: str) -> None:
+    """Update the task linked to a mission's proposal, if any."""
+    if not supabase:
+        return
+
+    mission_result = (
+        supabase.table("missions")
+        .select("proposal_id")
+        .eq("id", mission_id)
+        .execute()
+    )
+    if mission_result.data and mission_result.data[0].get("proposal_id"):
+        proposal_id = mission_result.data[0]["proposal_id"]
+        supabase.table("tasks").update({
+            "status": task_status,
+            "updated_at": now,
+        }).eq("proposal_id", proposal_id).execute()
+
+
 def _check_mission_complete(mission_id: str) -> None:
-    """Check if all steps for a mission are terminal. If so, mark mission completed."""
+    """Check if all steps for a mission are terminal. If so, mark mission completed or failed."""
     if not supabase:
         return
 
@@ -73,15 +92,44 @@ def _check_mission_complete(mission_id: str) -> None:
     remaining = result.count
     if remaining is not None and remaining == 0:
         now = datetime.now(timezone.utc).isoformat()
-        supabase.table("missions").update({
-            "status": "completed",
-            "completed_at": now,
-        }).eq("id", mission_id).execute()
 
-        emit("mission_completed", {
-            "mission_id": mission_id,
-            "completed_at": now,
-        })
+        # Check if any step failed
+        failed_result = (
+            supabase.table("steps")
+            .select("id", count="exact")
+            .eq("mission_id", mission_id)
+            .eq("status", "failed")
+            .execute()
+        )
+
+        if failed_result.count and failed_result.count > 0:
+            # Mission failed — at least one step failed
+            supabase.table("missions").update({
+                "status": "failed",
+                "completed_at": now,
+            }).eq("id", mission_id).execute()
+
+            emit("mission_failed", {"mission_id": mission_id})
+
+            _update_linked_task(mission_id, "blocked", now)
+        else:
+            # Mission completed — all steps succeeded
+            supabase.table("missions").update({
+                "status": "completed",
+                "completed_at": now,
+            }).eq("id", mission_id).execute()
+
+            emit("mission_completed", {
+                "mission_id": mission_id,
+                "completed_at": now,
+            })
+
+            _update_linked_task(mission_id, "review", now)
+
+            emit("agent_action", {
+                "mission_id": mission_id,
+                "message": "Mission completed — linked task moved to review",
+            })
 
 
 def _update_agent_status(daimyo_id: str) -> None:

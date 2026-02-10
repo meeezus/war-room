@@ -1,38 +1,27 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
-import type { Project, Board, Task } from "@/lib/types";
+import type { Project, Board, Task, Proposal } from "@/lib/types";
 import { PROJECT_STATUS_COLORS } from "@/lib/data";
-import { fadeInUp, staggerContainer, staggerItem } from "@/lib/motion";
+import { fadeInUp } from "@/lib/motion";
 import { StealthCard } from "./stealth-card";
-import { BoardSection } from "./board-section";
+import { ProjectKanban } from "./project-kanban";
+import { ProposalsSection } from "./proposals-section";
 
 interface ProjectDetailProps {
   project: Project;
   boards: (Board & { tasks: Task[] })[];
+  proposals: Proposal[];
 }
 
-export function ProjectDetail({ project, boards }: ProjectDetailProps) {
+export function ProjectDetail({ project, boards, proposals }: ProjectDetailProps) {
   const prefersReducedMotion = useReducedMotion();
   const accent = PROJECT_STATUS_COLORS[project.status] ?? "#6b7280";
-  const [showHistory, setShowHistory] = useState(true);
 
-  const activeBoards = boards
-    .map((board) => ({
-      ...board,
-      tasks: showHistory
-        ? board.tasks
-        : board.tasks.filter((t) => t.status !== "done"),
-    }))
-    .filter((board) => showHistory || board.tasks.length > 0);
-
-  const totalTasks = boards.reduce((sum, b) => sum + b.tasks.length, 0);
-  const doneTasks = boards.reduce(
-    (sum, b) => sum + b.tasks.filter((t) => t.status === "done").length,
-    0,
-  );
+  const allTasks = boards.flatMap((b) => b.tasks);
+  const totalTasks = allTasks.length;
+  const doneTasks = allTasks.filter((t) => t.status === "done").length;
   const progressPct = totalTasks > 0 ? (doneTasks / totalTasks) * 100 : 0;
 
   return (
@@ -127,40 +116,13 @@ export function ProjectDetail({ project, boards }: ProjectDetailProps) {
         </div>
       )}
 
-      {/* Show History toggle */}
-      <div className="flex justify-end">
-        <button
-          onClick={() => setShowHistory(!showHistory)}
-          className="text-xs text-[rgba(255,255,255,0.4)] transition-colors hover:text-[#E5E5E5]"
-        >
-          {showHistory ? `Hide Completed (${doneTasks})` : "Show All"}
-        </button>
-      </div>
+      {/* Proposals section */}
+      <ProposalsSection proposals={proposals} projectId={project.id} />
 
-      {/* Board sections */}
-      {activeBoards.length > 0 ? (
-        <motion.div
-          className="space-y-4"
-          variants={prefersReducedMotion ? undefined : staggerContainer}
-          initial="hidden"
-          animate="show"
-        >
-          {activeBoards.map((board) => (
-            <motion.div
-              key={board.id}
-              variants={prefersReducedMotion ? undefined : staggerItem}
-            >
-              <BoardSection board={board} tasks={board.tasks} />
-            </motion.div>
-          ))}
-        </motion.div>
-      ) : (
-        <StealthCard className="p-6 text-center">
-          <p className="text-sm text-[rgba(255,255,255,0.4)]">
-            No boards found for this project.
-          </p>
-        </StealthCard>
-      )}
+      {/* Kanban board */}
+      <div className="flex-1 overflow-hidden" style={{ minHeight: "400px" }}>
+        <ProjectKanban tasks={allTasks} projectId={project.id} />
+      </div>
     </motion.div>
   );
 }

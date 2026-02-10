@@ -25,9 +25,6 @@ export function AgentSidebar({ agents }: { agents: AgentStatus[] }) {
 
   return (
     <div className="flex h-full flex-col gap-2 overflow-y-auto pr-2">
-      <h2 className="mb-2 font-[family-name:var(--font-space-grotesk)] text-sm font-medium uppercase tracking-wider text-[rgba(255,255,255,0.4)]">
-        Daimyo Council
-      </h2>
       <motion.div
         className="flex flex-col gap-2"
         variants={prefersReducedMotion ? undefined : staggerContainer}

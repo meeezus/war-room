@@ -11,6 +11,8 @@ export interface Proposal {
   time_estimate: string | null // interval comes as string from Supabase
   risk_level: 'low' | 'medium' | 'high' | null
   auto_approved: boolean
+  council_review: boolean
+  reviews: { agent: string; verdict: 'approve' | 'concern' | 'reject'; note: string }[]
   approved_at: string | null
   approved_by: string | null
   status: 'pending' | 'approved' | 'rejected' | 'completed' | 'failed'
@@ -85,9 +87,9 @@ export interface CapGate {
 
 export interface DashboardStats {
   activeAgents: number
-  runningMissions: number
-  queuedSteps: number
-  todayProposals: number
+  inProgressTasks: number
+  pendingReviews: number
+  pendingProposals: number
 }
 
 // Dynasty-wide project tracking
@@ -106,6 +108,14 @@ export interface Project {
   updated_at: string
 }
 
+export interface ProjectWithMetrics extends Project {
+  taskCounts: { todo: number; assigned: number; in_progress: number; review: number; done: number; blocked: number; someday: number };
+  totalTasks: number;
+  activeTasks: number;
+  lastActivity: string | null;
+  pendingProposals: number;
+}
+
 export interface Board {
   id: string
   project_id: string | null
@@ -119,8 +129,9 @@ export interface Task {
   id: number
   board_id: string | null
   project_id: string | null
+  proposal_id: string | null
   title: string
-  status: 'active' | 'todo' | 'done' | 'someday' | 'blocked'
+  status: 'todo' | 'assigned' | 'in_progress' | 'review' | 'done' | 'someday' | 'blocked'
   priority: number | null
   goal: string | null
   type: string | null

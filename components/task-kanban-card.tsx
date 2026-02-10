@@ -20,6 +20,8 @@ export function TaskKanbanCard({ task }: { task: TaskWithProject }) {
   const prefersReducedMotion = useReducedMotion();
   const accent = TASK_STATUS_COLORS[task.status] ?? "#6b7280";
   const priorityStyle = task.priority ? PRIORITY_COLORS[task.priority] : null;
+  const isStale = task.status !== 'done' && task.status !== 'someday' &&
+    new Date(task.updated_at).getTime() < Date.now() - 7 * 24 * 60 * 60 * 1000;
 
   return (
     <motion.div
@@ -49,6 +51,11 @@ export function TaskKanbanCard({ task }: { task: TaskWithProject }) {
               className={`rounded-full px-1.5 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-medium ${priorityStyle.bg} ${priorityStyle.text}`}
             >
               P{task.priority}
+            </span>
+          )}
+          {isStale && (
+            <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-400">
+              stale
             </span>
           )}
         </div>

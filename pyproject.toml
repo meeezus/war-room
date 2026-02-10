@@ -1,0 +1,26 @@
+[project]
+name = "war-room-engine"
+version = "0.1.0"
+description = "Shogunate Engine - Agent orchestration for War Room"
+requires-python = ">=3.12"
+dependencies = [
+    "click>=8.0",
+    "supabase>=2.0",
+    "pydantic>=2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-mock>=3.0",
+]
+
+[project.scripts]
+shogun = "cli:cli"
+
+[tool.hatch.build.targets.wheel]
+packages = ["engine"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

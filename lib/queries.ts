@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import type { AgentStatus, Mission, Step, Event, DashboardStats, Project, Board, Task, DynastyStats } from '@/lib/types'
+import type { AgentStatus, Mission, Step, Event, DashboardStats, Project, ProjectWithMetrics, Board, Task, DynastyStats, Proposal } from '@/lib/types'
 
 export async function getAgents(): Promise<AgentStatus[]> {
   if (!supabase) return []
@@ -77,24 +77,21 @@ export async function getAgentWithHistory(id: string): Promise<{
 }
 
 export async function getStats(): Promise<DashboardStats> {
-  const defaults: DashboardStats = { activeAgents: 0, runningMissions: 0, queuedSteps: 0, todayProposals: 0 }
+  const defaults: DashboardStats = { activeAgents: 0, inProgressTasks: 0, pendingReviews: 0, pendingProposals: 0 }
   if (!supabase) return defaults
 
-  const todayStart = new Date()
-  todayStart.setHours(0, 0, 0, 0)
-
-  const [agentsRes, missionsRes, stepsRes, proposalsRes] = await Promise.all([
+  const [agentsRes, inProgressRes, reviewRes, proposalsRes] = await Promise.all([
     supabase.from('agent_status').select('id', { count: 'exact', head: true }).in('status', ['online', 'busy']),
-    supabase.from('missions').select('id', { count: 'exact', head: true }).eq('status', 'running'),
-    supabase.from('steps').select('id', { count: 'exact', head: true }).eq('status', 'queued'),
-    supabase.from('proposals').select('id', { count: 'exact', head: true }).gte('created_at', todayStart.toISOString()),
+    supabase.from('tasks').select('id', { count: 'exact', head: true }).eq('status', 'in_progress'),
+    supabase.from('tasks').select('id', { count: 'exact', head: true }).eq('status', 'review'),
+    supabase.from('proposals').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
   ])
 
   return {
     activeAgents: agentsRes.count ?? 0,
-    runningMissions: missionsRes.count ?? 0,
-    queuedSteps: stepsRes.count ?? 0,
-    todayProposals: proposalsRes.count ?? 0,
+    inProgressTasks: inProgressRes.count ?? 0,
+    pendingReviews: reviewRes.count ?? 0,
+    pendingProposals: proposalsRes.count ?? 0,
   }
 }
 
@@ -110,6 +107,55 @@ export async function getProjects(): Promise<Project[]> {
     .order('priority', { ascending: true })
   if (error) { console.error('getProjects error:', error); return [] }
   return data as Project[]
+}
+
+export async function getProjectsWithMetrics(): Promise<ProjectWithMetrics[]> {
+  if (!supabase) return []
+
+  // Fetch projects, tasks, and pending proposals in parallel
+  const [projectsRes, tasksRes, proposalsRes] = await Promise.all([
+    supabase.from('projects').select('*').order('priority', { ascending: true }),
+    supabase.from('tasks').select('id, project_id, status, updated_at'),
+    supabase.from('proposals').select('id, domain', { count: 'exact' }).eq('status', 'pending'),
+  ])
+
+  const projects = (projectsRes.data as Project[]) ?? []
+  const tasks = (tasksRes.data ?? []) as { id: number; project_id: string | null; status: string; updated_at: string }[]
+  const pendingProposalCount = proposalsRes.count ?? 0
+
+  const STATUS_ORDER: Record<string, number> = { inprogress: 0, todo: 1, onhold: 2, done: 3, someday: 4 }
+
+  return projects.map(project => {
+    const projectTasks = tasks.filter(t => t.project_id === project.id)
+    const taskCounts = {
+      todo: projectTasks.filter(t => t.status === 'todo').length,
+      assigned: projectTasks.filter(t => t.status === 'assigned').length,
+      in_progress: projectTasks.filter(t => t.status === 'in_progress').length,
+      review: projectTasks.filter(t => t.status === 'review').length,
+      done: projectTasks.filter(t => t.status === 'done').length,
+      blocked: projectTasks.filter(t => t.status === 'blocked').length,
+      someday: projectTasks.filter(t => t.status === 'someday').length,
+    }
+    const totalTasks = projectTasks.filter(t => t.status !== 'someday').length
+    const activeTasks = taskCounts.todo + taskCounts.assigned + taskCounts.in_progress + taskCounts.review + taskCounts.blocked
+    const lastActivity = projectTasks.length > 0
+      ? projectTasks.reduce((latest, t) => t.updated_at > latest ? t.updated_at : latest, projectTasks[0].updated_at)
+      : null
+
+    return {
+      ...project,
+      taskCounts,
+      totalTasks,
+      activeTasks,
+      lastActivity,
+      pendingProposals: pendingProposalCount,
+    }
+  }).sort((a, b) => {
+    const sa = STATUS_ORDER[a.status] ?? 99
+    const sb = STATUS_ORDER[b.status] ?? 99
+    if (sa !== sb) return sa - sb
+    return a.priority - b.priority
+  })
 }
 
 export async function getProjectWithBoards(id: string): Promise<{
@@ -178,7 +224,7 @@ export async function getDynastyStats(): Promise<DynastyStats> {
     supabase.from('projects').select('id', { count: 'exact', head: true }),
     supabase.from('projects').select('id', { count: 'exact', head: true }).in('status', ['inprogress', 'todo']),
     supabase.from('tasks').select('id', { count: 'exact', head: true }),
-    supabase.from('tasks').select('id', { count: 'exact', head: true }).in('status', ['active', 'todo', 'blocked']),
+    supabase.from('tasks').select('id', { count: 'exact', head: true }).in('status', ['in_progress', 'assigned', 'todo', 'review', 'blocked']),
   ])
 
   return {
@@ -187,4 +233,65 @@ export async function getDynastyStats(): Promise<DynastyStats> {
     totalTasks: tasksRes.count ?? 0,
     activeTasks: activeTasksRes.count ?? 0,
   }
+}
+
+// ---------------------------------------------------------------------------
+// Proposal triage queries
+// ---------------------------------------------------------------------------
+
+export async function getProjectProposals(projectId: string): Promise<Proposal[]> {
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from('proposals')
+    .select('*')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+  if (error) { console.error('getProjectProposals error:', error); return [] }
+  return (data as Proposal[]) ?? []
+}
+
+export async function approveProposal(proposalId: string, projectId: string): Promise<Task | null> {
+  if (!supabase) return null
+
+  const { data: proposal } = await supabase.from('proposals').select('*').eq('id', proposalId).single()
+  if (!proposal) return null
+
+  const now = new Date().toISOString()
+
+  await supabase.from('proposals').update({
+    status: 'approved',
+    approved_at: now,
+    approved_by: 'sensei',
+  }).eq('id', proposalId)
+
+  const { data: task, error } = await supabase.from('tasks').insert({
+    project_id: projectId,
+    proposal_id: proposalId,
+    title: proposal.title,
+    status: 'todo',
+    goal: proposal.description,
+    owner: null,
+    priority: proposal.risk_level === 'high' ? 1 : proposal.risk_level === 'medium' ? 2 : 3,
+  }).select().single()
+
+  if (error) { console.error('approveProposal task creation error:', error); return null }
+  return task as Task
+}
+
+export async function rejectProposal(proposalId: string): Promise<void> {
+  if (!supabase) return
+  await supabase.from('proposals').update({ status: 'rejected' }).eq('id', proposalId)
+}
+
+export async function getStaleTasks(): Promise<Task[]> {
+  if (!supabase) return []
+  const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .lt('updated_at', cutoff)
+    .not('status', 'in', '("done","someday")')
+    .order('updated_at', { ascending: true })
+  if (error) { console.error('getStaleTasks error:', error); return [] }
+  return (data as Task[]) ?? []
 }

@@ -17,8 +17,10 @@ export const PROJECT_STATUS_COLORS: Record<string, string> = {
 
 // Task status colors
 export const TASK_STATUS_COLORS: Record<string, string> = {
-  active: "#3b82f6",
+  in_progress: "#3b82f6",
+  assigned: "#f59e0b",
   todo: "#6b7280",
+  review: "#8b5cf6",
   done: "#10b981",
   someday: "#a855f7",
   blocked: "#ef4444",

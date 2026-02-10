@@ -28,9 +28,9 @@ export function StatsBar({ stats }: { stats: DashboardStats }) {
   return (
     <div className="grid grid-cols-4 gap-3">
       <StatCell label="Active Agents" value={stats.activeAgents} color="#10b981" />
-      <StatCell label="Running Missions" value={stats.runningMissions} color="#10b981" />
-      <StatCell label="Queue Depth" value={stats.queuedSteps} color="#eab308" />
-      <StatCell label="Today's Proposals" value={stats.todayProposals} />
+      <StatCell label="In Progress" value={stats.inProgressTasks} color="#3b82f6" />
+      <StatCell label="Pending Reviews" value={stats.pendingReviews} color="#8b5cf6" />
+      <StatCell label="Pending Proposals" value={stats.pendingProposals} color="#eab308" />
     </div>
   );
 }

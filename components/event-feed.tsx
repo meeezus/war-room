@@ -80,9 +80,6 @@ export function EventFeed({ events }: { events: Event[] }) {
 
   return (
     <div className="flex h-full flex-col">
-      <h2 className="mb-2 font-[family-name:var(--font-space-grotesk)] text-sm font-medium uppercase tracking-wider text-[rgba(255,255,255,0.4)]">
-        Event Feed
-      </h2>
       <StealthCard hover={false} className="flex-1 overflow-hidden">
         <div
           ref={scrollRef}

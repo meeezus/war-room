@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { getProjectWithBoards } from "@/lib/queries";
-import type { Project, Board, Task } from "@/lib/types";
+import { getProjectWithBoards, getProjectProposals } from "@/lib/queries";
+import type { Project, Board, Task, Proposal } from "@/lib/types";
 import { ProjectDetail } from "@/components/project-detail";
 import { StealthCard } from "@/components/stealth-card";
 
@@ -12,14 +12,19 @@ export default function ProjectPage() {
   const params = useParams<{ id: string }>();
   const [project, setProject] = useState<Project | null>(null);
   const [boards, setBoards] = useState<(Board & { tasks: Task[] })[]>([]);
+  const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
       if (!params.id) return;
-      const data = await getProjectWithBoards(params.id);
-      setProject(data.project);
-      setBoards(data.boards);
+      const [projectData, proposalsData] = await Promise.all([
+        getProjectWithBoards(params.id),
+        getProjectProposals(params.id),
+      ]);
+      setProject(projectData.project);
+      setBoards(projectData.boards);
+      setProposals(proposalsData);
       setLoading(false);
     }
     fetchData();
@@ -66,7 +71,7 @@ export default function ProjectPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <ProjectDetail project={project} boards={boards} />
+      <ProjectDetail project={project} boards={boards} proposals={proposals} />
     </div>
   );
 }
