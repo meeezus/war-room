@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk, JetBrains_Mono } from "next/font/google";
+import { ToastProvider } from "@/components/toast-provider";
 import "./globals.css";
 
 const inter = Inter({
@@ -23,6 +24,12 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Shogunate War Room",
   description: "Command dashboard for the AI executive council",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "War Room",
+  },
 };
 
 export default function RootLayout({
@@ -37,6 +44,7 @@ export default function RootLayout({
       >
         <div className="noise-overlay" />
         {children}
+        <ToastProvider />
       </body>
     </html>
   );

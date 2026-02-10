@@ -1,9 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
-import { DAIMYO, STATUS_COLORS } from "@/lib/data";
+import type { AgentStatus } from "@/lib/types";
+import { STATUS_COLORS } from "@/lib/data";
 import { staggerContainer, staggerItem, hoverLift, tapScale, timing } from "@/lib/motion";
 import { StealthCard } from "./stealth-card";
+import { useRealtimeAgents } from "@/lib/realtime";
 
 const statusLabels: Record<string, string> = {
   online: "Online",
@@ -12,7 +15,8 @@ const statusLabels: Record<string, string> = {
   offline: "Offline",
 };
 
-export function AgentSidebar() {
+export function AgentSidebar({ agents }: { agents: AgentStatus[] }) {
+  const liveAgents = useRealtimeAgents(agents);
   const prefersReducedMotion = useReducedMotion();
 
   return (
@@ -26,7 +30,7 @@ export function AgentSidebar() {
         initial="hidden"
         animate="show"
       >
-        {DAIMYO.map((agent) => (
+        {liveAgents.map((agent) => (
           <motion.div
             key={agent.id}
             variants={prefersReducedMotion ? undefined : staggerItem}
@@ -40,41 +44,35 @@ export function AgentSidebar() {
             }
             whileTap={prefersReducedMotion ? undefined : tapScale}
           >
-            <StealthCard className="p-3">
-              <div className="flex items-start gap-3">
-                <span className="text-2xl" role="img" aria-label={agent.name}>
-                  {agent.emoji}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-[family-name:var(--font-space-grotesk)] text-sm font-medium text-[#E5E5E5]">
-                      {agent.name}
-                    </h3>
-                    <div
-                      className="h-2 w-2 rounded-full flex-shrink-0"
-                      style={{
-                        backgroundColor: STATUS_COLORS[agent.status],
-                        boxShadow: agent.status === "online" ? `0 0 6px ${STATUS_COLORS[agent.status]}` : undefined,
-                      }}
-                    />
-                    <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-[rgba(255,255,255,0.4)]">
-                      {statusLabels[agent.status]}
-                    </span>
+            <Link href={`/agents/${agent.id}`}>
+              <StealthCard className="p-3">
+                <div className="flex items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-[family-name:var(--font-space-grotesk)] text-sm font-medium text-[#E5E5E5]">
+                        {agent.display_name}
+                      </h3>
+                      <div
+                        className="h-2 w-2 rounded-full flex-shrink-0"
+                        style={{
+                          backgroundColor: STATUS_COLORS[agent.status],
+                          boxShadow: agent.status === "online" ? `0 0 6px ${STATUS_COLORS[agent.status]}` : undefined,
+                        }}
+                      />
+                      <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-[rgba(255,255,255,0.4)]">
+                        {statusLabels[agent.status]}
+                      </span>
+                    </div>
+                    <p className="text-xs text-[rgba(255,255,255,0.4)]">{agent.domain}</p>
+                    <div className="mt-1 flex items-center gap-2">
+                      <span className="rounded-sm bg-white/[0.06] px-1.5 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-[rgba(255,255,255,0.3)]">
+                        Lv.{agent.level}
+                      </span>
+                    </div>
                   </div>
-                  <p className="text-xs text-[rgba(255,255,255,0.4)]">{agent.domain}</p>
-                  <div className="mt-1 flex items-center gap-2">
-                    <span className="rounded-sm bg-white/[0.06] px-1.5 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-[rgba(255,255,255,0.3)]">
-                      Lv.{agent.level}
-                    </span>
-                  </div>
-                  {agent.currentTask && (
-                    <p className="mt-1.5 truncate text-xs text-[#10b981]/70">
-                      {agent.currentTask}
-                    </p>
-                  )}
                 </div>
-              </div>
-            </StealthCard>
+              </StealthCard>
+            </Link>
           </motion.div>
         ))}
       </motion.div>

@@ -1,126 +1,93 @@
 "use client";
 
-import { useState } from "react";
-import {
-  DndContext,
-  closestCorners,
-  DragOverlay,
-  type DragEndEvent,
-  type DragOverEvent,
-  type DragStartEvent,
-} from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { useReducedMotion } from "motion/react";
-import { INITIAL_TASKS, COLUMNS, type Task, type TaskStatus } from "@/lib/data";
-import { KanbanColumn } from "./kanban-column";
-import { TaskCard } from "./task-card";
+import Link from "next/link";
+import { motion, useReducedMotion } from "motion/react";
+import type { Mission } from "@/lib/types";
+import { hoverLift, tapScale, SPRING_CONFIG } from "@/lib/motion";
+import { StealthCard } from "./stealth-card";
+import { useRealtimeMissions } from "@/lib/realtime";
 
-export function KanbanBoard() {
-  const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS);
-  const [activeId, setActiveId] = useState<string | null>(null);
+const MISSION_COLUMNS: { id: Mission["status"]; label: string }[] = [
+  { id: "queued", label: "Queued" },
+  { id: "running", label: "Running" },
+  { id: "completed", label: "Completed" },
+  { id: "failed", label: "Failed" },
+];
+
+const STATUS_ACCENT: Record<string, string> = {
+  queued: "#6b7280",
+  running: "#3b82f6",
+  completed: "#10b981",
+  failed: "#ef4444",
+  stale: "#eab308",
+};
+
+function MissionCard({ mission }: { mission: Mission }) {
   const prefersReducedMotion = useReducedMotion();
+  const accent = STATUS_ACCENT[mission.status] ?? "#6b7280";
 
-  const activeTask = activeId ? tasks.find((t) => t.id === activeId) : null;
+  return (
+    <Link href={`/missions/${mission.id}`}>
+      <motion.div
+        whileTap={prefersReducedMotion ? undefined : tapScale}
+        whileHover={prefersReducedMotion ? undefined : hoverLift}
+        transition={SPRING_CONFIG}
+        className="cursor-pointer rounded-sm border border-white/[0.06] bg-[#0F0F0F] p-3"
+      >
+        <div className="flex items-start justify-between gap-2">
+          <span className="text-sm font-medium text-white/90">{mission.title}</span>
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          <span
+            className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 font-mono text-[10px] font-medium"
+            style={{
+              backgroundColor: `${accent}20`,
+              color: accent,
+            }}
+          >
+            <span
+              className="inline-block size-1.5 rounded-full"
+              style={{ backgroundColor: accent }}
+            />
+            {mission.status}
+          </span>
+          <span className="rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[10px] text-white/40">
+            {mission.assigned_to}
+          </span>
+        </div>
+      </motion.div>
+    </Link>
+  );
+}
 
-  // Group tasks by column status
-  const tasksByColumn = COLUMNS.map((col) => ({
+export function KanbanBoard({ missions }: { missions: Mission[] }) {
+  const liveMissions = useRealtimeMissions(missions);
+  const columns = MISSION_COLUMNS.map((col) => ({
     ...col,
-    tasks: tasks.filter((t) => t.status === col.id),
+    missions: liveMissions.filter((m) => m.status === col.id),
   }));
-
-  function handleDragStart(event: DragStartEvent) {
-    setActiveId(String(event.active.id));
-  }
-
-  function handleDragOver(event: DragOverEvent) {
-    const { active, over } = event;
-    if (!over) return;
-
-    const activeTaskId = String(active.id);
-    const overId = String(over.id);
-
-    // Determine target column: if over a column droppable, use that; if over a task, use that task's status
-    const isOverColumn = COLUMNS.some((col) => col.id === overId);
-    let targetStatus: TaskStatus | undefined;
-
-    if (isOverColumn) {
-      targetStatus = overId as TaskStatus;
-    } else {
-      const overTask = tasks.find((t) => t.id === overId);
-      if (overTask) {
-        targetStatus = overTask.status;
-      }
-    }
-
-    if (!targetStatus) return;
-
-    const taskToMove = tasks.find((t) => t.id === activeTaskId);
-    if (!taskToMove || taskToMove.status === targetStatus) return;
-
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.id === activeTaskId ? { ...t, status: targetStatus } : t
-      )
-    );
-  }
-
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-
-    if (over) {
-      const activeTaskId = String(active.id);
-      const overId = String(over.id);
-
-      const isOverColumn = COLUMNS.some((col) => col.id === overId);
-      let targetStatus: TaskStatus | undefined;
-
-      if (isOverColumn) {
-        targetStatus = overId as TaskStatus;
-      } else {
-        const overTask = tasks.find((t) => t.id === overId);
-        if (overTask) {
-          targetStatus = overTask.status;
-        }
-      }
-
-      if (targetStatus) {
-        setTasks((prev) =>
-          prev.map((t) =>
-            t.id === activeTaskId ? { ...t, status: targetStatus } : t
-          )
-        );
-      }
-    }
-
-    setActiveId(null);
-  }
 
   return (
     <div className="flex-1 overflow-auto">
-      <DndContext
-        collisionDetection={closestCorners}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="grid grid-cols-4 gap-4">
-          {tasksByColumn.map((col) => (
-            <SortableContext
-              key={col.id}
-              items={col.tasks.map((t) => t.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              <KanbanColumn id={col.id} label={col.label} tasks={col.tasks} />
-            </SortableContext>
-          ))}
-        </div>
-
-        <DragOverlay dropAnimation={prefersReducedMotion ? null : undefined}>
-          {activeTask ? (
-            <TaskCard task={activeTask} isDragOverlay />
-          ) : null}
-        </DragOverlay>
-      </DndContext>
+      <div className="grid grid-cols-4 gap-4">
+        {columns.map((col) => (
+          <StealthCard key={col.id} hover={false} className="overflow-hidden">
+            <div className="flex items-center justify-between border-b border-white/[0.06] px-3 py-2.5">
+              <h3 className="font-display text-xs font-semibold tracking-wide text-white/60 uppercase">
+                {col.label}
+              </h3>
+              <span className="inline-flex size-5 items-center justify-center rounded bg-emerald-500/15 font-mono text-[10px] font-medium text-emerald-400">
+                {col.missions.length}
+              </span>
+            </div>
+            <div className="flex min-h-[120px] flex-col gap-2 p-2">
+              {col.missions.map((mission) => (
+                <MissionCard key={mission.id} mission={mission} />
+              ))}
+            </div>
+          </StealthCard>
+        ))}
+      </div>
     </div>
   );
 }

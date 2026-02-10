@@ -1,6 +1,6 @@
 "use client";
 
-import { DAIMYO, INITIAL_TASKS, STATUS_COLORS } from "@/lib/data";
+import type { DashboardStats } from "@/lib/types";
 import { StealthCard } from "./stealth-card";
 
 function StatCell({ label, value, color }: { label: string; value: string | number; color?: string }) {
@@ -24,17 +24,13 @@ function StatCell({ label, value, color }: { label: string; value: string | numb
   );
 }
 
-export function StatsBar() {
-  const activeAgents = DAIMYO.filter((d) => d.status !== "offline").length;
-  const inProgress = INITIAL_TASKS.filter((t) => t.status === "in_progress").length;
-  const queueDepth = INITIAL_TASKS.filter((t) => t.status === "backlog" || t.status === "pending").length;
-
+export function StatsBar({ stats }: { stats: DashboardStats }) {
   return (
     <div className="grid grid-cols-4 gap-3">
-      <StatCell label="Active Agents" value={activeAgents} color="#10b981" />
-      <StatCell label="System Status" value="Operational" color="#10b981" />
-      <StatCell label="In Progress" value={inProgress} color="#eab308" />
-      <StatCell label="Queue Depth" value={queueDepth} />
+      <StatCell label="Active Agents" value={stats.activeAgents} color="#10b981" />
+      <StatCell label="Running Missions" value={stats.runningMissions} color="#10b981" />
+      <StatCell label="Queue Depth" value={stats.queuedSteps} color="#eab308" />
+      <StatCell label="Today's Proposals" value={stats.todayProposals} />
     </div>
   );
 }
