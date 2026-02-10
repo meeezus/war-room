@@ -25,28 +25,28 @@ DEFAULT_TIMEOUT_MINUTES = 30
 
 # Daimyo registry with skill paths
 DAIMYO_REGISTRY: dict[str, dict] = {
-    "atlas": {
-        "name": "Atlas",
+    "ed": {
+        "name": "Ed",
         "domain": "engineering",
         "skill_path": os.path.expanduser("~/Shugyo/Shogunate/Daimyo/Atlas-SKILL.md"),
     },
-    "sage": {
-        "name": "Sage",
+    "light": {
+        "name": "Light",
         "domain": "product",
         "skill_path": os.path.expanduser("~/Shugyo/Shogunate/Daimyo/Sage-SKILL.md"),
     },
-    "vex": {
-        "name": "Vex",
+    "toji": {
+        "name": "Toji",
         "domain": "commerce",
         "skill_path": os.path.expanduser("~/Shugyo/Shogunate/Daimyo/Vex-SKILL.md"),
     },
-    "spark": {
-        "name": "Spark",
+    "power": {
+        "name": "Power",
         "domain": "influence",
         "skill_path": os.path.expanduser("~/Shugyo/Shogunate/Daimyo/Spark-SKILL.md"),
     },
-    "bolt": {
-        "name": "Bolt",
+    "major": {
+        "name": "Major",
         "domain": "operations",
         "skill_path": os.path.expanduser("~/Shugyo/Shogunate/Daimyo/Bolt-SKILL.md"),
     },

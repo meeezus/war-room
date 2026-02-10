@@ -1,0 +1,24 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/michaelenriquez/Code/war-room/engine/hooks/commit-sync.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "ExitPlanMode",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/michaelenriquez/Code/war-room/engine/hooks/plan-sync.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
