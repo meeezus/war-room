@@ -1,14 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "motion/react";
 import type { Mission, Step } from "@/lib/types";
-import { startMission } from "@/lib/queries";
 import { StealthCard } from "./stealth-card";
 import { StepCard } from "./step-card";
 import { staggerContainer } from "@/lib/motion";
 import { useRealtimeSteps } from "@/lib/realtime";
+import { getTaskByProposal } from "@/lib/queries";
 
 const STATUS_ACCENT: Record<string, string> = {
   queued: "#6b7280",
@@ -48,13 +48,31 @@ export function MissionDetail({
 }) {
   const [missionStatus, setMissionStatus] = useState(mission.status);
   const [starting, setStarting] = useState(false);
+  const [linkedTask, setLinkedTask] = useState<{ id: number; project_id: string | null; title: string } | null>(null);
   const liveSteps = useRealtimeSteps(mission.id, steps);
   const accent = STATUS_ACCENT[missionStatus] ?? "#6b7280";
 
+  useEffect(() => {
+    if (mission.proposal_id) {
+      getTaskByProposal(mission.proposal_id).then((t) => {
+        if (t) setLinkedTask({ id: t.id, project_id: t.project_id, title: t.title });
+      });
+    }
+  }, [mission.proposal_id]);
+
   async function handleStart() {
     setStarting(true);
-    const ok = await startMission(mission.id);
-    if (ok) setMissionStatus("running");
+    try {
+      const res = await fetch(`/api/missions/${mission.id}/execute`, { method: 'POST' });
+      if (res.ok) {
+        setMissionStatus("running");
+      } else {
+        const data = await res.json();
+        console.error('Execute failed:', data.error);
+      }
+    } catch (err) {
+      console.error('Execute error:', err);
+    }
     setStarting(false);
   }
   const completedSteps = liveSteps.filter((s) => s.status === "completed").length;
@@ -130,6 +148,19 @@ export function MissionDetail({
           <span className="font-[family-name:var(--font-jetbrains-mono)]">
             Created {formatTimestamp(mission.created_at)}
           </span>
+
+          {/* Linked Task */}
+          {linkedTask && linkedTask.project_id && (
+            <span>
+              Task:{" "}
+              <Link
+                href={`/projects/${linkedTask.project_id}`}
+                className="text-emerald-400/80 hover:text-emerald-400 transition-colors"
+              >
+                {linkedTask.title}
+              </Link>
+            </span>
+          )}
         </div>
       </StealthCard>
 

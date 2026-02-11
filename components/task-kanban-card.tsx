@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import type { Task } from "@/lib/types";
 import { TASK_STATUS_COLORS } from "@/lib/data";
 import { hoverLift, tapScale, SPRING_CONFIG } from "@/lib/motion";
 import { StealthCard } from "./stealth-card";
+import { getMissionByProposal } from "@/lib/queries";
 
 export type TaskWithProject = Task & { projects?: { title: string } | null };
 
@@ -30,11 +32,20 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 
 export function TaskKanbanCard({ task }: { task: TaskWithProject }) {
   const [expanded, setExpanded] = useState(false);
+  const [missionId, setMissionId] = useState<string | null>(null);
   const prefersReducedMotion = useReducedMotion();
   const accent = TASK_STATUS_COLORS[task.status] ?? "#6b7280";
   const priorityStyle = task.priority ? PRIORITY_COLORS[task.priority] : null;
   const isStale = task.status !== 'done' && task.status !== 'someday' &&
     new Date(task.updated_at).getTime() < Date.now() - 7 * 24 * 60 * 60 * 1000;
+
+  useEffect(() => {
+    if (expanded && task.proposal_id && !missionId) {
+      getMissionByProposal(task.proposal_id).then((m) => {
+        if (m) setMissionId(m.id);
+      });
+    }
+  }, [expanded, task.proposal_id, missionId]);
 
   return (
     <motion.div
@@ -96,6 +107,20 @@ export function TaskKanbanCard({ task }: { task: TaskWithProject }) {
                   label="Updated"
                   value={new Date(task.updated_at).toLocaleDateString()}
                 />
+                {missionId && (
+                  <div className="flex gap-2">
+                    <span className="shrink-0 text-[10px] font-medium uppercase tracking-wider text-white/25">
+                      Mission
+                    </span>
+                    <Link
+                      href={`/missions/${missionId}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-xs text-emerald-400/80 hover:text-emerald-400 transition-colors"
+                    >
+                      View Mission →
+                    </Link>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}

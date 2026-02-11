@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { exec } from 'child_process'
 import { createServiceClient } from '@/lib/supabase-server'
 
 const DOMAIN_TO_DAIMYO: Record<string, string> = {
@@ -100,28 +101,20 @@ export async function PATCH(
       )
     }
 
-    // 5. Insert mission
+    // 5. Trigger engine mission decomposition (async — K2.5 steps)
     const daimyoId = DOMAIN_TO_DAIMYO[proposal.domain ?? ''] ?? 'ed'
+    const engineDir = process.env.SHOGUNATE_ENGINE_DIR || `${process.env.HOME}/Code/shogunate-engine`
+    exec(
+      `cd "${engineDir}" && uv run python -c "from engine.mission import run_pending; missions = run_pending(); print(f'Created {len(missions)} mission(s)')"`,
+      { timeout: 60000 },
+      (error, stdout, stderr) => {
+        if (error) console.error('Engine run_pending error:', error.message)
+        if (stdout) console.log('Engine run_pending:', stdout.trim())
+        if (stderr) console.error('Engine run_pending stderr:', stderr)
+      }
+    )
 
-    const { data: mission, error: missionError } = await supabase
-      .from('missions')
-      .insert({
-        proposal_id: id,
-        title: proposal.title,
-        assigned_to: daimyoId,
-        status: 'queued',
-      })
-      .select('id, assigned_to')
-      .single()
-
-    if (missionError) {
-      return NextResponse.json(
-        { error: 'Failed to create mission' },
-        { status: 500 }
-      )
-    }
-
-    return NextResponse.json({ task, mission })
+    return NextResponse.json({ task, missionPending: true, daimyo: daimyoId })
   }
 
   if (action === 'reject') {

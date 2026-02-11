@@ -228,6 +228,18 @@ export async function getAllTasks() {
   return data ?? []
 }
 
+export async function getMissionStats(): Promise<{ active: number; total: number }> {
+  if (!supabase) return { active: 0, total: 0 }
+  const [activeRes, totalRes] = await Promise.all([
+    supabase.from('missions').select('id', { count: 'exact', head: true }).in('status', ['queued', 'running']),
+    supabase.from('missions').select('id', { count: 'exact', head: true }),
+  ])
+  return {
+    active: activeRes.count ?? 0,
+    total: totalRes.count ?? 0,
+  }
+}
+
 export async function getDynastyStats(): Promise<DynastyStats> {
   const defaults: DynastyStats = { totalProjects: 0, activeProjects: 0, totalTasks: 0, activeTasks: 0 }
   if (!supabase) return defaults
@@ -263,7 +275,7 @@ export async function getProjectProposals(projectId: string): Promise<Proposal[]
   return (data as Proposal[]) ?? []
 }
 
-export async function approveProposal(proposalId: string, projectId: string): Promise<{ task: Task; mission: { id: string; assigned_to: string } } | null> {
+export async function approveProposal(proposalId: string, projectId: string): Promise<{ task: Task; missionPending: boolean; daimyo: string } | null> {
   try {
     const res = await fetch(`/api/proposals/${proposalId}`, {
       method: 'PATCH',
@@ -302,6 +314,30 @@ export async function startMission(missionId: string): Promise<boolean> {
   }).eq('id', missionId).eq('status', 'queued')
   if (error) { console.error('startMission error:', error); return false }
   return true
+}
+
+export async function getMissionByProposal(proposalId: string): Promise<Mission | null> {
+  if (!supabase) return null
+  const { data, error } = await supabase
+    .from('missions')
+    .select('*')
+    .eq('proposal_id', proposalId)
+    .limit(1)
+    .maybeSingle()
+  if (error) { console.error('getMissionByProposal error:', error); return null }
+  return (data as Mission) ?? null
+}
+
+export async function getTaskByProposal(proposalId: string): Promise<Task | null> {
+  if (!supabase) return null
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('proposal_id', proposalId)
+    .limit(1)
+    .maybeSingle()
+  if (error) { console.error('getTaskByProposal error:', error); return null }
+  return (data as Task) ?? null
 }
 
 export async function getStaleTasks(): Promise<Task[]> {
