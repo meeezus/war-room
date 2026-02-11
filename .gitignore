@@ -54,6 +54,10 @@ linear-integration-pitch.html
 *.tsbuildinfo
 next-env.d.ts
 
+# tauri
+src-tauri/target/
+src-tauri/gen/
+
 # serwist (generated service worker)
 public/sw.js
 public/sw.js.map
