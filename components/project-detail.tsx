@@ -13,20 +13,22 @@ interface ProjectDetailProps {
   project: Project;
   boards: (Board & { tasks: Task[] })[];
   proposals: Proposal[];
+  tasks: Task[];
+  onUpdate?: () => void;
 }
 
-export function ProjectDetail({ project, boards, proposals }: ProjectDetailProps) {
+export function ProjectDetail({ project, boards, proposals, tasks, onUpdate }: ProjectDetailProps) {
   const prefersReducedMotion = useReducedMotion();
   const accent = PROJECT_STATUS_COLORS[project.status] ?? "#6b7280";
 
-  const allTasks = boards.flatMap((b) => b.tasks);
+  const allTasks = tasks;
   const totalTasks = allTasks.length;
   const doneTasks = allTasks.filter((t) => t.status === "done").length;
   const progressPct = totalTasks > 0 ? (doneTasks / totalTasks) * 100 : 0;
 
   return (
     <motion.div
-      className="mx-auto max-w-4xl space-y-4 p-4"
+      className="mx-auto max-w-[1600px] space-y-4 p-4"
       {...(prefersReducedMotion ? {} : fadeInUp)}
     >
       {/* Breadcrumb */}
@@ -117,7 +119,7 @@ export function ProjectDetail({ project, boards, proposals }: ProjectDetailProps
       )}
 
       {/* Proposals section */}
-      <ProposalsSection proposals={proposals} projectId={project.id} />
+      <ProposalsSection proposals={proposals} projectId={project.id} onUpdate={onUpdate} />
 
       {/* Kanban board */}
       <div className="flex-1 overflow-hidden" style={{ minHeight: "400px" }}>

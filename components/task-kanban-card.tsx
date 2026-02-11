@@ -1,6 +1,7 @@
 "use client";
 
-import { motion, useReducedMotion } from "motion/react";
+import { useState } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import type { Task } from "@/lib/types";
 import { TASK_STATUS_COLORS } from "@/lib/data";
 import { hoverLift, tapScale, SPRING_CONFIG } from "@/lib/motion";
@@ -16,7 +17,19 @@ const PRIORITY_COLORS: Record<number, { bg: string; text: string }> = {
   5: { bg: "bg-blue-500/15", text: "text-blue-400" },
 };
 
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex gap-2">
+      <span className="shrink-0 text-[10px] font-medium uppercase tracking-wider text-white/25">
+        {label}
+      </span>
+      <span className="text-xs text-[rgba(255,255,255,0.5)]">{value}</span>
+    </div>
+  );
+}
+
 export function TaskKanbanCard({ task }: { task: TaskWithProject }) {
+  const [expanded, setExpanded] = useState(false);
   const prefersReducedMotion = useReducedMotion();
   const accent = TASK_STATUS_COLORS[task.status] ?? "#6b7280";
   const priorityStyle = task.priority ? PRIORITY_COLORS[task.priority] : null;
@@ -25,6 +38,8 @@ export function TaskKanbanCard({ task }: { task: TaskWithProject }) {
 
   return (
     <motion.div
+      className="cursor-pointer"
+      onClick={() => setExpanded((prev) => !prev)}
       whileTap={prefersReducedMotion ? undefined : tapScale}
       whileHover={prefersReducedMotion ? undefined : hoverLift}
       transition={SPRING_CONFIG}
@@ -59,6 +74,32 @@ export function TaskKanbanCard({ task }: { task: TaskWithProject }) {
             </span>
           )}
         </div>
+
+        <AnimatePresence initial={false}>
+          {expanded && (
+            <motion.div
+              initial={prefersReducedMotion ? false : { height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+              className="overflow-hidden"
+            >
+              <div className="mt-2 border-t border-white/[0.06] pt-2 space-y-1.5">
+                {task.goal && <DetailRow label="Goal" value={task.goal} />}
+                {task.notes && <DetailRow label="Notes" value={task.notes} />}
+                {task.owner && <DetailRow label="Owner" value={task.owner} />}
+                <DetailRow
+                  label="Created"
+                  value={new Date(task.created_at).toLocaleDateString()}
+                />
+                <DetailRow
+                  label="Updated"
+                  value={new Date(task.updated_at).toLocaleDateString()}
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </StealthCard>
     </motion.div>
   );

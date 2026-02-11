@@ -12,21 +12,24 @@ export default function ProjectPage() {
   const params = useParams<{ id: string }>();
   const [project, setProject] = useState<Project | null>(null);
   const [boards, setBoards] = useState<(Board & { tasks: Task[] })[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(true);
 
+  async function fetchData() {
+    if (!params.id) return;
+    const [projectData, proposalsData] = await Promise.all([
+      getProjectWithBoards(params.id),
+      getProjectProposals(params.id),
+    ]);
+    setProject(projectData.project);
+    setBoards(projectData.boards);
+    setTasks(projectData.allTasks);
+    setProposals(proposalsData);
+    setLoading(false);
+  }
+
   useEffect(() => {
-    async function fetchData() {
-      if (!params.id) return;
-      const [projectData, proposalsData] = await Promise.all([
-        getProjectWithBoards(params.id),
-        getProjectProposals(params.id),
-      ]);
-      setProject(projectData.project);
-      setBoards(projectData.boards);
-      setProposals(proposalsData);
-      setLoading(false);
-    }
     fetchData();
   }, [params.id]);
 
@@ -71,7 +74,7 @@ export default function ProjectPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <ProjectDetail project={project} boards={boards} proposals={proposals} />
+      <ProjectDetail project={project} boards={boards} tasks={tasks} proposals={proposals} onUpdate={fetchData} />
     </div>
   );
 }
