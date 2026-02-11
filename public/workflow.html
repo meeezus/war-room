@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>War Room Lifecycle</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0A0A0A;
+      --bg-card: rgba(10, 10, 10, 0.8);
+      --bg-card-hover: rgba(15, 15, 15, 0.85);
+      --text: #E5E5E5;
+      --text-dim: rgba(255, 255, 255, 0.5);
+      --text-muted: rgba(255, 255, 255, 0.3);
+      --border: rgba(255, 255, 255, 0.06);
+      --border-hover: rgba(255, 255, 255, 0.15);
+      --font-sans: 'Space Grotesk', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+
+      --purple: #a855f7;
+      --green: #10b981;
+      --red: #ef4444;
+      --blue: #3b82f6;
+      --indigo: #6366f1;
+      --yellow: #eab308;
+      --amber: #f59e0b;
+      --gray: #6b7280;
+      --violet: #8b5cf6;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      line-height: 1.6;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Layout */
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    /* Header */
+    .page-header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+    .page-header h1 {
+      font-family: var(--font-sans);
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+    .page-header p {
+      color: var(--text-dim);
+      font-size: 15px;
+    }
+
+    /* Cards */
+    .card {
+      position: relative;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg-card);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+      padding: 28px 28px 24px;
+      margin-bottom: 0;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      top: 0;
+      height: 60px;
+      border-radius: 4px 4px 0 0;
+      background: linear-gradient(to bottom, rgba(255,255,255,0.02), transparent);
+      pointer-events: none;
+    }
+
+    /* Section headers */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .section-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 500;
+      flex-shrink: 0;
+    }
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    /* Body text */
+    .card p {
+      color: var(--text-dim);
+      font-size: 14px;
+      margin-bottom: 12px;
+      line-height: 1.7;
+    }
+    .card p:last-child { margin-bottom: 0; }
+
+    /* Inline code */
+    code {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 3px;
+      padding: 2px 6px;
+      color: var(--text);
+    }
+
+    /* Field list */
+    .field-list {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 4px 16px;
+      font-size: 13px;
+      margin: 12px 0;
+    }
+    .field-list dt {
+      font-family: var(--font-mono);
+      color: var(--text);
+      font-weight: 500;
+    }
+    .field-list dd {
+      color: var(--text-dim);
+    }
+
+    /* Event badges */
+    .event-badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 3px;
+      margin: 2px 4px 2px 0;
+      white-space: nowrap;
+    }
+
+    /* Event cascade */
+    .event-cascade {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin: 12px 0 4px;
+    }
+    .cascade-arrow {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    /* Flow connector */
+    .flow-connector {
+      display: flex;
+      justify-content: center;
+      padding: 8px 0;
+    }
+    .flow-arrow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+    .flow-arrow .shaft {
+      width: 2px;
+      height: 24px;
+      border-radius: 1px;
+    }
+    .flow-arrow .head {
+      width: 0;
+      height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+    }
+
+    /* Status mapping table */
+    .status-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 13px;
+      margin: 12px 0 4px;
+    }
+    .status-table th {
+      text-align: left;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .status-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-dim);
+    }
+    .status-table tr:last-child td {
+      border-bottom: none;
+    }
+    .status-table .domain-cell {
+      font-family: var(--font-mono);
+      color: var(--text);
+      font-weight: 500;
+    }
+    .status-table .daimyo-cell {
+      font-weight: 500;
+    }
+
+    /* Mapping grid for domain routing */
+    .domain-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin: 12px 0 4px;
+    }
+    .domain-chip {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .domain-chip .domain-name {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+    .domain-chip .daimyo-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .domain-chip .arrow-sep {
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    /* Legend */
+    .legend-section {
+      margin-top: 56px;
+    }
+    .legend-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      letter-spacing: -0.2px;
+    }
+    .legend-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 6px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+    }
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .legend-label {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    /* Transition list */
+    .transition-list {
+      list-style: none;
+      margin: 12px 0 4px;
+    }
+    .transition-list li {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 0;
+      font-size: 13px;
+      color: var(--text-dim);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    }
+    .transition-list li:last-child { border-bottom: none; }
+    .transition-list .trigger {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text);
+      min-width: 160px;
+    }
+    .transition-list .result {
+      color: var(--text-dim);
+    }
+    .transition-list .t-arrow {
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    /* Subsection */
+    .subsection-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin: 16px 0 8px;
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .container { padding: 32px 16px 64px; }
+      .card { padding: 20px 18px 18px; }
+      .domain-grid { grid-template-columns: repeat(2, 1fr); }
+      .legend-grid { grid-template-columns: repeat(2, 1fr); }
+      .page-header h1 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <div class="page-header">
+    <h1>War Room Lifecycle</h1>
+    <p>Proposal &rarr; Approval &rarr; Execution &rarr; Completion</p>
+  </div>
+
+  <!-- 1. PROPOSE -->
+  <div class="card" id="propose">
+    <div class="section-header">
+      <span class="section-number" style="background: rgba(168,85,247,0.15); color: #a855f7;">1</span>
+      <span class="section-title">Propose</span>
+    </div>
+    <p>
+      Proposals enter the system via <code>wr propose "title"</code> on the CLI or are generated by agents (source: <code>discord</code>, <code>cron</code>, <code>trigger</code>). Each proposal lands in the <code>proposals</code> table with status <code>pending</code>.
+    </p>
+
+    <div class="subsection-label">Fields</div>
+    <dl class="field-list">
+      <dt>title</dt>        <dd>What the proposal is for</dd>
+      <dt>description</dt>  <dd>Optional details / rationale</dd>
+      <dt>domain</dt>       <dd>engineering, product, commerce, influence, operations, coordination</dd>
+      <dt>risk_level</dt>   <dd>low, medium, or high</dd>
+      <dt>source</dt>       <dd>manual, discord, cron, or trigger</dd>
+      <dt>requested_by</dt> <dd>Who asked (e.g. "sensei", agent name)</dd>
+      <dt>project_id</dt>   <dd>Links proposal to a dynasty project</dd>
+    </dl>
+
+    <div class="subsection-label">Where it appears</div>
+    <p>
+      Proposals appear in the <strong>ProposalsSection</strong> within each project detail view. Pending proposals show Approve / Reject buttons. Duplicate detection warns if a matching task already exists.
+    </p>
+
+    <div class="subsection-label">Events emitted</div>
+    <div class="event-cascade">
+      <span class="event-badge" style="background: rgba(168,85,247,0.12); color: #a855f7;">proposal_created</span>
+    </div>
+  </div>
+
+  <!-- Arrow 1 -> 2 -->
+  <div class="flow-connector">
+    <div class="flow-arrow">
+      <div class="shaft" style="background: linear-gradient(to bottom, #a855f7, #10b981);"></div>
+      <div class="head" style="border-top: 8px solid #10b981;"></div>
+    </div>
+  </div>
+
+  <!-- 2. APPROVE -->
+  <div class="card" id="approve">
+    <div class="section-header">
+      <span class="section-number" style="background: rgba(16,185,129,0.15); color: #10b981;">2</span>
+      <span class="section-title">Approve</span>
+    </div>
+    <p>
+      When the user clicks <strong>Approve</strong>, the system executes a three-step cascade:
+    </p>
+
+    <div class="subsection-label">Cascade</div>
+    <ul class="transition-list">
+      <li>
+        <span class="trigger">proposal.status</span>
+        <span class="t-arrow">&rarr;</span>
+        <span class="result"><code>approved</code> &mdash; <code>approved_by</code> set to "sensei"</span>
+      </li>
+      <li>
+        <span class="trigger">Task created</span>
+        <span class="t-arrow">&rarr;</span>
+        <span class="result">Inserted into <code>tasks</code> with status <code>todo</code>, linked via <code>proposal_id</code></span>
+      </li>
+      <li>
+        <span class="trigger">Mission created</span>
+        <span class="t-arrow">&rarr;</span>
+        <span class="result">Inserted into <code>missions</code> with status <code>queued</code>, routed to domain daimyo</span>
+      </li>
+    </ul>
+
+    <p>
+      The task appears in the project's <strong>Todo</strong> kanban column. The mission is assigned to the domain's daimyo via <code>DOMAIN_TO_DAIMYO</code> routing (see Section 6).
+    </p>
+
+    <div class="subsection-label">Event cascade</div>
+    <div class="event-cascade">
+      <span class="event-badge" style="background: rgba(16,185,129,0.12); color: #10b981;">proposal_approved</span>
+      <span class="cascade-arrow">&rarr;</span>
+      <span class="event-badge" style="background: rgba(139,92,246,0.12); color: #8b5cf6;">task_created</span>
+      <span class="cascade-arrow">&rarr;</span>
+      <span class="event-badge" style="background: rgba(245,158,11,0.12); color: #f59e0b;">task_updated</span>
+    </div>
+  </div>
+
+  <!-- Arrow 2 -> 3 -->
+  <div class="flow-connector">
+    <div class="flow-arrow">
+      <div class="shaft" style="background: linear-gradient(to bottom, #10b981, #3b82f6);"></div>
+      <div class="head" style="border-top: 8px solid #3b82f6;"></div>
+    </div>
+  </div>
+
+  <!-- 3. EXECUTE -->
+  <div class="card" id="execute">
+    <div class="section-header">
+      <span class="section-number" style="background: rgba(59,130,246,0.15); color: #3b82f6;">3</span>
+      <span class="section-title">Execute</span>
+    </div>
+    <p>
+      From the mission detail view, the user clicks <strong>Execute</strong>. This triggers:
+    </p>
+
+    <ul class="transition-list">
+      <li>
+        <span class="trigger">mission.status</span>
+        <span class="t-arrow">&rarr;</span>
+        <span class="result"><code>running</code> &mdash; <code>started_at</code> set to now</span>
+      </li>
+      <li>
+        <span class="trigger">Linked task</span>
+        <span class="t-arrow">&rarr;</span>
+        <span class="result">Auto-moves from <code>todo</code> &rarr; <code>in_progress</code> (via DB trigger)</span>
+      </li>
+      <li>
+        <span class="trigger">Engine dispatch</span>
+        <span class="t-arrow">&rarr;</span>
+        <span class="result"><code>shogun execute-mission &lt;id&gt;</code> &mdash; daimyo receives the mission</span>
+      </li>
+    </ul>
+
+    <p>
+      The engine executes each mission step sequentially. Steps have kinds: <code>research</code>, <code>code</code>, <code>review</code>, <code>test</code>, <code>deploy</code>, <code>write</code>, <code>analyze</code>.
+    </p>
+
+    <div class="subsection-label">Events emitted</div>
+    <div class="event-cascade">
+      <span class="event-badge" style="background: rgba(59,130,246,0.12); color: #3b82f6;">mission_started</span>
+      <span class="cascade-arrow">&rarr;</span>
+      <span class="event-badge" style="background: rgba(245,158,11,0.12); color: #f59e0b;">task_updated</span>
+      <span class="cascade-arrow">&rarr;</span>
+      <span class="event-badge" style="background: rgba(99,102,241,0.12); color: #6366f1;">step_started</span>
+    </div>
+  </div>
+
+  <!-- Arrow 3 -> 4 -->
+  <div class="flow-connector">
+    <div class="flow-arrow">
+      <div class="shaft" style="background: linear-gradient(to bottom, #3b82f6, #10b981);"></div>
+      <div class="head" style="border-top: 8px solid #10b981;"></div>
+    </div>
+  </div>
+
+  <!-- 4. AUTO-PROGRESSION -->
+  <div class="card" id="auto-progression">
+    <div class="section-header">
+      <span class="section-number" style="background: rgba(16,185,129,0.15); color: #10b981;">4</span>
+      <span class="section-title">Auto-Progression</span>
+    </div>
+    <p>
+      Database triggers on <code>missions.status</code> automatically advance linked tasks. The trigger function <code>progress_task_on_mission()</code> maps mission outcomes to task states.
+    </p>
+
+    <div class="subsection-label">Mission &rarr; Task mapping</div>
+    <table class="status-table">
+      <thead>
+        <tr>
+          <th>Mission Status</th>
+          <th>Task Moves To</th>
+          <th>Events</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code style="color: #3b82f6;">running</code></td>
+          <td><code>in_progress</code></td>
+          <td>
+            <span class="event-badge" style="background: rgba(59,130,246,0.12); color: #3b82f6; font-size: 10px;">mission_started</span>
+            <span class="event-badge" style="background: rgba(245,158,11,0.12); color: #f59e0b; font-size: 10px;">task_updated</span>
+          </td>
+        </tr>
+        <tr>
+          <td><code style="color: #10b981;">completed</code></td>
+          <td><code>review</code></td>
+          <td>
+            <span class="event-badge" style="background: rgba(16,185,129,0.12); color: #10b981; font-size: 10px;">mission_completed</span>
+            <span class="event-badge" style="background: rgba(245,158,11,0.12); color: #f59e0b; font-size: 10px;">task_updated</span>
+          </td>
+        </tr>
+        <tr>
+          <td><code style="color: #ef4444;">failed</code></td>
+          <td><code>blocked</code></td>
+          <td>
+            <span class="event-badge" style="background: rgba(239,68,68,0.12); color: #ef4444; font-size: 10px;">mission_failed</span>
+            <span class="event-badge" style="background: rgba(245,158,11,0.12); color: #f59e0b; font-size: 10px;">task_updated</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p style="margin-top: 12px;">
+      Tasks already in <code>done</code> are skipped. Each task status change fires the <code>task_event_trigger</code>, which emits a <code>task_updated</code> event to the live feed.
+    </p>
+  </div>
+
+  <!-- Arrow 4 -> 5 -->
+  <div class="flow-connector">
+    <div class="flow-arrow">
+      <div class="shaft" style="background: linear-gradient(to bottom, #10b981, #6366f1);"></div>
+      <div class="head" style="border-top: 8px solid #6366f1;"></div>
+    </div>
+  </div>
+
+  <!-- 5. AGENT STATUS -->
+  <div class="card" id="agent-status">
+    <div class="section-header">
+      <span class="section-number" style="background: rgba(99,102,241,0.15); color: #6366f1;">5</span>
+      <span class="section-title">Agent Status</span>
+    </div>
+    <p>
+      Daimyo agents report their status (<code>online</code>, <code>idle</code>, <code>busy</code>, <code>offline</code>) in the sidebar via the <code>agent_status</code> table.
+    </p>
+
+    <ul class="transition-list">
+      <li>
+        <span class="trigger">Heartbeat</span>
+        <span class="t-arrow">&rarr;</span>
+        <span class="result">Agents emit <code>heartbeat</code> events to stay "alive" &mdash; <code>last_heartbeat</code> updated</span>
+      </li>
+      <li>
+        <span class="trigger">Status change</span>
+        <span class="t-arrow">&rarr;</span>
+        <span class="result">Trigger emits <code>agent_action</code> event: "{name} is now {status}"</span>
+      </li>
+      <li>
+        <span class="trigger">Mission assigned</span>
+        <span class="t-arrow">&rarr;</span>
+        <span class="result"><code>current_mission_id</code> set, agent goes <code>busy</code></span>
+      </li>
+      <li>
+        <span class="trigger">Mission complete</span>
+        <span class="t-arrow">&rarr;</span>
+        <span class="result"><code>missions_completed</code> incremented, agent goes <code>idle</code></span>
+      </li>
+    </ul>
+
+    <div class="subsection-label">Events emitted</div>
+    <div class="event-cascade">
+      <span class="event-badge" style="background: rgba(107,114,128,0.12); color: #6b7280;">heartbeat</span>
+      <span class="event-badge" style="background: rgba(59,130,246,0.12); color: #3b82f6;">agent_action</span>
+    </div>
+  </div>
+
+  <!-- Arrow 5 -> 6 -->
+  <div class="flow-connector">
+    <div class="flow-arrow">
+      <div class="shaft" style="background: linear-gradient(to bottom, #6366f1, #f59e0b);"></div>
+      <div class="head" style="border-top: 8px solid #f59e0b;"></div>
+    </div>
+  </div>
+
+  <!-- 6. DOMAIN ROUTING -->
+  <div class="card" id="domain-routing">
+    <div class="section-header">
+      <span class="section-number" style="background: rgba(245,158,11,0.15); color: #f59e0b;">6</span>
+      <span class="section-title">Domain Routing</span>
+    </div>
+    <p>
+      When a proposal is approved, its <code>domain</code> field determines which daimyo receives the mission. Default fallback: <strong>Ed</strong> (engineering).
+    </p>
+
+    <div class="subsection-label">DOMAIN_TO_DAIMYO mapping</div>
+    <div class="domain-grid">
+      <div class="domain-chip">
+        <span class="domain-name">engineering</span>
+        <span class="arrow-sep">&rarr;</span>
+        <span class="daimyo-name" style="color: #3b82f6;">Ed</span>
+      </div>
+      <div class="domain-chip">
+        <span class="domain-name">product</span>
+        <span class="arrow-sep">&rarr;</span>
+        <span class="daimyo-name" style="color: #f59e0b;">Light</span>
+      </div>
+      <div class="domain-chip">
+        <span class="domain-name">commerce</span>
+        <span class="arrow-sep">&rarr;</span>
+        <span class="daimyo-name" style="color: #10b981;">Toji</span>
+      </div>
+      <div class="domain-chip">
+        <span class="domain-name">influence</span>
+        <span class="arrow-sep">&rarr;</span>
+        <span class="daimyo-name" style="color: #ef4444;">Power</span>
+      </div>
+      <div class="domain-chip">
+        <span class="domain-name">operations</span>
+        <span class="arrow-sep">&rarr;</span>
+        <span class="daimyo-name" style="color: #8b5cf6;">Major</span>
+      </div>
+      <div class="domain-chip">
+        <span class="domain-name">coordination</span>
+        <span class="arrow-sep">&rarr;</span>
+        <span class="daimyo-name" style="color: #a855f7;">Pip</span>
+      </div>
+    </div>
+
+    <p style="margin-top: 12px;">
+      If no domain is set on the proposal, the system defaults to <code>engineering</code> &rarr; <strong>Ed</strong>.
+    </p>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend-section">
+    <div class="card">
+      <div class="section-header">
+        <span class="section-title">Event Type Legend</span>
+      </div>
+      <p>Every state change emits a typed event to the live feed. Colors match the dashboard event feed.</p>
+
+      <div class="legend-grid" style="margin-top: 16px;">
+        <div class="legend-item">
+          <span class="legend-dot" style="background: #a855f7; box-shadow: 0 0 6px rgba(168,85,247,0.4);"></span>
+          <span class="legend-label">proposal_created</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background: #10b981; box-shadow: 0 0 6px rgba(16,185,129,0.4);"></span>
+          <span class="legend-label">proposal_approved</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background: #ef4444; box-shadow: 0 0 6px rgba(239,68,68,0.4);"></span>
+          <span class="legend-label">proposal_rejected</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background: #3b82f6; box-shadow: 0 0 6px rgba(59,130,246,0.4);"></span>
+          <span class="legend-label">mission_started</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background: #10b981; box-shadow: 0 0 6px rgba(16,185,129,0.4);"></span>
+          <span class="legend-label">mission_completed</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background: #ef4444; box-shadow: 0 0 6px rgba(239,68,68,0.4);"></span>
+          <span class="legend-label">mission_failed</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background: #6366f1; box-shadow: 0 0 6px rgba(99,102,241,0.4);"></span>
+          <span class="legend-label">step_started</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background: #10b981; box-shadow: 0 0 6px rgba(16,185,129,0.4);"></span>
+          <span class="legend-label">step_completed</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background: #ef4444; box-shadow: 0 0 6px rgba(239,68,68,0.4);"></span>
+          <span class="legend-label">step_failed</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background: #eab308; box-shadow: 0 0 6px rgba(234,179,8,0.4);"></span>
+          <span class="legend-label">step_stale</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background: #6b7280; box-shadow: 0 0 6px rgba(107,114,128,0.4);"></span>
+          <span class="legend-label">heartbeat</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background: #3b82f6; box-shadow: 0 0 6px rgba(59,130,246,0.4);"></span>
+          <span class="legend-label">agent_action</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background: #a855f7; box-shadow: 0 0 6px rgba(168,85,247,0.4);"></span>
+          <span class="legend-label">user_request</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background: #8b5cf6; box-shadow: 0 0 6px rgba(139,92,246,0.4);"></span>
+          <span class="legend-label">task_created</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background: #f59e0b; box-shadow: 0 0 6px rgba(245,158,11,0.4);"></span>
+          <span class="legend-label">task_updated</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

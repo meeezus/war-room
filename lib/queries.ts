@@ -171,8 +171,9 @@ export async function getProjectsWithMetrics(): Promise<ProjectWithMetrics[]> {
 export async function getProjectWithBoards(id: string): Promise<{
   project: Project | null
   boards: (Board & { tasks: Task[] })[]
+  allTasks: Task[]
 }> {
-  if (!supabase) return { project: null, boards: [] }
+  if (!supabase) return { project: null, boards: [], allTasks: [] }
 
   const [projectRes, boardsRes, tasksRes] = await Promise.all([
     supabase.from('projects').select('*').eq('id', id).single(),
@@ -193,6 +194,7 @@ export async function getProjectWithBoards(id: string): Promise<{
   return {
     project: (projectRes.data as Project) ?? null,
     boards: boardsWithTasks,
+    allTasks,
   }
 }
 
@@ -262,53 +264,33 @@ export async function getProjectProposals(projectId: string): Promise<Proposal[]
 }
 
 export async function approveProposal(proposalId: string, projectId: string): Promise<{ task: Task; mission: { id: string; assigned_to: string } } | null> {
-  if (!supabase) return null
-
-  const { data: proposal } = await supabase.from('proposals').select('*').eq('id', proposalId).single()
-  if (!proposal) return null
-
-  const now = new Date().toISOString()
-
-  await supabase.from('proposals').update({
-    status: 'approved',
-    approved_at: now,
-    approved_by: 'sensei',
-    project_id: projectId,
-  }).eq('id', proposalId)
-
-  const { data: task, error: taskError } = await supabase.from('tasks').insert({
-    project_id: projectId,
-    proposal_id: proposalId,
-    title: proposal.title,
-    status: 'todo',
-    goal: proposal.description,
-    owner: null,
-    priority: proposal.risk_level === 'high' ? 1 : proposal.risk_level === 'medium' ? 2 : 3,
-  }).select().single()
-
-  if (taskError) { console.error('approveProposal task creation error:', taskError); return null }
-
-  // Route to daimyo based on domain (default: ed/engineering)
-  const daimyoId = DOMAIN_TO_DAIMYO[proposal.domain ?? 'engineering'] ?? 'ed'
-
-  const { data: mission, error: missionError } = await supabase.from('missions').insert({
-    proposal_id: proposalId,
-    title: proposal.title,
-    assigned_to: daimyoId,
-    status: 'queued',
-  }).select('id, assigned_to').single()
-
-  if (missionError) { console.error('approveProposal mission creation error:', missionError) }
-
-  return {
-    task: task as Task,
-    mission: mission ? { id: mission.id, assigned_to: mission.assigned_to } : { id: '', assigned_to: daimyoId },
+  try {
+    const res = await fetch(`/api/proposals/${proposalId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'approve', projectId }),
+    })
+    if (!res.ok) {
+      console.error('approveProposal API error:', await res.text())
+      return null
+    }
+    return await res.json()
+  } catch (err) {
+    console.error('approveProposal error:', err)
+    return null
   }
 }
 
 export async function rejectProposal(proposalId: string): Promise<void> {
-  if (!supabase) return
-  await supabase.from('proposals').update({ status: 'rejected' }).eq('id', proposalId)
+  try {
+    await fetch(`/api/proposals/${proposalId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'reject' }),
+    })
+  } catch (err) {
+    console.error('rejectProposal error:', err)
+  }
 }
 
 export async function startMission(missionId: string): Promise<boolean> {
