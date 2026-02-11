@@ -350,30 +350,44 @@ export async function getProjectMissions(projectId: string): Promise<Mission[]> 
   return data as Mission[]
 }
 
-export async function getProjectMissionsWithSteps(projectId: string): Promise<(Mission & { stepCounts: { total: number; completed: number } })[]> {
+export async function getProjectMissionsWithSteps(projectId: string): Promise<(Mission & { stepCounts: { total: number; completed: number }; description: string | null })[]> {
   if (!supabase) return []
 
   const missions = await getProjectMissions(projectId)
   if (!missions.length) return []
 
-  // Get step counts for all missions in one query
-  const { data: steps, error } = await supabase
-    .from('steps')
-    .select('mission_id, status')
-    .in('mission_id', missions.map(m => m.id))
+  // Get step counts and proposal descriptions for all missions in parallel
+  const proposalIds = missions.map(m => m.proposal_id).filter((id): id is string => id != null)
 
-  if (error) { console.error('getProjectMissionsWithSteps steps error:', error) }
+  const [stepsRes, proposalsRes] = await Promise.all([
+    supabase
+      .from('steps')
+      .select('mission_id, status')
+      .in('mission_id', missions.map(m => m.id)),
+    proposalIds.length > 0
+      ? supabase.from('proposals').select('id, description').in('id', proposalIds)
+      : Promise.resolve({ data: [] as { id: string; description: string | null }[], error: null }),
+  ])
 
-  const stepsByMission = (steps ?? []).reduce((acc, s) => {
+  if (stepsRes.error) { console.error('getProjectMissionsWithSteps steps error:', stepsRes.error) }
+  if (proposalsRes.error) { console.error('getProjectMissionsWithSteps proposals error:', proposalsRes.error) }
+
+  const stepsByMission = (stepsRes.data ?? []).reduce((acc, s) => {
     if (!acc[s.mission_id]) acc[s.mission_id] = { total: 0, completed: 0 }
     acc[s.mission_id].total++
     if (s.status === 'completed') acc[s.mission_id].completed++
     return acc
   }, {} as Record<string, { total: number; completed: number }>)
 
+  const descriptionByProposalId = ((proposalsRes.data ?? []) as { id: string; description: string | null }[]).reduce((acc, p) => {
+    acc[p.id] = p.description
+    return acc
+  }, {} as Record<string, string | null>)
+
   return missions.map(m => ({
     ...m,
     stepCounts: stepsByMission[m.id] ?? { total: 0, completed: 0 },
+    description: m.proposal_id ? (descriptionByProposalId[m.proposal_id] ?? null) : null,
   }))
 }
 

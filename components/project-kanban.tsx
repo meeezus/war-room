@@ -43,7 +43,7 @@ export function ProjectKanban({ missions: initialMissions, projectId }: ProjectK
           const newMission = payload.new as Mission;
           setMissions((prev) => [
             ...prev,
-            { ...newMission, stepCounts: { total: 0, completed: 0 } },
+            { ...newMission, stepCounts: { total: 0, completed: 0 }, description: null },
           ]);
         },
       )
@@ -54,7 +54,7 @@ export function ProjectKanban({ missions: initialMissions, projectId }: ProjectK
           const updated = payload.new as Mission;
           setMissions((prev) =>
             prev.map((m) =>
-              m.id === updated.id ? { ...updated, stepCounts: m.stepCounts } : m,
+              m.id === updated.id ? { ...updated, stepCounts: m.stepCounts, description: m.description } : m,
             ),
           );
         },

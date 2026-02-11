@@ -10,7 +10,7 @@ import { AgentSidebar } from "@/components/agent-sidebar";
 import { EventFeed } from "@/components/event-feed";
 import { StealthCard } from "@/components/stealth-card";
 import { ProjectOverview } from "@/components/project-overview";
-import { MissionQueue } from "@/components/mission-queue";
+
 
 const defaultStats: DashboardStats = {
   activeAgents: 0,
@@ -134,18 +134,6 @@ export default function DashboardPage() {
         </div>
         <StatsBar stats={stats} />
       </div>
-
-      {/* Mission Queue */}
-      {missions.filter(m => m.status === 'queued' || m.status === 'running').length > 0 && (
-        <div className="mb-4 flex-shrink-0">
-          <div className="mb-2 flex items-center gap-2">
-            <span className="font-[family-name:var(--font-space-grotesk)] text-xs font-medium uppercase tracking-wider text-[rgba(255,255,255,0.4)]">
-              Mission Queue
-            </span>
-          </div>
-          <MissionQueue missions={missions.filter(m => m.status === 'queued' || m.status === 'running')} />
-        </div>
-      )}
 
       {/* Main Content */}
       <div className="flex flex-1 gap-4 overflow-hidden">
