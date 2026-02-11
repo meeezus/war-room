@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { getAgents, getMissions, getEvents, getStats, getProjectsWithMetrics, getDynastyStats, getMissionStats } from "@/lib/queries";
 import type { AgentStatus, Mission, Event, DashboardStats, DynastyStats, ProjectWithMetrics } from "@/lib/types";
+import Link from "next/link";
 import { StatsBar } from "@/components/stats-bar";
 import { AgentSidebar } from "@/components/agent-sidebar";
 import { EventFeed } from "@/components/event-feed";
@@ -124,7 +125,9 @@ export default function DashboardPage() {
           <span className="ml-auto font-[family-name:var(--font-jetbrains-mono)] text-xs tabular-nums text-[rgba(255,255,255,0.3)]">
             {dynastyStats.activeProjects}/{dynastyStats.totalProjects} projects
             {" \u00B7 "}
-            {missionStats.active}/{missionStats.total} missions
+            <Link href="/missions" className="transition-colors hover:text-[rgba(255,255,255,0.6)]">
+              {missionStats.active}/{missionStats.total} missions
+            </Link>
             {" \u00B7 "}
             {dynastyStats.activeTasks}/{dynastyStats.totalTasks} tasks
           </span>

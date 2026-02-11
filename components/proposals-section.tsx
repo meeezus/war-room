@@ -36,14 +36,14 @@ export function ProposalsSection({ proposals, projectId, onUpdate }: ProposalsSe
       const daimyoId = result.daimyo || DOMAIN_TO_DAIMYO[proposal?.domain ?? ''] || 'ed';
       const daimyoName = daimyoId.charAt(0).toUpperCase() + daimyoId.slice(1);
       setDispatchFeedback({ proposalId, daimyo: daimyoName });
-      // Flash for 2 seconds then remove the card
       setTimeout(() => {
         setDispatchFeedback(null);
         setLocalProposals((prev) => prev.filter((p) => p.id !== proposalId));
       }, 2000);
-    } else {
+    } else if (result) {
       setLocalProposals((prev) => prev.filter((p) => p.id !== proposalId));
     }
+    // If result is null (API failed), card stays — user can retry
     setActing(null);
     onUpdate?.();
   }

@@ -47,7 +47,7 @@ export async function POST(
   // Spawn engine executor as detached background process
   const engineDir = process.env.SHOGUNATE_ENGINE_DIR || `${process.env.HOME}/Code/shogunate-engine`
   exec(
-    `cd "${engineDir}" && uv run shogun execute-mission ${id}`,
+    `cd "${engineDir}" && uv run python -c "from engine.executor import execute_mission; execute_mission('${id}')"`,
     { timeout: 1800000 }, // 30 min timeout
     (error, stdout, stderr) => {
       if (error) console.error(`Execute mission ${id} error:`, error.message)
