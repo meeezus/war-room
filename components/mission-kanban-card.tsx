@@ -17,6 +17,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export interface MissionWithSteps extends Mission {
   stepCounts: { total: number; completed: number };
+  description: string | null;
 }
 
 function DetailRow({ label, value }: { label: string; value: string }) {
@@ -135,24 +136,63 @@ export function MissionKanbanCard({ mission }: { mission: MissionWithSteps }) {
               transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
               className="overflow-hidden"
             >
-              <div className="mt-2 border-t border-white/[0.06] pt-2 space-y-1.5">
-                <DetailRow label="Status" value={mission.status} />
-                <DetailRow
-                  label="Created"
-                  value={new Date(mission.created_at).toLocaleDateString()}
-                />
-                {mission.started_at && (
+              <div className="mt-2 border-t border-white/[0.06] pt-2 space-y-2">
+                {/* Description */}
+                {mission.description && (
+                  <p className="line-clamp-3 text-xs text-[rgba(255,255,255,0.5)]">
+                    {mission.description}
+                  </p>
+                )}
+
+                {/* Step summary */}
+                {total > 0 && (
                   <DetailRow
-                    label="Started"
-                    value={new Date(mission.started_at).toLocaleString()}
+                    label="Steps"
+                    value={`${completed}/${total} completed`}
                   />
                 )}
-                {mission.completed_at && (
-                  <DetailRow
-                    label="Completed"
-                    value={new Date(mission.completed_at).toLocaleString()}
-                  />
+
+                {/* Result summary */}
+                {mission.result && Object.keys(mission.result).length > 0 && (
+                  <div className="flex gap-2">
+                    <span className="shrink-0 text-[10px] font-medium uppercase tracking-wider text-white/25">
+                      Result
+                    </span>
+                    {typeof mission.result.summary === "string" ? (
+                      <span className="line-clamp-2 text-xs text-[rgba(255,255,255,0.5)]">
+                        {mission.result.summary}
+                      </span>
+                    ) : (
+                      <Link
+                        href={`/missions/${mission.id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-xs text-blue-400/70 transition-colors hover:text-blue-300"
+                      >
+                        Result available
+                      </Link>
+                    )}
+                  </div>
                 )}
+
+                {/* Dates — compact single line */}
+                <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+                  <DetailRow
+                    label="Created"
+                    value={new Date(mission.created_at).toLocaleDateString()}
+                  />
+                  {mission.started_at && (
+                    <DetailRow
+                      label="Started"
+                      value={new Date(mission.started_at).toLocaleDateString()}
+                    />
+                  )}
+                  {mission.completed_at && (
+                    <DetailRow
+                      label="Done"
+                      value={new Date(mission.completed_at).toLocaleDateString()}
+                    />
+                  )}
+                </div>
               </div>
             </motion.div>
           )}

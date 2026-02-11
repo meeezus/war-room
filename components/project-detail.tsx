@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
 import type { Project, Board, Task, Proposal } from "@/lib/types";
@@ -7,6 +8,7 @@ import { PROJECT_STATUS_COLORS } from "@/lib/data";
 import { fadeInUp } from "@/lib/motion";
 import { StealthCard } from "./stealth-card";
 import { ProjectKanban } from "./project-kanban";
+import { MissionTableView } from "./mission-table-view";
 import { ProposalsSection } from "./proposals-section";
 import type { MissionWithSteps } from "./mission-kanban-card";
 
@@ -22,6 +24,19 @@ interface ProjectDetailProps {
 export function ProjectDetail({ project, boards, proposals, tasks, missions, onUpdate }: ProjectDetailProps) {
   const prefersReducedMotion = useReducedMotion();
   const accent = PROJECT_STATUS_COLORS[project.status] ?? "#6b7280";
+
+  const [viewMode, setViewMode] = useState<"kanban" | "table">("kanban");
+
+  useEffect(() => {
+    const stored = localStorage.getItem("war-room-view-mode");
+    if (stored === "kanban" || stored === "table") {
+      setViewMode(stored);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("war-room-view-mode", viewMode);
+  }, [viewMode]);
 
   const totalMissions = missions.length;
   const completedMissions = missions.filter((m) => m.status === "completed").length;
@@ -103,9 +118,31 @@ export function ProjectDetail({ project, boards, proposals, tasks, missions, onU
       {totalMissions > 0 && (
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-xs text-[rgba(255,255,255,0.4)]">
-            <span className="font-[family-name:var(--font-space-grotesk)] font-medium">
-              Missions
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="font-[family-name:var(--font-space-grotesk)] font-medium">
+                Missions
+              </span>
+              <button
+                onClick={() => setViewMode("kanban")}
+                className={`rounded px-2 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] transition-colors ${
+                  viewMode === "kanban"
+                    ? "bg-white/[0.1] text-[rgba(255,255,255,0.6)]"
+                    : "text-[rgba(255,255,255,0.3)] hover:text-[rgba(255,255,255,0.5)]"
+                }`}
+              >
+                Board
+              </button>
+              <button
+                onClick={() => setViewMode("table")}
+                className={`rounded px-2 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] transition-colors ${
+                  viewMode === "table"
+                    ? "bg-white/[0.1] text-[rgba(255,255,255,0.6)]"
+                    : "text-[rgba(255,255,255,0.3)] hover:text-[rgba(255,255,255,0.5)]"
+                }`}
+              >
+                Table
+              </button>
+            </div>
             <span className="font-[family-name:var(--font-jetbrains-mono)]">
               {completedMissions} / {totalMissions}
             </span>
@@ -122,9 +159,13 @@ export function ProjectDetail({ project, boards, proposals, tasks, missions, onU
       {/* Proposals section */}
       <ProposalsSection proposals={proposals} projectId={project.id} onUpdate={onUpdate} />
 
-      {/* Kanban board */}
+      {/* Missions view */}
       <div className="flex-1 overflow-hidden" style={{ minHeight: "400px" }}>
-        <ProjectKanban missions={missions} projectId={project.id} />
+        {viewMode === "kanban" ? (
+          <ProjectKanban missions={missions} projectId={project.id} />
+        ) : (
+          <MissionTableView missions={missions} />
+        )}
       </div>
     </motion.div>
   );

@@ -1,86 +1,131 @@
 # War Room Briefing — Pip Agent
 
+**Updated: 2026-02-11** (overnight polish session)
+
 ## What Is the War Room
 
-A dynasty-wide command dashboard served at a web URL. It visualizes **all projects** across Shogunate, Folio, and personal work — not just agent ops. Think of it as the single pane of glass for everything the dynasty is building.
+A dynasty-wide command dashboard. Visualizes **all projects** across Shogunate, Folio, and personal work. Single pane of glass for everything the dynasty builds.
+
+Now also available as a **native Mac desktop app** via Tauri.
 
 ---
 
 ## Architecture
 
-- **Frontend**: Next.js 16 (React 19, Tailwind v4) — static dashboard, no auth required for viewing
+- **Frontend**: Next.js 16 (React 19, Tailwind v4) — dark theme, glassmorphism cards
 - **Backend**: Supabase PostgreSQL with Row Level Security
-- **Realtime**: Supabase Realtime subscriptions — changes appear instantly on the dashboard
-- **Write access**: Requires Supabase service role key (not the anon key)
+- **Realtime**: Supabase Realtime subscriptions — live updates
+- **Desktop**: Tauri 2.x wrapping the Next.js app as a native Mac window
+- **Write access**: Requires Supabase service role key
+
+---
+
+## What Changed (Feb 10-11 Overnight)
+
+### Major: Mission-First Board
+The dashboard no longer shows **tasks** in kanban columns. It now shows **missions** — the unit of work that agents actually execute. Every project view has a 4-column kanban:
+
+| Column | Status | Color |
+|--------|--------|-------|
+| Queued | Waiting to execute | Gray |
+| Running | Agent working on it | Blue |
+| Completed | Done | Green |
+| Failed | Error | Red |
+
+**78 existing tasks were migrated to missions** via a one-time script. Each task got a linked proposal + mission.
+
+### Major: Mission Queue Removed from Dashboard
+The main dashboard no longer shows a Mission Queue. Missions live inside their projects — cleaner, less overwhelming.
+
+### New: Table View
+Project detail pages now have a **Board / Table toggle**. Table view shows missions as sortable rows (status, title, agent, progress, dates) — like Obsidian.
+
+### New: Richer Mission Cards
+Clicking a mission card in kanban now shows:
+- **Description** (pulled from the linked proposal)
+- **Step summary** (e.g. "3/5 completed")
+- **Result summary** (if completed)
+- **Dates** (created, started, done)
+
+### New: Tauri Desktop App
+War Room now runs as a native Mac app. `npm run tauri:dev` opens a Tauri window that auto-starts the Next.js server.
 
 ---
 
 ## Supabase Schema
 
-| Table | Count | Purpose |
-|-------|-------|---------|
-| `projects` | 16 | Dynasty-wide projects (Folio, Shogunate boards, personal) |
-| `boards` | 14 | Organize tasks within projects |
-| `tasks` | 74 | Work items with status: `active`, `todo`, `done`, `blocked`, `someday` |
-| `agent_status` | 6 | Daimyo agents: Ed, Light, Toji, Power, Major, CC |
-| `events` | — | Activity feed (`agent_action`, `system`, `proposal` types) |
-| `proposals` | — | Submitted proposals from agents |
-| `missions` | — | Shogunate engine missions |
-| `steps` | — | Mission steps |
-| `cap_gates` | — | Capability gates from Shogunate engine |
+| Table | Purpose |
+|-------|---------|
+| `projects` | Dynasty-wide projects |
+| `boards` | Organize tasks within projects |
+| `tasks` | Legacy work items (being superseded by missions) |
+| `proposals` | Submitted proposals — contain description, domain, risk level |
+| `missions` | **Primary work unit** — linked to proposals, assigned to agents |
+| `steps` | Mission execution steps (research, code, review, test, deploy) |
+| `agent_status` | Daimyo agents: Ed, Light, Toji, Power, Major, CC |
+| `events` | Activity feed |
+| `cap_gates` | Capability gates |
 
 ### Key relationships
-- Projects contain boards, boards contain tasks
-- Events reference agents by name
-- Agent status tracks each agent's current state (busy, idle, offline)
+- `proposals` → `missions` (1:1, proposal_id on mission)
+- `proposals` → `projects` (via project_id)
+- `missions` → `steps` (1:many, mission_id on step)
+- Missions are linked to projects **through proposals** (not directly)
 
----
-
-## CC Agent (Claude Code)
-
-CC is the only agent currently writing to Supabase. Here's how it works:
-
-- Runs in terminal as the "CC" agent
-- Auto-updates the dashboard via **PostToolUse hooks**:
-  - `ExitPlanMode` → `plan-sync.sh` → sets CC to busy, creates tasks from the approved plan
-  - `Bash` (on git commit) → `commit-sync.sh` → fires events into the activity feed
-- Uses `engine/war-room-api.sh` — a curl wrapper pre-loaded with the service role key
-- Has a `/war-room` skill for manual overrides (status changes, event posting)
+### Mission lifecycle
+1. Proposal created (pending) → appears in project's Proposals section
+2. Proposal approved → mission auto-created (queued)
+3. Mission executed → status changes to running, steps created
+4. Steps complete → mission marked completed/failed
 
 ---
 
 ## Dashboard Views
 
-- **Kanban**: Shows tasks (not projects) flowing through columns: Active → Todo → Done → Blocked → Someday
-- **Event Feed**: Scrolling feed of agent actions, commits, system events — updates in realtime
-- **Stats Bar**: Counts of tasks by status, active agents
-- **Agent Sidebar**: Shows each Daimyo agent's current status and last action
+### Main Dashboard (`/dashboard`)
+- **Stats Bar**: Active agents, in-progress tasks, pending reviews, pending proposals
+- **Project Overview**: Cards for each project with status, priority, task/mission counts
+- **Agent Sidebar** (collapsible): Daimyo council status
+- **Event Feed** (collapsible): Live scrolling feed of agent actions
+
+### Project Detail (`/projects/[id]`)
+- Project header with goal, status, type, owner
+- **Proposals section**: Pending proposals with approve/reject
+- **Mission progress bar**: X/Y missions completed
+- **Board/Table toggle**: Switch between kanban and table view
+- **Kanban**: 4 columns (queued → running → completed → failed), expandable cards
+- **Table**: Sortable rows with status dot, title, agent, progress bar, dates
+
+### Mission Detail (`/missions/[id]`)
+- Full mission info with all steps listed
 
 ---
 
-## Pip's Potential Role
+## CC Agent (Claude Code)
 
-You could integrate with the War Room to:
+CC writes to Supabase via PostToolUse hooks:
+- `ExitPlanMode` → plan-sync → sets CC to busy, creates tasks
+- `Bash` (on git commit) → commit-sync → fires events
 
-- **Route Discord requests** as proposals or events
-- **Create tasks** from Discord conversations
-- **Post events** when actions happen in Discord (e.g., user requests, decisions made)
-- **Update your own agent status** to reflect what you're doing
-
-### What you'd need
-- `SUPABASE_URL` — the project URL
-- `SERVICE_ROLE_KEY` — for write access (bypasses RLS)
-- Knowledge of the REST API patterns below
+Also has `/war-room` skill for manual status changes and event posting.
 
 ---
 
-## API Patterns
+## Pip's Role
 
-All writes use the Supabase REST API with the service role key for auth.
+You can integrate with the War Room to:
 
-### Post an event
+- **Route Discord requests** as proposals
+- **Post events** when actions happen in Discord
+- **Update your agent status** to reflect what you're doing
+- **Create proposals** that appear in the War Room for Sensei to approve
+
+### API Patterns
+
+All writes use Supabase REST API with service role key:
 
 ```bash
+# Post an event
 curl -X POST "${SUPABASE_URL}/rest/v1/events" \
   -H "apikey: ${SERVICE_ROLE_KEY}" \
   -H "Authorization: Bearer ${SERVICE_ROLE_KEY}" \
@@ -93,59 +138,49 @@ curl -X POST "${SUPABASE_URL}/rest/v1/events" \
   }'
 ```
 
-### Update agent status
+```bash
+# Create a proposal (preferred over creating tasks directly)
+curl -X POST "${SUPABASE_URL}/rest/v1/proposals" \
+  -H "apikey: ${SERVICE_ROLE_KEY}" \
+  -H "Authorization: Bearer ${SERVICE_ROLE_KEY}" \
+  -H "Content-Type: application/json" \
+  -H "Prefer: return=representation" \
+  -d '{
+    "title": "Proposal from Discord discussion",
+    "description": "Details here...",
+    "source": "discord",
+    "requested_by": "pip",
+    "status": "pending",
+    "project_id": "<project-uuid-if-known>"
+  }'
+```
 
 ```bash
+# Update agent status
 curl -X PATCH "${SUPABASE_URL}/rest/v1/agent_status?name=eq.pip" \
   -H "apikey: ${SERVICE_ROLE_KEY}" \
   -H "Authorization: Bearer ${SERVICE_ROLE_KEY}" \
   -H "Content-Type: application/json" \
   -H "Prefer: return=minimal" \
-  -d '{"status": "busy", "current_task": "Processing Discord request"}'
+  -d '{"status": "busy"}'
 ```
 
-### Create a task
-
-```bash
-curl -X POST "${SUPABASE_URL}/rest/v1/tasks" \
-  -H "apikey: ${SERVICE_ROLE_KEY}" \
-  -H "Authorization: Bearer ${SERVICE_ROLE_KEY}" \
-  -H "Content-Type: application/json" \
-  -H "Prefer: return=minimal" \
-  -d '{
-    "title": "Task from Discord",
-    "status": "todo",
-    "board_id": "<board-uuid>",
-    "created_by": "pip"
-  }'
-```
-
-### Create a proposal
-
-```bash
-curl -X POST "${SUPABASE_URL}/rest/v1/proposals" \
-  -H "apikey: ${SERVICE_ROLE_KEY}" \
-  -H "Authorization: Bearer ${SERVICE_ROLE_KEY}" \
-  -H "Content-Type: application/json" \
-  -H "Prefer: return=minimal" \
-  -d '{
-    "agent": "pip",
-    "title": "Proposal from Discord discussion",
-    "body": "Details here...",
-    "status": "pending"
-  }'
-```
+### What you need
+- `SUPABASE_URL` — the project URL
+- `SERVICE_ROLE_KEY` — for write access (bypasses RLS)
 
 ---
 
-## Current State
+## Important: Confirm Understanding
 
-- Dashboard is **live** and read-only for viewers (no auth to view)
-- **CC is the only agent** currently writing to Supabase
-- Realtime subscriptions make updates appear instantly on all connected clients
-- Kanban shows tasks flowing through status columns
-- Event feed shows agent actions, commits, system events in reverse chronological order
-- You (Pip) are not yet registered in `agent_status` — would need a row inserted first
+**Sensei asked you to confirm that you understand this briefing.** When you next talk to him, acknowledge:
+
+1. War Room is now mission-first (not task-first)
+2. Dashboard no longer has a Mission Queue — missions live in projects
+3. Projects have kanban + table view toggle
+4. Mission cards show real detail (description from proposal, step progress, results)
+5. Tauri desktop app exists now
+6. Your role: route Discord → proposals, post events, update status
 
 ---
 
@@ -153,6 +188,7 @@ curl -X POST "${SUPABASE_URL}/rest/v1/proposals" \
 
 - War Room codebase: `~/Code/war-room/`
 - API wrapper: `engine/war-room-api.sh`
-- Supabase types: `lib/types.ts`
-- Realtime subscriptions: `lib/realtime.ts`
+- Types: `lib/types.ts`
+- Queries: `lib/queries.ts`
+- Realtime: `lib/realtime.ts`
 - Supabase client: `lib/supabase.ts`
