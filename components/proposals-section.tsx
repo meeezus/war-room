@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Proposal } from "@/lib/types";
-import { approveProposal, rejectProposal } from "@/lib/queries";
+import { approveProposal, rejectProposal, DOMAIN_TO_DAIMYO } from "@/lib/queries";
 import { StealthCard } from "./stealth-card";
 
 const RISK_COLORS: Record<string, { bg: string; text: string }> = {
@@ -30,9 +30,11 @@ export function ProposalsSection({ proposals, projectId, onUpdate }: ProposalsSe
   async function proceedApprove(proposalId: string) {
     setDuplicateWarning(null);
     setActing(proposalId);
+    const proposal = localProposals.find(p => p.id === proposalId);
     const result = await approveProposal(proposalId, projectId);
-    if (result && 'mission' in result) {
-      const daimyoName = result.mission.assigned_to.charAt(0).toUpperCase() + result.mission.assigned_to.slice(1);
+    if (result && result.missionPending) {
+      const daimyoId = result.daimyo || DOMAIN_TO_DAIMYO[proposal?.domain ?? ''] || 'ed';
+      const daimyoName = daimyoId.charAt(0).toUpperCase() + daimyoId.slice(1);
       setDispatchFeedback({ proposalId, daimyo: daimyoName });
       // Flash for 2 seconds then remove the card
       setTimeout(() => {
@@ -208,7 +210,7 @@ export function ProposalsSection({ proposals, projectId, onUpdate }: ProposalsSe
                 )}
                 {dispatchFeedback?.proposalId === proposal.id && (
                   <div className="mt-2 rounded bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-400">
-                    Dispatched to {dispatchFeedback.daimyo}
+                    Mission queued for {dispatchFeedback.daimyo}
                   </div>
                 )}
               </StealthCard>

@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { getAgents, getMissions, getEvents, getStats, getProjectsWithMetrics, getDynastyStats } from "@/lib/queries";
+import { getAgents, getMissions, getEvents, getStats, getProjectsWithMetrics, getDynastyStats, getMissionStats } from "@/lib/queries";
 import type { AgentStatus, Mission, Event, DashboardStats, DynastyStats, ProjectWithMetrics } from "@/lib/types";
 import { StatsBar } from "@/components/stats-bar";
 import { AgentSidebar } from "@/components/agent-sidebar";
 import { EventFeed } from "@/components/event-feed";
 import { StealthCard } from "@/components/stealth-card";
 import { ProjectOverview } from "@/components/project-overview";
+import { MissionQueue } from "@/components/mission-queue";
 
 const defaultStats: DashboardStats = {
   activeAgents: 0,
@@ -53,19 +54,21 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats>(defaultStats);
   const [projects, setProjects] = useState<ProjectWithMetrics[]>([]);
   const [dynastyStats, setDynastyStats] = useState<DynastyStats>(defaultDynastyStats);
+  const [missionStats, setMissionStats] = useState({ active: 0, total: 0 });
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [feedOpen, setFeedOpen] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
-      const [agentsData, missionsData, eventsData, statsData, projectsData, dynastyData] = await Promise.all([
+      const [agentsData, missionsData, eventsData, statsData, projectsData, dynastyData, missionStatsData] = await Promise.all([
         getAgents(),
         getMissions(),
         getEvents(),
         getStats(),
         getProjectsWithMetrics(),
         getDynastyStats(),
+        getMissionStats(),
       ]);
       setAgents(agentsData);
       setMissions(missionsData);
@@ -73,6 +76,7 @@ export default function DashboardPage() {
       setStats(statsData);
       setProjects(projectsData);
       setDynastyStats(dynastyData);
+      setMissionStats(missionStatsData);
       setLoading(false);
     }
     fetchData();
@@ -118,13 +122,27 @@ export default function DashboardPage() {
             Dynasty Command Center
           </span>
           <span className="ml-auto font-[family-name:var(--font-jetbrains-mono)] text-xs tabular-nums text-[rgba(255,255,255,0.3)]">
-            {dynastyStats.activeProjects}/{dynastyStats.totalProjects} missions
+            {dynastyStats.activeProjects}/{dynastyStats.totalProjects} projects
+            {" \u00B7 "}
+            {missionStats.active}/{missionStats.total} missions
             {" \u00B7 "}
             {dynastyStats.activeTasks}/{dynastyStats.totalTasks} tasks
           </span>
         </div>
         <StatsBar stats={stats} />
       </div>
+
+      {/* Mission Queue */}
+      {missions.filter(m => m.status === 'queued' || m.status === 'running').length > 0 && (
+        <div className="mb-4 flex-shrink-0">
+          <div className="mb-2 flex items-center gap-2">
+            <span className="font-[family-name:var(--font-space-grotesk)] text-xs font-medium uppercase tracking-wider text-[rgba(255,255,255,0.4)]">
+              Mission Queue
+            </span>
+          </div>
+          <MissionQueue missions={missions.filter(m => m.status === 'queued' || m.status === 'running')} />
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="flex flex-1 gap-4 overflow-hidden">
