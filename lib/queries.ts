@@ -328,6 +328,55 @@ export async function getMissionByProposal(proposalId: string): Promise<Mission 
   return (data as Mission) ?? null
 }
 
+export async function getProjectMissions(projectId: string): Promise<Mission[]> {
+  if (!supabase) return []
+  // Missions are linked to projects via proposals table
+  // First get proposal IDs for this project, then get their missions
+  const { data: proposals, error: propError } = await supabase
+    .from('proposals')
+    .select('id')
+    .eq('project_id', projectId)
+
+  if (propError || !proposals?.length) return []
+
+  const proposalIds = proposals.map(p => p.id)
+  const { data, error } = await supabase
+    .from('missions')
+    .select('*')
+    .in('proposal_id', proposalIds)
+    .order('created_at', { ascending: false })
+
+  if (error) { console.error('getProjectMissions error:', error); return [] }
+  return data as Mission[]
+}
+
+export async function getProjectMissionsWithSteps(projectId: string): Promise<(Mission & { stepCounts: { total: number; completed: number } })[]> {
+  if (!supabase) return []
+
+  const missions = await getProjectMissions(projectId)
+  if (!missions.length) return []
+
+  // Get step counts for all missions in one query
+  const { data: steps, error } = await supabase
+    .from('steps')
+    .select('mission_id, status')
+    .in('mission_id', missions.map(m => m.id))
+
+  if (error) { console.error('getProjectMissionsWithSteps steps error:', error) }
+
+  const stepsByMission = (steps ?? []).reduce((acc, s) => {
+    if (!acc[s.mission_id]) acc[s.mission_id] = { total: 0, completed: 0 }
+    acc[s.mission_id].total++
+    if (s.status === 'completed') acc[s.mission_id].completed++
+    return acc
+  }, {} as Record<string, { total: number; completed: number }>)
+
+  return missions.map(m => ({
+    ...m,
+    stepCounts: stepsByMission[m.id] ?? { total: 0, completed: 0 },
+  }))
+}
+
 export async function getTaskByProposal(proposalId: string): Promise<Task | null> {
   if (!supabase) return null
   const { data, error } = await supabase

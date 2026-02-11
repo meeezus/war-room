@@ -24,6 +24,7 @@ export interface Proposal {
 export interface Mission {
   id: string
   proposal_id: string | null
+  project_id: string | null
   title: string
   assigned_to: string
   status: 'queued' | 'running' | 'completed' | 'failed' | 'stale'

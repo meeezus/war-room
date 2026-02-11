@@ -8,23 +8,24 @@ import { fadeInUp } from "@/lib/motion";
 import { StealthCard } from "./stealth-card";
 import { ProjectKanban } from "./project-kanban";
 import { ProposalsSection } from "./proposals-section";
+import type { MissionWithSteps } from "./mission-kanban-card";
 
 interface ProjectDetailProps {
   project: Project;
   boards: (Board & { tasks: Task[] })[];
   proposals: Proposal[];
   tasks: Task[];
+  missions: MissionWithSteps[];
   onUpdate?: () => void;
 }
 
-export function ProjectDetail({ project, boards, proposals, tasks, onUpdate }: ProjectDetailProps) {
+export function ProjectDetail({ project, boards, proposals, tasks, missions, onUpdate }: ProjectDetailProps) {
   const prefersReducedMotion = useReducedMotion();
   const accent = PROJECT_STATUS_COLORS[project.status] ?? "#6b7280";
 
-  const allTasks = tasks;
-  const totalTasks = allTasks.length;
-  const doneTasks = allTasks.filter((t) => t.status === "done").length;
-  const progressPct = totalTasks > 0 ? (doneTasks / totalTasks) * 100 : 0;
+  const totalMissions = missions.length;
+  const completedMissions = missions.filter((m) => m.status === "completed").length;
+  const progressPct = totalMissions > 0 ? (completedMissions / totalMissions) * 100 : 0;
 
   return (
     <motion.div
@@ -99,14 +100,14 @@ export function ProjectDetail({ project, boards, proposals, tasks, onUpdate }: P
       </StealthCard>
 
       {/* Progress bar */}
-      {totalTasks > 0 && (
+      {totalMissions > 0 && (
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-xs text-[rgba(255,255,255,0.4)]">
             <span className="font-[family-name:var(--font-space-grotesk)] font-medium">
-              Tasks
+              Missions
             </span>
             <span className="font-[family-name:var(--font-jetbrains-mono)]">
-              {doneTasks} / {totalTasks}
+              {completedMissions} / {totalMissions}
             </span>
           </div>
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
@@ -123,7 +124,7 @@ export function ProjectDetail({ project, boards, proposals, tasks, onUpdate }: P
 
       {/* Kanban board */}
       <div className="flex-1 overflow-hidden" style={{ minHeight: "400px" }}>
-        <ProjectKanban tasks={allTasks} projectId={project.id} />
+        <ProjectKanban missions={missions} projectId={project.id} />
       </div>
     </motion.div>
   );
