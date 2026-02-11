@@ -1,0 +1,9 @@
+/Users/michaelenriquez/Code/war-room/src-tauri/target/debug/deps/signal_hook-1f73ce02a055dcf3.d: /Users/michaelenriquez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-0.3.18/src/lib.rs /Users/michaelenriquez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-0.3.18/src/flag.rs /Users/michaelenriquez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-0.3.18/src/low_level/mod.rs /Users/michaelenriquez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-0.3.18/src/low_level/pipe.rs /Users/michaelenriquez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-0.3.18/src/low_level/signal_details.rs
+
+/Users/michaelenriquez/Code/war-room/src-tauri/target/debug/deps/libsignal_hook-1f73ce02a055dcf3.rmeta: /Users/michaelenriquez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-0.3.18/src/lib.rs /Users/michaelenriquez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-0.3.18/src/flag.rs /Users/michaelenriquez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-0.3.18/src/low_level/mod.rs /Users/michaelenriquez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-0.3.18/src/low_level/pipe.rs /Users/michaelenriquez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-0.3.18/src/low_level/signal_details.rs
+
+/Users/michaelenriquez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-0.3.18/src/lib.rs:
+/Users/michaelenriquez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-0.3.18/src/flag.rs:
+/Users/michaelenriquez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-0.3.18/src/low_level/mod.rs:
+/Users/michaelenriquez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-0.3.18/src/low_level/pipe.rs:
+/Users/michaelenriquez/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-0.3.18/src/low_level/signal_details.rs:

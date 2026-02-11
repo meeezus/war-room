@@ -194,6 +194,55 @@ export function useRealtimeSteps(
 }
 
 // ---------------------------------------------------------------------------
+// useRealtimeProjectMissions
+// ---------------------------------------------------------------------------
+
+export function useRealtimeProjectMissions(
+  initialMissions: Mission[],
+  projectId: string,
+): Mission[] {
+  const [missions, setMissions] = useState(initialMissions)
+
+  useEffect(() => {
+    setMissions(initialMissions)
+  }, [initialMissions])
+
+  useEffect(() => {
+    if (!REALTIME_ENABLED || !supabase) return
+
+    const client = supabase
+    const channel: RealtimeChannel = client
+      .channel(`missions-project-${projectId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "missions" },
+        (payload) => {
+          // Check if this mission belongs to our project by checking proposal
+          const newMission = payload.new as Mission
+          setMissions((prev) => [...prev, newMission])
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "missions" },
+        (payload) => {
+          const updated = payload.new as Mission
+          setMissions((prev) =>
+            prev.map((m) => (m.id === updated.id ? updated : m)),
+          )
+        },
+      )
+      .subscribe()
+
+    return () => {
+      client.removeChannel(channel)
+    }
+  }, [projectId])
+
+  return missions
+}
+
+// ---------------------------------------------------------------------------
 // useRealtimeProjects
 // ---------------------------------------------------------------------------
 

@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { getProjectWithBoards, getProjectProposals } from "@/lib/queries";
+import { getProjectWithBoards, getProjectProposals, getProjectMissionsWithSteps } from "@/lib/queries";
 import type { Project, Board, Task, Proposal } from "@/lib/types";
+import type { MissionWithSteps } from "@/components/mission-kanban-card";
 import { ProjectDetail } from "@/components/project-detail";
 import { StealthCard } from "@/components/stealth-card";
 
@@ -14,18 +15,21 @@ export default function ProjectPage() {
   const [boards, setBoards] = useState<(Board & { tasks: Task[] })[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [missions, setMissions] = useState<MissionWithSteps[]>([]);
   const [loading, setLoading] = useState(true);
 
   async function fetchData() {
     if (!params.id) return;
-    const [projectData, proposalsData] = await Promise.all([
+    const [projectData, proposalsData, missionsData] = await Promise.all([
       getProjectWithBoards(params.id),
       getProjectProposals(params.id),
+      getProjectMissionsWithSteps(params.id),
     ]);
     setProject(projectData.project);
     setBoards(projectData.boards);
     setTasks(projectData.allTasks);
     setProposals(proposalsData);
+    setMissions(missionsData);
     setLoading(false);
   }
 
@@ -74,7 +78,7 @@ export default function ProjectPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <ProjectDetail project={project} boards={boards} tasks={tasks} proposals={proposals} onUpdate={fetchData} />
+      <ProjectDetail project={project} boards={boards} tasks={tasks} proposals={proposals} missions={missions} onUpdate={fetchData} />
     </div>
   );
 }

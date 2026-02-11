@@ -1,49 +1,91 @@
 "use client";
 
-import { useState } from "react";
-import type { Task } from "@/lib/types";
-import { TaskKanbanCard } from "./task-kanban-card";
-import { useRealtimeTasks } from "@/lib/realtime";
+import { useState, useEffect } from "react";
+import type { Mission } from "@/lib/types";
+import { MissionKanbanCard, type MissionWithSteps } from "./mission-kanban-card";
+import { supabase } from "@/lib/supabase";
+import type { RealtimeChannel } from "@supabase/supabase-js";
+
+const REALTIME_ENABLED = process.env.NEXT_PUBLIC_ENABLE_REALTIME !== "false";
 
 const KANBAN_COLUMNS = [
-  { key: "todo", label: "Todo", status: "todo", accent: "#6b7280" },
-  { key: "assigned", label: "Assigned", status: "assigned", accent: "#f59e0b" },
-  { key: "in_progress", label: "In Progress", status: "in_progress", accent: "#3b82f6" },
-  { key: "review", label: "Review", status: "review", accent: "#8b5cf6" },
-  { key: "done", label: "Done", status: "done", accent: "#10b981" },
-  { key: "blocked", label: "Blocked", status: "blocked", accent: "#ef4444" },
+  { key: "queued", label: "Queued", status: "queued", accent: "#6b7280" },
+  { key: "running", label: "Running", status: "running", accent: "#3b82f6" },
+  { key: "completed", label: "Completed", status: "completed", accent: "#10b981" },
+  { key: "failed", label: "Failed", status: "failed", accent: "#ef4444" },
 ] as const;
 
 interface ProjectKanbanProps {
-  tasks: Task[];
+  missions: MissionWithSteps[];
   projectId: string;
 }
 
-export function ProjectKanban({ tasks, projectId }: ProjectKanbanProps) {
-  const liveTasks = useRealtimeTasks(tasks, projectId);
-  const [showAllDone, setShowAllDone] = useState(false);
+export function ProjectKanban({ missions: initialMissions, projectId }: ProjectKanbanProps) {
+  const [missions, setMissions] = useState(initialMissions);
+  const [showAllCompleted, setShowAllCompleted] = useState(false);
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  useEffect(() => {
+    setMissions(initialMissions);
+  }, [initialMissions]);
+
+  // Realtime subscription
+  useEffect(() => {
+    if (!REALTIME_ENABLED || !supabase) return;
+
+    const client = supabase;
+    const channel: RealtimeChannel = client
+      .channel(`missions-kanban-${projectId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "missions" },
+        (payload) => {
+          const newMission = payload.new as Mission;
+          setMissions((prev) => [
+            ...prev,
+            { ...newMission, stepCounts: { total: 0, completed: 0 } },
+          ]);
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "missions" },
+        (payload) => {
+          const updated = payload.new as Mission;
+          setMissions((prev) =>
+            prev.map((m) =>
+              m.id === updated.id ? { ...updated, stepCounts: m.stepCounts } : m,
+            ),
+          );
+        },
+      )
+      .subscribe();
+
+    return () => {
+      client.removeChannel(channel);
+    };
+  }, [projectId]);
 
   return (
     <div className="flex h-full gap-3 overflow-x-auto">
       {KANBAN_COLUMNS.map((col) => {
-        const allCards = liveTasks.filter((t) => t.status === col.status);
-        // For done column: show last 7 days by default, with expand toggle
+        const allCards = missions.filter((m) => m.status === col.status);
+        // For completed column: show last 7 days by default
         const cards =
-          col.status === "done" && !showAllDone
-            ? allCards.filter((t) => t.updated_at >= sevenDaysAgo)
+          col.status === "completed" && !showAllCompleted
+            ? allCards.filter((m) => m.created_at >= sevenDaysAgo)
             : allCards;
-        const hiddenDone =
-          col.status === "done" ? allCards.length - cards.length : 0;
+        const hiddenCompleted =
+          col.status === "completed" ? allCards.length - cards.length : 0;
 
-        // Skip blocked column entirely when empty
-        if (col.status === "blocked" && allCards.length === 0) return null;
+        // Skip failed column when empty
+        if (col.status === "failed" && allCards.length === 0) return null;
 
         return (
           <div
             key={col.key}
-            className={`flex min-w-[160px] flex-1 flex-col ${
-              col.status === "blocked" ? "max-w-[200px]" : ""
+            className={`flex min-w-[180px] flex-1 flex-col ${
+              col.status === "failed" ? "max-w-[220px]" : ""
             }`}
           >
             <div className="mb-2 flex items-center gap-2 px-1">
@@ -59,20 +101,20 @@ export function ProjectKanban({ tasks, projectId }: ProjectKanbanProps) {
               </span>
             </div>
             <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
-              {cards.map((task) => (
-                <TaskKanbanCard key={task.id} task={task} />
+              {cards.map((mission) => (
+                <MissionKanbanCard key={mission.id} mission={mission} />
               ))}
-              {col.status === "done" && hiddenDone > 0 && (
+              {col.status === "completed" && hiddenCompleted > 0 && (
                 <button
-                  onClick={() => setShowAllDone(true)}
+                  onClick={() => setShowAllCompleted(true)}
                   className="mt-1 text-xs text-[rgba(255,255,255,0.4)] hover:text-[#E5E5E5]"
                 >
-                  Show all (+{hiddenDone})
+                  Show all (+{hiddenCompleted})
                 </button>
               )}
-              {col.status === "done" && showAllDone && allCards.length > 0 && (
+              {col.status === "completed" && showAllCompleted && allCards.length > 0 && (
                 <button
-                  onClick={() => setShowAllDone(false)}
+                  onClick={() => setShowAllCompleted(false)}
                   className="mt-1 text-xs text-[rgba(255,255,255,0.4)] hover:text-[#E5E5E5]"
                 >
                   Show recent only
