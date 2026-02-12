@@ -26,7 +26,7 @@ function StatCell({ label, value, color }: { label: string; value: string | numb
 
 export function StatsBar({ stats }: { stats: DashboardStats }) {
   return (
-    <div className="grid grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
       <StatCell label="Active Agents" value={stats.activeAgents} color="#10b981" />
       <StatCell label="In Progress" value={stats.inProgressTasks} color="#3b82f6" />
       <StatCell label="Pending Reviews" value={stats.pendingReviews} color="#8b5cf6" />

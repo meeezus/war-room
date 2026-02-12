@@ -18,7 +18,7 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isFetchingMessages, setIsFetchingMessages] = useState(false)
   const [isCreatingThread, setIsCreatingThread] = useState(false)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(typeof window !== 'undefined' ? window.innerWidth >= 768 : true)
   const [error, setError] = useState<string | null>(null)
   const channelRef = useRef<RealtimeChannel | null>(null)
 
@@ -283,7 +283,7 @@ export default function ChatPage() {
         <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800 bg-zinc-950">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="h-8 w-8 rounded-md hover:bg-zinc-800 flex items-center justify-center transition-colors md:hidden"
+            className="h-8 w-8 rounded-md hover:bg-zinc-800 flex items-center justify-center transition-colors"
           >
             {sidebarOpen ? <ChevronLeft className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </button>
