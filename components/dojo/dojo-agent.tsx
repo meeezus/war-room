@@ -1,5 +1,6 @@
 "use client"
 
+import Image from 'next/image'
 import type { AgentStatus } from '@/lib/types'
 
 interface DojoAgentProps {
@@ -10,14 +11,15 @@ interface DojoAgentProps {
   onClick?: (agent: AgentStatus, screenPos: { x: number; y: number }) => void
 }
 
-const AGENT_EMOJIS: Record<string, string> = {
-  'pip': '🤖',
-  'cc': '🤖',
-  'ed': '⚔️',
-  'light': '💡',
-  'toji': '💰',
-  'power': '⚡',
-  'major': '🎯',
+const AGENT_AVATARS: Record<string, string> = {
+  'pip': '/agents/cc.png',
+  'cc': '/agents/cc.png',
+  'ed': '/agents/ed.png',
+  'light': '/agents/light.png',
+  'toji': '/agents/toji.png',
+  'power': '/agents/makima.png',
+  'makima': '/agents/makima.png',
+  'major': '/agents/major.png',
 }
 
 const STATUS_COLORS: Record<AgentStatus['status'], string> = {
@@ -28,7 +30,7 @@ const STATUS_COLORS: Record<AgentStatus['status'], string> = {
 }
 
 export function DojoAgent({ agent, position, isNearby, ringColor, onClick }: DojoAgentProps) {
-  const emoji = AGENT_EMOJIS[agent.name.toLowerCase()] || '🤖'
+  const avatar = AGENT_AVATARS[agent.name.toLowerCase()] || '/agents/cc.png'
   const statusColor = ringColor || STATUS_COLORS[agent.status]
   const isBusy = agent.status === 'busy'
 
@@ -56,8 +58,8 @@ export function DojoAgent({ agent, position, isNearby, ringColor, onClick }: Doj
             className="absolute inset-0 rounded-full"
             style={{
               border: `3px solid ${statusColor}`,
-              width: '56px',
-              height: '56px',
+              width: '54px',
+              height: '54px',
               left: '50%',
               top: '50%',
               transform: 'translate(-50%, -50%)',
@@ -66,8 +68,14 @@ export function DojoAgent({ agent, position, isNearby, ringColor, onClick }: Doj
           />
 
           {/* Agent sprite */}
-          <div className="relative text-4xl select-none z-10">
-            {emoji}
+          <div className="relative size-12 z-10 overflow-hidden rounded-full">
+            <Image
+              src={avatar}
+              alt={agent.display_name}
+              width={48}
+              height={48}
+              className="size-full object-cover"
+            />
           </div>
 
           {/* Work indicator */}

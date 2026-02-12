@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { getAgentWithHistory } from "@/lib/queries";
@@ -10,6 +11,17 @@ import { getRoleCard } from "@/lib/role-cards";
 import type { AgentStatus, Mission, Event, RpgStats, RoleCard } from "@/lib/types";
 import { StealthCard } from "@/components/stealth-card";
 import { RpgStatBar } from "@/components/rpg-stat-bar";
+
+const AGENT_AVATARS: Record<string, string> = {
+  'pip': '/agents/cc.png',
+  'cc': '/agents/cc.png',
+  'ed': '/agents/ed.png',
+  'light': '/agents/light.png',
+  'toji': '/agents/toji.png',
+  'power': '/agents/makima.png',
+  'makima': '/agents/makima.png',
+  'major': '/agents/major.png',
+};
 
 const STATUS_ICONS: Record<string, string> = {
   completed: "\u2705",
@@ -135,7 +147,15 @@ export default function AgentDetailPage() {
         <div className="grid gap-4 sm:grid-cols-[200px_1fr]">
           {/* Avatar Card */}
           <StealthCard className="flex flex-col items-center justify-center p-6">
-            <span className="text-6xl">{roleCard.emoji}</span>
+            <div className="size-[128px] overflow-hidden rounded-full border-2 border-zinc-700">
+              <Image
+                src={AGENT_AVATARS[roleCard.id] || AGENT_AVATARS[id] || '/agents/cc.png'}
+                alt={roleCard.name}
+                width={128}
+                height={128}
+                className="size-full object-cover"
+              />
+            </div>
             <div className="mt-4 flex items-center gap-2">
               <div
                 className="h-2 w-2 rounded-full"

@@ -1,5 +1,7 @@
 "use client"
 
+import Image from 'next/image'
+
 interface DojoPlayerProps {
   position: { x: number; y: number }
 }
@@ -16,7 +18,15 @@ export function DojoPlayer({ position }: DojoPlayerProps) {
     >
       <div className="relative">
         {/* Player sprite */}
-        <div className="text-4xl select-none">🥷</div>
+        <div className="size-12 overflow-hidden rounded-full border-2 border-white/30">
+          <Image
+            src="/agents/player.png"
+            alt="Sensei"
+            width={48}
+            height={48}
+            className="size-full object-cover"
+          />
+        </div>
         {/* Shadow */}
         <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-6 h-2 bg-black/40 rounded-full blur-sm" />
       </div>

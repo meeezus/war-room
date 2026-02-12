@@ -47,14 +47,14 @@ export const ROLE_CARDS: Record<string, RoleCard> = {
   },
   power: {
     id: 'power',
-    name: 'Power',
-    title: 'The Herald',
+    name: 'Makima',
+    title: 'The Controller',
     class: 'Influencer',
     domain: 'influence',
-    emoji: '⚡',
+    emoji: '🔗',
     color: '#ef4444', // red
-    description: 'Force of nature who amplifies presence and builds community.',
-    abilities: ['Brand Amplification', 'Community Building', 'Content Strategy'],
+    description: 'Master of influence who controls narratives and bends perception to build unstoppable brand presence.',
+    abilities: ['Mind Control Marketing', 'Narrative Domination', 'Community Control'],
   },
   major: {
     id: 'major',
@@ -66,6 +66,18 @@ export const ROLE_CARDS: Record<string, RoleCard> = {
     color: '#06b6d4', // cyan
     description: 'Operations commander who keeps systems running and processes optimized.',
     abilities: ['Process Optimization', 'Infrastructure Ops', 'Automation'],
+  },
+  // Makima is also known as power in the system
+  makima: {
+    id: 'power',
+    name: 'Makima',
+    title: 'The Controller',
+    class: 'Influencer',
+    domain: 'influence',
+    emoji: '🔗',
+    color: '#ef4444',
+    description: 'Master of influence who controls narratives and bends perception to build unstoppable brand presence.',
+    abilities: ['Mind Control Marketing', 'Narrative Domination', 'Community Control'],
   },
   // CC is also known as pip in the system
   cc: {

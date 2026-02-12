@@ -1,7 +1,19 @@
 "use client"
 
+import Image from 'next/image'
 import Link from 'next/link'
 import type { AgentStatus, RpgStats, RoleCard } from '@/lib/types'
+
+const AGENT_AVATARS: Record<string, string> = {
+  'pip': '/agents/cc.png',
+  'cc': '/agents/cc.png',
+  'ed': '/agents/ed.png',
+  'light': '/agents/light.png',
+  'toji': '/agents/toji.png',
+  'power': '/agents/makima.png',
+  'makima': '/agents/makima.png',
+  'major': '/agents/major.png',
+}
 
 interface AgentStatPopupProps {
   agent: AgentStatus
@@ -14,6 +26,8 @@ interface AgentStatPopupProps {
 const STAT_LABELS = ['TRU', 'SPD', 'WIS', 'PWR'] as const
 
 export function AgentStatPopup({ agent, stats, roleCard, position, onClose }: AgentStatPopupProps) {
+  const avatar = AGENT_AVATARS[roleCard.id] || AGENT_AVATARS[roleCard.name.toLowerCase()] || '/agents/cc.png'
+
   return (
     <>
       {/* Backdrop to catch clicks away */}
@@ -29,8 +43,16 @@ export function AgentStatPopup({ agent, stats, roleCard, position, onClose }: Ag
       >
         {/* Header */}
         <div className="mb-3">
-          <div className="flex items-center gap-1.5">
-            <span className="text-lg">{roleCard.emoji}</span>
+          <div className="flex items-center gap-2">
+            <div className="size-8 overflow-hidden rounded-full shrink-0">
+              <Image
+                src={avatar}
+                alt={roleCard.name}
+                width={32}
+                height={32}
+                className="size-full object-cover"
+              />
+            </div>
             <span className="font-[family-name:var(--font-space-grotesk)] font-semibold text-zinc-100">
               {roleCard.name}
             </span>

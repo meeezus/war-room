@@ -135,7 +135,7 @@ export default function DojoPage() {
                 <ArrowLeft className="w-5 h-5 text-zinc-400" />
               </Link>
               <h1 className="text-2xl font-bold font-[family-name:var(--font-space-grotesk)] text-balance">
-                The Dojo
+                The Dojo <span className="text-lg opacity-50">🌸</span>
               </h1>
             </div>
 

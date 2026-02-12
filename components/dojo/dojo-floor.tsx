@@ -23,6 +23,7 @@ const AGENT_POSITIONS: Record<string, { x: number; y: number }> = {
   'light': { x: 400, y: 100 },
   'toji': { x: 120, y: 350 },
   'power': { x: 680, y: 350 },
+  'makima': { x: 680, y: 350 },
   'major': { x: 400, y: 450 },
 }
 
@@ -136,18 +137,56 @@ export function DojoFloor({ agents, missions, onAgentInteract, onAgentClick, age
   return (
     <div
       ref={floorRef}
-      className="relative bg-zinc-950 border border-zinc-800 rounded-lg overflow-hidden cursor-crosshair"
+      className="relative bg-zinc-950 border-2 border-amber-900/30 rounded-lg overflow-hidden cursor-crosshair"
       style={{
         width: `${ROOM_WIDTH}px`,
         height: `${ROOM_HEIGHT}px`,
-        backgroundImage: `
-          linear-gradient(rgba(63, 63, 70, 0.2) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(63, 63, 70, 0.2) 1px, transparent 1px)
+        background: `
+          linear-gradient(135deg, rgba(139, 119, 82, 0.04) 25%, transparent 25%),
+          linear-gradient(225deg, rgba(139, 119, 82, 0.04) 25%, transparent 25%),
+          linear-gradient(315deg, rgba(139, 119, 82, 0.04) 25%, transparent 25%),
+          linear-gradient(45deg, rgba(139, 119, 82, 0.04) 25%, transparent 25%),
+          linear-gradient(rgba(63, 63, 70, 0.15) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(63, 63, 70, 0.15) 1px, transparent 1px)
         `,
-        backgroundSize: '40px 40px',
+        backgroundSize: '80px 80px, 80px 80px, 80px 80px, 80px 80px, 40px 40px, 40px 40px',
+        backgroundColor: 'rgb(12, 12, 14)',
       }}
       onClick={handleFloorClick}
     >
+      {/* Cherry blossom petals - decorative */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        {[...Array(8)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute opacity-20"
+            style={{
+              left: `${10 + (i * 12) % 90}%`,
+              top: `-20px`,
+              fontSize: '14px',
+              animation: `fall ${8 + i * 2}s linear infinite`,
+              animationDelay: `${i * 1.5}s`,
+            }}
+          >
+            🌸
+          </div>
+        ))}
+      </div>
+
+      {/* Corner posts */}
+      {[
+        { top: 8, left: 8 },
+        { top: 8, right: 8 },
+        { bottom: 8, left: 8 },
+        { bottom: 8, right: 8 },
+      ].map((pos, i) => (
+        <div
+          key={i}
+          className="absolute size-3 rounded-sm bg-amber-900/20 border border-amber-800/20 pointer-events-none"
+          style={pos as React.CSSProperties}
+        />
+      ))}
+
       {/* Mission board */}
       <MissionBoard
         missions={missions}
