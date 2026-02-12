@@ -115,11 +115,11 @@ export default function DashboardPage() {
     <div className="flex h-screen flex-col overflow-hidden bg-background p-4">
       {/* Header */}
       <div className="mb-4 flex-shrink-0">
-        <div className="mb-3 flex items-baseline gap-3">
+        <div className="mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <h1 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold tracking-tight text-[#E5E5E5]">
             War Room
           </h1>
-          <span className="text-xs text-[rgba(255,255,255,0.4)]">
+          <span className="hidden sm:inline text-xs text-[rgba(255,255,255,0.4)]">
             Dynasty Command Center
           </span>
           <span className="ml-auto font-[family-name:var(--font-jetbrains-mono)] text-xs tabular-nums text-[rgba(255,255,255,0.3)]">
@@ -135,10 +135,20 @@ export default function DashboardPage() {
         <StatsBar stats={stats} />
       </div>
 
+      {/* Mobile nav */}
+      <div className="flex gap-2 mb-3 sm:hidden">
+        <Link href="/chat" className="flex-1 rounded-lg bg-zinc-900 border border-zinc-800 px-3 py-2 text-center text-xs font-medium text-zinc-300 hover:bg-zinc-800">
+          💬 Chat
+        </Link>
+        <Link href="/missions" className="flex-1 rounded-lg bg-zinc-900 border border-zinc-800 px-3 py-2 text-center text-xs font-medium text-zinc-300 hover:bg-zinc-800">
+          🎯 Missions
+        </Link>
+      </div>
+
       {/* Main Content */}
       <div className="flex flex-1 gap-4 overflow-hidden">
-        {/* Left - Agent Sidebar */}
-        <div className={`transition-all duration-150 flex-shrink-0 overflow-hidden ${sidebarOpen ? "w-64" : "w-10"}`}>
+        {/* Left - Agent Sidebar (hidden on mobile) */}
+        <div className={`hidden sm:block transition-all duration-150 flex-shrink-0 overflow-hidden ${sidebarOpen ? "w-64" : "w-10"}`}>
           {sidebarOpen ? (
             <div className="flex h-full flex-col">
               <div className="mb-2 flex h-6 items-center justify-between">
@@ -179,8 +189,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Right - Event Feed */}
-        <div className={`transition-all duration-150 flex-shrink-0 overflow-hidden ${feedOpen ? "w-80" : "w-10"}`}>
+        {/* Right - Event Feed (hidden on mobile) */}
+        <div className={`hidden sm:block transition-all duration-150 flex-shrink-0 overflow-hidden ${feedOpen ? "w-80" : "w-10"}`}>
           {feedOpen ? (
             <div className="flex h-full flex-col">
               <div className="mb-2 flex h-6 items-center justify-between">

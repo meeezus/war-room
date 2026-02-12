@@ -7,6 +7,7 @@ import { STATUS_COLORS } from "@/lib/data";
 import { staggerContainer, staggerItem, hoverLift, tapScale, timing } from "@/lib/motion";
 import { StealthCard } from "./stealth-card";
 import { useRealtimeAgents } from "@/lib/realtime";
+import { MessageSquare, Zap } from "lucide-react";
 
 const statusLabels: Record<string, string> = {
   online: "Online",
@@ -25,6 +26,24 @@ export function AgentSidebar({ agents }: { agents: AgentStatus[] }) {
 
   return (
     <div className="flex h-full flex-col gap-2 overflow-y-auto pr-2">
+      {/* Chat Navigation */}
+      <Link href="/chat">
+        <StealthCard className="p-3 mb-2 border-primary/20 hover:border-primary/40 transition-colors">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <Zap className="h-4 w-4 text-primary" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-[family-name:var(--font-space-grotesk)] text-sm font-medium text-[#E5E5E5]">
+                Shoin Chat
+              </h3>
+              <p className="text-xs text-[rgba(255,255,255,0.4)]">Real-time Daimyo council</p>
+            </div>
+            <MessageSquare className="h-4 w-4 text-[rgba(255,255,255,0.3)]" />
+          </div>
+        </StealthCard>
+      </Link>
+
       <motion.div
         className="flex flex-col gap-2"
         variants={prefersReducedMotion ? undefined : staggerContainer}
