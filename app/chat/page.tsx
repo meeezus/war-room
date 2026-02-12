@@ -205,9 +205,43 @@ export default function ChatPage() {
               accumulated += event.content
               setStreamingContent(accumulated)
             } else if (event.type === 'done') {
-              // Response complete — clear streaming, let Realtime add the DB message
+              // Add the complete message directly to state
+              // Don't rely solely on Realtime (WebSocket can be flaky)
+              const assistantMsg: ChatMessage = {
+                id: event.messageId || `done-${Date.now()}`,
+                thread_id: activeThreadId!,
+                role: 'assistant',
+                content: accumulated,
+                agent_id: 'cc',
+                user_id: null,
+                streaming: false,
+                streaming_complete: true,
+                metadata: {},
+                created_at: new Date().toISOString(),
+              }
+              setMessages((prev) => {
+                if (prev.some((m) => m.id === assistantMsg.id)) return prev
+                return [...prev, assistantMsg]
+              })
               setStreamingContent('')
             } else if (event.type === 'error') {
+              // If we already have content, keep it as the message
+              if (accumulated) {
+                const partialMsg: ChatMessage = {
+                  id: `partial-${Date.now()}`,
+                  thread_id: activeThreadId!,
+                  role: 'assistant',
+                  content: accumulated,
+                  agent_id: 'cc',
+                  user_id: null,
+                  streaming: false,
+                  streaming_complete: true,
+                  metadata: {},
+                  created_at: new Date().toISOString(),
+                }
+                setMessages((prev) => [...prev, partialMsg])
+                setStreamingContent('')
+              }
               setError(event.message)
             }
           } catch {

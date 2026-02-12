@@ -104,6 +104,7 @@ create index idx_war_room_events_created_at on war_room_events(created_at desc);
 
 -- Insert default Daimyo agents
 insert into agent_presence (id, name, avatar, specialty, status) values
+  ('cc', 'Claude Code', '🤖', 'Engineering', 'online'),
   ('pip', 'Pip', '🐿️', 'Coordination', 'online'),
   ('ed', 'Ed', '⚔️', 'Engineering', 'offline'),
   ('light', 'Light', '💡', 'Product', 'offline'),

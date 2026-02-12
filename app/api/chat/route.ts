@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
           controller.enqueue(encoder.encode(`data: ${doneData}\n\n`))
         }
       } catch (err) {
-        const errMsg = err instanceof Error ? err.message : 'Unknown error: ' + String(err)
+        const errMsg = err instanceof Error ? err.message : typeof err === 'object' ? JSON.stringify(err) : String(err)
         console.error('[chat/route] Error:', errMsg)
         const errorData = JSON.stringify({ type: 'error', message: errMsg })
         controller.enqueue(encoder.encode(`data: ${errorData}\n\n`))
