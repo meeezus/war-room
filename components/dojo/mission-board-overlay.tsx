@@ -3,10 +3,14 @@
 import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import type { Mission } from '@/lib/types'
+import type { Mission, Proposal, AgentStatus } from '@/lib/types'
+import { MissionKanbanCard, type MissionWithSteps } from '@/components/mission-kanban-card'
+import { ProposalKanbanCard } from './proposal-kanban-card'
 
 interface MissionBoardOverlayProps {
   missions: Mission[]
+  proposals: Proposal[]
+  agents: AgentStatus[]
   open: boolean
   onClose: () => void
 }
@@ -16,32 +20,23 @@ interface StepCounts {
   completed: number
 }
 
-const STATUS_ORDER: Mission['status'][] = ['running', 'queued', 'completed', 'failed', 'stale']
+const KANBAN_COLUMNS = [
+  { key: 'proposals', label: 'Proposals', accent: '#f59e0b' },
+  { key: 'in_progress', label: 'In Progress', accent: '#3b82f6' },
+  { key: 'review', label: 'Review', accent: '#10b981' },
+  { key: 'done', label: 'Done', accent: '#6b7280' },
+] as const
 
-const STATUS_COLORS: Record<string, { dot: string; bar: string; badge: string; badgeText: string }> = {
-  running: { dot: 'bg-blue-500', bar: 'bg-blue-500', badge: 'bg-blue-500/20 border-blue-500/40', badgeText: 'text-blue-400' },
-  queued: { dot: 'bg-yellow-500', bar: 'bg-yellow-500', badge: 'bg-yellow-500/20 border-yellow-500/40', badgeText: 'text-yellow-400' },
-  completed: { dot: 'bg-emerald-500', bar: 'bg-emerald-500', badge: 'bg-emerald-500/20 border-emerald-500/40', badgeText: 'text-emerald-400' },
-  failed: { dot: 'bg-red-500', bar: 'bg-red-500', badge: 'bg-red-500/20 border-red-500/40', badgeText: 'text-red-400' },
-  stale: { dot: 'bg-zinc-600', bar: 'bg-zinc-600', badge: 'bg-zinc-600/20 border-zinc-600/40', badgeText: 'text-zinc-400' },
-}
+const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000
 
-function timeAgo(date: string): string {
-  const now = Date.now()
-  const then = new Date(date).getTime()
-  const diffMs = now - then
-  const diffMin = Math.floor(diffMs / 60000)
-  if (diffMin < 1) return 'just now'
-  if (diffMin < 60) return `${diffMin}m ago`
-  const diffHr = Math.floor(diffMin / 60)
-  if (diffHr < 24) return `${diffHr}h ago`
-  const diffDay = Math.floor(diffHr / 24)
-  return `${diffDay}d ago`
-}
-
-export function MissionBoardOverlay({ missions, open, onClose }: MissionBoardOverlayProps) {
+export function MissionBoardOverlay({ missions, proposals, agents, open, onClose }: MissionBoardOverlayProps) {
   const [stepCounts, setStepCounts] = useState<Record<string, StepCounts>>({})
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
+  const [localProposals, setLocalProposals] = useState(proposals)
+
+  // Sync local proposals when props change
+  useEffect(() => {
+    setLocalProposals(proposals)
+  }, [proposals])
 
   // Fetch step counts for all missions
   useEffect(() => {
@@ -80,20 +75,46 @@ export function MissionBoardOverlay({ missions, open, onClose }: MissionBoardOve
 
   if (!open) return null
 
-  // Group missions by status
-  const grouped = STATUS_ORDER.reduce((acc, status) => {
-    const group = missions.filter(m => m.status === status)
-    if (group.length > 0) acc.push({ status, missions: group })
-    return acc
-  }, [] as { status: string; missions: Mission[] }[])
+  // Stats
+  const activeAgentCount = agents.filter(a => a.current_mission_id != null).length
+  const inProgressCount = missions.filter(m => m.status === 'running').length
+  const pendingProposalCount = localProposals.length
 
-  const toggleGroup = (status: string) => {
-    setCollapsedGroups(prev => {
-      const next = new Set(prev)
-      if (next.has(status)) next.delete(status)
-      else next.add(status)
-      return next
-    })
+  // Column data
+  const now = Date.now()
+
+  const proposalCards = localProposals
+  const inProgressCards = missions.filter(m => m.status === 'running' || m.status === 'queued')
+  const reviewCards = missions.filter(
+    m => m.status === 'completed' && m.completed_at && (now - new Date(m.completed_at).getTime()) <= TWENTY_FOUR_HOURS
+  )
+  const doneCards = missions.filter(
+    m =>
+      (m.status === 'completed' && m.completed_at && (now - new Date(m.completed_at).getTime()) > TWENTY_FOUR_HOURS) ||
+      m.status === 'failed'
+  )
+
+  function toMissionWithSteps(mission: Mission): MissionWithSteps {
+    return {
+      ...mission,
+      stepCounts: stepCounts[mission.id] || { total: 0, completed: 0 },
+      description: null,
+    }
+  }
+
+  function handleProposalApproved(proposalId: string) {
+    setLocalProposals(prev => prev.filter(p => p.id !== proposalId))
+  }
+
+  function handleProposalRejected(proposalId: string) {
+    setLocalProposals(prev => prev.filter(p => p.id !== proposalId))
+  }
+
+  const columnData: Record<string, { missions: Mission[]; proposals: Proposal[] }> = {
+    proposals: { missions: [], proposals: proposalCards },
+    in_progress: { missions: inProgressCards, proposals: [] },
+    review: { missions: reviewCards, proposals: [] },
+    done: { missions: doneCards, proposals: [] },
   }
 
   return (
@@ -102,99 +123,91 @@ export function MissionBoardOverlay({ missions, open, onClose }: MissionBoardOve
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl max-h-[80vh] bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl flex flex-col overflow-hidden"
+        className="flex w-full max-w-5xl max-h-[85vh] flex-col overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
-          <h2 className="text-xl font-bold font-[family-name:var(--font-space-grotesk)]">
-            Mission Board
-          </h2>
+          <div>
+            <h2 className="text-xl font-bold font-[family-name:var(--font-space-grotesk)] text-balance">
+              Mission Board
+            </h2>
+            {/* Stats bar */}
+            <div className="mt-2 flex items-center gap-3">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] px-2.5 py-1 text-[11px]">
+                <span className="inline-block size-1.5 rounded-full bg-blue-500" />
+                <span className="font-[family-name:var(--font-jetbrains-mono)] tabular-nums text-white/50">
+                  {activeAgentCount}
+                </span>
+                <span className="text-white/30">active agents</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] px-2.5 py-1 text-[11px]">
+                <span className="inline-block size-1.5 rounded-full bg-emerald-500" />
+                <span className="font-[family-name:var(--font-jetbrains-mono)] tabular-nums text-white/50">
+                  {inProgressCount}
+                </span>
+                <span className="text-white/30">in progress</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] px-2.5 py-1 text-[11px]">
+                <span className="inline-block size-1.5 rounded-full bg-amber-500" />
+                <span className="font-[family-name:var(--font-jetbrains-mono)] tabular-nums text-white/50">
+                  {pendingProposalCount}
+                </span>
+                <span className="text-white/30">proposals</span>
+              </span>
+            </div>
+          </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+            className="p-2 hover:bg-zinc-800 rounded-lg transition-colors self-start"
           >
             <X className="w-5 h-5 text-zinc-400" />
           </button>
         </div>
 
-        {/* Mission list */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {grouped.length === 0 && (
-            <p className="text-sm text-zinc-600 font-[family-name:var(--font-jetbrains-mono)] text-center py-8">
-              No missions yet
-            </p>
-          )}
-
-          {grouped.map(({ status, missions: group }) => {
-            const colors = STATUS_COLORS[status] ?? STATUS_COLORS.stale
-            const isCollapsed = collapsedGroups.has(status)
+        {/* Kanban columns */}
+        <div className="flex h-full gap-3 overflow-x-auto px-6 pb-6 pt-4">
+          {KANBAN_COLUMNS.map((col) => {
+            const data = columnData[col.key]
+            const cardCount = col.key === 'proposals' ? data.proposals.length : data.missions.length
 
             return (
-              <div key={status}>
-                <button
-                  onClick={() => toggleGroup(status)}
-                  className="flex items-center gap-2 mb-3 group cursor-pointer"
-                >
-                  <span className="text-sm text-zinc-500 group-hover:text-zinc-300 transition-colors">
-                    {isCollapsed ? '▸' : '▾'}
+              <div key={col.key} className="flex min-w-[200px] flex-1 flex-col">
+                {/* Column header */}
+                <div className="mb-2 flex items-center gap-2 px-1">
+                  <span
+                    className="inline-block size-2 rounded-full"
+                    style={{ backgroundColor: col.accent }}
+                  />
+                  <span className="font-[family-name:var(--font-space-grotesk)] text-xs font-semibold uppercase tracking-wider text-[rgba(255,255,255,0.5)]">
+                    {col.label}
                   </span>
-                  <h3 className="text-sm font-[family-name:var(--font-space-grotesk)] font-semibold capitalize text-zinc-300">
-                    {status}
-                  </h3>
-                  <span className="text-xs text-zinc-500 font-[family-name:var(--font-jetbrains-mono)] tabular-nums">
-                    ({group.length})
+                  <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] tabular-nums text-[rgba(255,255,255,0.3)]">
+                    {cardCount}
                   </span>
-                </button>
+                </div>
 
-                {!isCollapsed && (
-                  <div className="space-y-2">
-                    {group.map((mission) => {
-                      const sc = stepCounts[mission.id]
-                      const progress = sc && sc.total > 0 ? (sc.completed / sc.total) * 100 : 0
+                {/* Cards */}
+                <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
+                  {col.key === 'proposals' && data.proposals.map((proposal) => (
+                    <ProposalKanbanCard
+                      key={proposal.id}
+                      proposal={proposal}
+                      onApproved={handleProposalApproved}
+                      onRejected={handleProposalRejected}
+                    />
+                  ))}
 
-                      return (
-                        <div
-                          key={mission.id}
-                          className="p-4 bg-zinc-900 border border-zinc-800 rounded-lg hover:border-zinc-700 transition-colors"
-                        >
-                          <div className="flex items-start justify-between gap-3 mb-2">
-                            <p className="text-sm font-medium text-pretty line-clamp-2">
-                              {mission.title}
-                            </p>
-                            <span className={`shrink-0 px-2 py-0.5 rounded text-[10px] font-[family-name:var(--font-jetbrains-mono)] font-medium border capitalize ${colors.badge} ${colors.badgeText}`}>
-                              {status}
-                            </span>
-                          </div>
+                  {col.key !== 'proposals' && data.missions.map((mission) => (
+                    <MissionKanbanCard key={mission.id} mission={toMissionWithSteps(mission)} />
+                  ))}
 
-                          {/* Progress bar */}
-                          {sc && sc.total > 0 && (
-                            <div className="mb-2">
-                              <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                                <div
-                                  className={`h-full rounded-full transition-all duration-500 ${colors.bar}`}
-                                  style={{ width: `${progress}%` }}
-                                />
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="flex items-center gap-2 text-xs text-zinc-500 font-[family-name:var(--font-jetbrains-mono)] tabular-nums">
-                            <span>{mission.assigned_to}</span>
-                            <span className="text-zinc-700">·</span>
-                            {sc ? (
-                              <span>{sc.completed}/{sc.total} steps</span>
-                            ) : (
-                              <span>0 steps</span>
-                            )}
-                            <span className="text-zinc-700">·</span>
-                            <span>{timeAgo(mission.created_at)}</span>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
+                  {cardCount === 0 && (
+                    <p className="px-1 py-4 text-center font-[family-name:var(--font-jetbrains-mono)] text-xs text-zinc-600">
+                      None
+                    </p>
+                  )}
+                </div>
               </div>
             )
           })}

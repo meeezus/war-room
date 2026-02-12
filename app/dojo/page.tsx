@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, MessageSquare, LayoutDashboard } from 'lucide-react'
-import type { AgentStatus, Mission, Event, RpgStats } from '@/lib/types'
-import { getAgents, getMissions, getEvents } from '@/lib/queries'
+import type { AgentStatus, Mission, Event, RpgStats, Proposal } from '@/lib/types'
+import { getAgents, getMissions, getEvents, getAllPendingProposals } from '@/lib/queries'
 import { useRealtimeAgents, useRealtimeMissions, useRealtimeEvents } from '@/lib/realtime'
 import { DojoFloor } from '@/components/dojo/dojo-floor'
 import { DojoChatPanel } from '@/components/dojo/dojo-chat-panel'
@@ -16,6 +16,7 @@ import { getRoleCard } from '@/lib/role-cards'
 export default function DojoPage() {
   const [agents, setAgents] = useState<AgentStatus[]>([])
   const [missions, setMissions] = useState<Mission[]>([])
+  const [proposals, setProposals] = useState<Proposal[]>([])
   const [events, setEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
   const [chatAgent, setChatAgent] = useState<AgentStatus | null>(null)
@@ -30,13 +31,15 @@ export default function DojoPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [agentsData, missionsData, eventsData] = await Promise.all([
+        const [agentsData, missionsData, proposalsData, eventsData] = await Promise.all([
           getAgents(),
           getMissions(),
+          getAllPendingProposals(),
           getEvents(20),
         ])
         setAgents(agentsData)
         setMissions(missionsData)
+        setProposals(proposalsData)
         setEvents(eventsData)
       } catch (error) {
         console.error('Error fetching dojo data:', error)
@@ -320,6 +323,8 @@ export default function DojoPage() {
       {/* Mission board overlay */}
       <MissionBoardOverlay
         missions={missions}
+        proposals={proposals}
+        agents={agents}
         open={boardOverlayOpen}
         onClose={() => setBoardOverlayOpen(false)}
       />
