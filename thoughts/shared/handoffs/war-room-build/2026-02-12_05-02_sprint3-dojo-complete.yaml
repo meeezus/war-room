@@ -1,0 +1,88 @@
+---
+session: war-room-build
+date: 2026-02-12
+status: complete
+outcome: SUCCEEDED
+---
+
+goal: "Sprint 3 complete: The Dojo (game-style war room), execution pipeline, RPG agent system"
+now: "Run npm run dev and test the Dojo at /dojo — walk around, talk to agents, check mission board. Then commit + PR."
+test: npm run build
+
+done_this_session:
+  - task: "S3A-T1: Fixed engine/mission.py — implemented create_mission() + run_pending()"
+    files: [engine/mission.py, app/api/proposals/[id]/route.ts]
+  - task: "S3A-T2: Fixed executor column names, SKILL paths, input sanitization"
+    files: [engine/executor.py, engine/config.py, app/api/missions/[id]/execute/route.ts]
+  - task: "S3A-T3: Proposal creation UI — new dialog + API route"
+    files: [app/api/proposals/route.ts, components/create-proposal-dialog.tsx, components/project-detail.tsx]
+  - task: "S3B-T1: Dojo page — top-down room, WASD movement, agent sprites, proximity detection"
+    files: [app/dojo/page.tsx, components/dojo/dojo-floor.tsx, components/dojo/dojo-agent.tsx, components/dojo/dojo-player.tsx, components/dojo/mission-board.tsx]
+  - task: "S3B-T2: Dojo chat panel — walk up + press A, streaming Claude responses"
+    files: [components/dojo/dojo-chat-panel.tsx]
+  - task: "S3B-T3: Mission board wired to real Supabase data with overlay"
+    files: [components/dojo/mission-board-overlay.tsx]
+  - task: "S3C-T1: RPG stat computation from Supabase + role cards for all 7 agents"
+    files: [lib/rpg-stats.ts, lib/role-cards.ts, lib/types.ts]
+  - task: "S3C-T2: RPG stat popup on agent click in dojo"
+    files: [components/dojo/agent-stat-popup.tsx]
+  - task: "S3C-T3: Full RPG character sheet at /agents/[id]"
+    files: [app/agents/[id]/page.tsx, components/rpg-stat-bar.tsx]
+
+blockers: []
+
+questions:
+  - "Sensei wants Power renamed to Makima (influence/marketing, Chainsaw Man ref) — when to do this?"
+  - "Ed to security / Bohoma to engineering — on hold, Sensei not convinced yet"
+
+decisions:
+  - swarm_execution: "9 tasks, 3 groups, swarm with TeamCreate. All sonnet model. Completed in ~7 minutes."
+  - emoji_placeholders: "Using emoji sprites for Sprint 3. Real anime character art deferred to Sprint 4."
+  - no_new_deps: "Zero new npm packages added across all 9 tasks"
+  - dojo_is_primary: "The Dojo is the primary command center. Dashboard remains for overview. Shoin Chat for deep planning."
+
+findings:
+  - execution_pipeline_works: "Full pipeline: create proposal → approve → mission created with K2.5 steps → execute via Claude CLI → events logged"
+  - total_new_code: "1820 lines across 13 new files + 485 lines changed across 9 modified files"
+  - skill_path_fixes: "DAIMYO_REGISTRY skill paths were wrong (Atlas-SKILL.md etc). Fixed to actual filenames on disk."
+  - executor_column_fix: "executor.py had daimyo_id column reference but agent_status uses id. Fixed."
+
+worked:
+  - "TeamCreate swarm with 3 parallel groups — fast coordination"
+  - "Detailed agent prompts with full type definitions and file context"
+  - "Sonnet model for all tasks — good balance of speed and quality"
+
+failed: []
+
+next:
+  - "Commit all Sprint 3 changes and create PR"
+  - "Test the Dojo end-to-end: walk around, chat, mission board, stat popups"
+  - "Sprint 4 planning: real character art, 3D, Makima rename, cherry blossom environment"
+  - "Consider: Power → Makima rename (Sensei approved), Ed → security (on hold)"
+
+files:
+  created:
+    - app/dojo/page.tsx
+    - app/api/proposals/route.ts
+    - components/dojo/dojo-floor.tsx
+    - components/dojo/dojo-agent.tsx
+    - components/dojo/dojo-player.tsx
+    - components/dojo/dojo-chat-panel.tsx
+    - components/dojo/mission-board.tsx
+    - components/dojo/mission-board-overlay.tsx
+    - components/dojo/agent-stat-popup.tsx
+    - components/create-proposal-dialog.tsx
+    - components/rpg-stat-bar.tsx
+    - lib/rpg-stats.ts
+    - lib/role-cards.ts
+    - .specs/2026-02-11-sprint-3-the-dojo.md
+  modified:
+    - engine/mission.py
+    - engine/executor.py
+    - engine/config.py
+    - app/api/proposals/[id]/route.ts
+    - app/api/missions/[id]/execute/route.ts
+    - app/agents/[id]/page.tsx
+    - app/dashboard/page.tsx
+    - components/project-detail.tsx
+    - lib/types.ts

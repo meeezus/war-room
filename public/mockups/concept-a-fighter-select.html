@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Concept A: Fighter Select — War Room</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg-deep: #09090b;
+    --bg-card: #18181b;
+    --bg-card-hover: #27272a;
+    --border: #27272a;
+    --border-active: #34d399;
+    --text-primary: #f4f4f5;
+    --text-secondary: #a1a1aa;
+    --text-muted: #71717a;
+    --emerald: #34d399;
+    --emerald-dim: #065f46;
+    --emerald-glow: rgba(52, 211, 153, 0.3);
+    --red: #f87171;
+    --yellow: #fbbf24;
+    --blue: #60a5fa;
+  }
+
+  body {
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-deep);
+  }
+  .header h1 {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .header h1 span { color: var(--emerald); }
+  .header-stats {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .header-stats .active { color: var(--emerald); }
+
+  /* Concept label */
+  .concept-label {
+    text-align: center;
+    padding: 8px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    background: rgba(52, 211, 153, 0.03);
+  }
+
+  /* Agent Grid */
+  .agent-grid-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    position: relative;
+  }
+  .agent-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    max-width: 640px;
+    width: 100%;
+  }
+
+  .agent-card {
+    background: var(--bg-card);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s ease-out;
+    position: relative;
+  }
+  .agent-card:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--text-muted);
+    transform: translateY(-2px);
+  }
+  .agent-card.selected {
+    border-color: var(--emerald);
+    box-shadow: 0 0 20px var(--emerald-glow), inset 0 0 20px rgba(52, 211, 153, 0.05);
+  }
+  .agent-card.offline { opacity: 0.4; }
+
+  .agent-avatar {
+    font-size: 40px;
+    margin-bottom: 8px;
+    display: block;
+    line-height: 1;
+  }
+  .agent-name {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+  .agent-class {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    text-transform: uppercase;
+  }
+  .status-busy { background: rgba(251, 191, 36, 0.15); color: var(--yellow); }
+  .status-busy .dot { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); }
+  .status-online { background: rgba(52, 211, 153, 0.15); color: var(--emerald); }
+  .status-online .dot { background: var(--emerald); box-shadow: 0 0 6px var(--emerald); }
+  .status-idle { background: rgba(96, 165, 250, 0.15); color: var(--blue); }
+  .status-idle .dot { background: var(--blue); }
+  .status-offline { background: rgba(113, 113, 122, 0.15); color: var(--text-muted); }
+  .status-offline .dot { background: var(--text-muted); }
+  .dot { width: 6px; height: 6px; border-radius: 50%; }
+
+  /* Selection cursor indicator */
+  .agent-card.selected::after {
+    content: '▲';
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--emerald);
+    font-size: 14px;
+    animation: pulse-cursor 1s ease-in-out infinite;
+  }
+  @keyframes pulse-cursor {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* Detail Panel */
+  .detail-panel {
+    border-top: 1px solid var(--border);
+    background: var(--bg-card);
+    padding: 16px 24px;
+  }
+  .detail-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .detail-identity {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .detail-identity .avatar { font-size: 28px; }
+  .detail-identity h2 { font-size: 16px; font-weight: 600; }
+  .detail-identity .class-label {
+    font-size: 12px;
+    color: var(--emerald);
+  }
+  .detail-identity .level {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: var(--emerald-dim);
+    color: var(--emerald);
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-left: 8px;
+  }
+
+  .detail-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .btn {
+    font-family: 'Space Grotesk', system-ui;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-primary {
+    background: var(--emerald);
+    color: var(--bg-deep);
+    border-color: var(--emerald);
+  }
+  .btn-primary:hover { background: #2dd4a8; }
+  .btn-secondary {
+    background: transparent;
+    color: var(--text-primary);
+  }
+  .btn-secondary:hover { background: var(--bg-card-hover); }
+
+  /* Stats row */
+  .stats-row {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 8px;
+  }
+  .stat-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .stat-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    width: 28px;
+  }
+  .stat-bar {
+    width: 80px;
+    height: 6px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .stat-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--emerald);
+    transition: width 0.3s ease-out;
+  }
+  .stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-secondary);
+    width: 24px;
+    text-align: right;
+  }
+
+  .current-task {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 6px;
+    margin-top: 8px;
+  }
+  .current-task span { color: var(--yellow); }
+
+  /* Mission Strip */
+  .mission-strip {
+    border-top: 1px solid var(--border);
+    background: var(--bg-deep);
+    padding: 10px 24px;
+    display: flex;
+    gap: 24px;
+  }
+  .mission-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+  }
+  .mission-icon { color: var(--emerald); font-size: 12px; }
+  .mission-name {
+    font-size: 12px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+  }
+  .mission-progress {
+    flex: 1;
+    height: 4px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+    overflow: hidden;
+    min-width: 60px;
+  }
+  .mission-progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--emerald);
+  }
+  .mission-pct {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* Controller hint */
+  .controller-hints {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    padding: 8px;
+    border-top: 1px solid var(--border);
+    background: var(--bg-deep);
+  }
+  .hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .hint kbd {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  /* Chat overlay */
+  .chat-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg-deep);
+    z-index: 100;
+    display: none;
+    flex-direction: column;
+  }
+  .chat-overlay.open { display: flex; }
+
+  .chat-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .chat-back {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 4px 8px;
+  }
+  .chat-back:hover { color: var(--text-primary); }
+  .chat-agent-info { display: flex; align-items: center; gap: 8px; }
+  .chat-agent-info .avatar { font-size: 24px; }
+  .chat-agent-info h3 { font-size: 14px; font-weight: 600; }
+  .chat-agent-info .class-label { font-size: 11px; color: var(--emerald); }
+
+  .chat-body {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+  .chat-messages {
+    flex: 1;
+    padding: 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .msg {
+    max-width: 70%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .msg-user {
+    align-self: flex-end;
+    background: var(--emerald-dim);
+    color: var(--text-primary);
+    border-bottom-right-radius: 4px;
+  }
+  .msg-agent {
+    align-self: flex-start;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+  }
+  .msg-agent code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    background: rgba(255,255,255,0.06);
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+
+  .canvas-panel {
+    width: 380px;
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-deep);
+  }
+  .canvas-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+  }
+  .canvas-tab {
+    padding: 8px 16px;
+    font-size: 12px;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .canvas-tab.active {
+    color: var(--emerald);
+    border-bottom-color: var(--emerald);
+  }
+  .canvas-content {
+    flex: 1;
+    padding: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    overflow-y: auto;
+    white-space: pre;
+  }
+  .canvas-content .kw { color: #c084fc; }
+  .canvas-content .fn { color: #60a5fa; }
+  .canvas-content .str { color: var(--emerald); }
+  .canvas-content .comment { color: var(--text-muted); }
+
+  .chat-input-row {
+    display: flex;
+    gap: 8px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+  }
+  .chat-input {
+    flex: 1;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-family: 'Space Grotesk', system-ui;
+    font-size: 14px;
+    color: var(--text-primary);
+    outline: none;
+  }
+  .chat-input:focus { border-color: var(--emerald); }
+  .chat-input::placeholder { color: var(--text-muted); }
+  .voice-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .voice-btn:hover { border-color: var(--emerald); color: var(--emerald); }
+
+  /* Navigation between mockups */
+  .nav-bar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    display: flex;
+    gap: 4px;
+    padding: 8px;
+    z-index: 200;
+  }
+  .nav-bar a {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+  }
+  .nav-bar a:hover { border-color: var(--emerald); color: var(--emerald); }
+  .nav-bar a.current { border-color: var(--emerald); color: var(--emerald); background: var(--emerald-dim); }
+</style>
+</head>
+<body>
+
+<div class="nav-bar">
+  <a href="concept-a-fighter-select.html" class="current">A: Fighter</a>
+  <a href="concept-b-the-dojo.html">B: Dojo</a>
+  <a href="concept-c-ops-hud.html">C: Ops HUD</a>
+</div>
+
+<!-- MAIN: Character Select Screen -->
+<div id="select-screen">
+  <div class="header">
+    <h1><span>WAR</span> ROOM</h1>
+    <div class="header-stats">
+      <span class="active">4 online</span> · 2 missions active
+    </div>
+  </div>
+
+  <div class="concept-label">Concept A — Fighter Select · D-Pad / Click to select · A / Enter to talk</div>
+
+  <div class="agent-grid-container">
+    <div class="agent-grid">
+      <div class="agent-card selected" data-agent="cc" onclick="selectAgent(this)">
+        <span class="agent-avatar">🤖</span>
+        <div class="agent-name">CC</div>
+        <div class="agent-class">Artificer</div>
+        <span class="status-badge status-busy"><span class="dot"></span>BUSY</span>
+      </div>
+      <div class="agent-card" data-agent="pip" onclick="selectAgent(this)">
+        <span class="agent-avatar">🐿️</span>
+        <div class="agent-name">Pip</div>
+        <div class="agent-class">Commander</div>
+        <span class="status-badge status-idle"><span class="dot"></span>IDLE</span>
+      </div>
+      <div class="agent-card" data-agent="ed" onclick="selectAgent(this)">
+        <span class="agent-avatar">⚔️</span>
+        <div class="agent-name">Ed</div>
+        <div class="agent-class">Forgemaster</div>
+        <span class="status-badge status-online"><span class="dot"></span>ONLINE</span>
+      </div>
+      <div class="agent-card" data-agent="light" onclick="selectAgent(this)">
+        <span class="agent-avatar">💡</span>
+        <div class="agent-name">Light</div>
+        <div class="agent-class">Sage</div>
+        <span class="status-badge status-online"><span class="dot"></span>ONLINE</span>
+      </div>
+      <div class="agent-card offline" data-agent="toji" onclick="selectAgent(this)">
+        <span class="agent-avatar">🛡️</span>
+        <div class="agent-name">Toji</div>
+        <div class="agent-class">Merchant</div>
+        <span class="status-badge status-offline"><span class="dot"></span>OFF</span>
+      </div>
+      <div class="agent-card offline" data-agent="power" onclick="selectAgent(this)">
+        <span class="agent-avatar">⚡</span>
+        <div class="agent-name">Power</div>
+        <div class="agent-class">Bard</div>
+        <span class="status-badge status-offline"><span class="dot"></span>OFF</span>
+      </div>
+      <div class="agent-card offline" data-agent="major" onclick="selectAgent(this)">
+        <span class="agent-avatar">🎯</span>
+        <div class="agent-name">Major</div>
+        <div class="agent-class">Ranger</div>
+        <span class="status-badge status-offline"><span class="dot"></span>OFF</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail Panel -->
+  <div class="detail-panel" id="detail-panel">
+    <div class="detail-top">
+      <div class="detail-identity">
+        <span class="avatar">🤖</span>
+        <div>
+          <h2 id="detail-name">CC <span class="level">Lv.8</span></h2>
+          <div class="class-label" id="detail-class">Artificer · Engineering</div>
+        </div>
+      </div>
+      <div class="detail-actions">
+        <button class="btn btn-primary" onclick="openChat()">TALK</button>
+        <button class="btn btn-secondary" onclick="alert('Opens /agents/cc')">VIEW SHEET</button>
+      </div>
+    </div>
+    <div class="stats-row" id="detail-stats">
+      <div class="stat-item">
+        <span class="stat-label">TRU</span>
+        <div class="stat-bar"><div class="stat-bar-fill" style="width: 72%"></div></div>
+        <span class="stat-value">72</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">SPD</span>
+        <div class="stat-bar"><div class="stat-bar-fill" style="width: 85%"></div></div>
+        <span class="stat-value">85</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">WIS</span>
+        <div class="stat-bar"><div class="stat-bar-fill" style="width: 58%"></div></div>
+        <span class="stat-value">58</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">PWR</span>
+        <div class="stat-bar"><div class="stat-bar-fill" style="width: 91%"></div></div>
+        <span class="stat-value">91</span>
+      </div>
+    </div>
+    <div class="current-task" id="detail-task">
+      <span>►</span> Fixing auth middleware in /src/middleware/auth.ts
+    </div>
+  </div>
+
+  <!-- Mission Strip -->
+  <div class="mission-strip">
+    <div class="mission-item">
+      <span class="mission-icon">►</span>
+      <span class="mission-name">Fix Channel Permissions</span>
+      <div class="mission-progress"><div class="mission-progress-fill" style="width: 80%"></div></div>
+      <span class="mission-pct">80%</span>
+    </div>
+    <div class="mission-item">
+      <span class="mission-icon">►</span>
+      <span class="mission-name">Leveling System</span>
+      <div class="mission-progress"><div class="mission-progress-fill" style="width: 20%"></div></div>
+      <span class="mission-pct">20%</span>
+    </div>
+  </div>
+
+  <div class="controller-hints">
+    <div class="hint"><kbd>D-Pad</kbd> Move cursor</div>
+    <div class="hint"><kbd>A</kbd> Talk</div>
+    <div class="hint"><kbd>Y</kbd> View Sheet</div>
+    <div class="hint"><kbd>Start</kbd> Missions</div>
+  </div>
+</div>
+
+<!-- CHAT OVERLAY -->
+<div class="chat-overlay" id="chat-overlay">
+  <div class="chat-header">
+    <button class="chat-back" onclick="closeChat()">← B</button>
+    <div class="chat-agent-info">
+      <span class="avatar" id="chat-avatar">🤖</span>
+      <div>
+        <h3 id="chat-name">CC</h3>
+        <div class="class-label">Artificer · Engineering</div>
+      </div>
+    </div>
+    <div style="flex:1"></div>
+    <div class="header-stats">
+      <span class="active">busy</span> · mission: Fix Channel Permissions
+    </div>
+  </div>
+
+  <div class="chat-body">
+    <div class="chat-messages">
+      <div class="msg msg-agent">
+        I've been working on the auth middleware. Found the issue — the token validation was checking <code>exp</code> before <code>iat</code>, causing race conditions on fast refreshes.
+      </div>
+      <div class="msg msg-user">
+        Show me the fix.
+      </div>
+      <div class="msg msg-agent">
+        Here's the updated middleware. I reordered the checks and added a 5-second clock skew tolerance:
+      </div>
+      <div class="msg msg-user">
+        Looks good. Run the tests and commit it.
+      </div>
+      <div class="msg msg-agent">
+        Running tests now... <code>npm test -- auth</code>
+      </div>
+    </div>
+
+    <div class="canvas-panel">
+      <div class="canvas-tabs">
+        <div class="canvas-tab active">auth.ts</div>
+        <div class="canvas-tab">test output</div>
+      </div>
+      <div class="canvas-content"><span class="comment">// middleware/auth.ts</span>
+<span class="kw">export async function</span> <span class="fn">validateToken</span>(token: <span class="str">string</span>) {
+  <span class="kw">const</span> decoded = jwt.decode(token)
+
+  <span class="comment">// Fixed: check iat before exp</span>
+  <span class="comment">// Added clock skew tolerance</span>
+  <span class="kw">const</span> SKEW = <span class="str">5</span>
+  <span class="kw">const</span> now = Math.floor(Date.now() / <span class="str">1000</span>)
+
+  <span class="kw">if</span> (decoded.iat > now + SKEW) {
+    <span class="kw">throw new</span> Error(<span class="str">'Token issued in future'</span>)
+  }
+  <span class="kw">if</span> (decoded.exp < now - SKEW) {
+    <span class="kw">throw new</span> Error(<span class="str">'Token expired'</span>)
+  }
+
+  <span class="kw">return</span> decoded
+}</div>
+    </div>
+  </div>
+
+  <div class="chat-input-row">
+    <input type="text" class="chat-input" placeholder="Type a message or press 🎤 to speak...">
+    <button class="voice-btn" title="Spokenly voice input">🎤</button>
+  </div>
+</div>
+
+<script>
+  const agents = {
+    cc: { name: 'CC', avatar: '🤖', class: 'Artificer · Engineering', level: 8, stats: {TRU:72, SPD:85, WIS:58, PWR:91}, task: '► Fixing auth middleware in /src/middleware/auth.ts' },
+    pip: { name: 'Pip', avatar: '🐿️', class: 'Commander · Coordination', level: 6, stats: {TRU:88, SPD:65, WIS:79, PWR:42}, task: '► Idle — awaiting orders' },
+    ed: { name: 'Ed', avatar: '⚔️', class: 'Forgemaster · Engineering', level: 7, stats: {TRU:68, SPD:78, WIS:52, PWR:88}, task: '► Reviewing PR #42 — API refactor' },
+    light: { name: 'Light', avatar: '💡', class: 'Sage · Product', level: 5, stats: {TRU:82, SPD:55, WIS:90, PWR:35}, task: '► Drafting spec for voice input feature' },
+    toji: { name: 'Toji', avatar: '🛡️', class: 'Merchant · Commerce', level: 3, stats: {TRU:45, SPD:40, WIS:38, PWR:22}, task: '— Offline' },
+    power: { name: 'Power', avatar: '⚡', class: 'Bard · Influence', level: 2, stats: {TRU:35, SPD:30, WIS:42, PWR:18}, task: '— Offline' },
+    major: { name: 'Major', avatar: '🎯', class: 'Ranger · Operations', level: 4, stats: {TRU:55, SPD:62, WIS:48, PWR:50}, task: '— Offline' },
+  };
+
+  let currentAgent = 'cc';
+
+  function selectAgent(el) {
+    document.querySelectorAll('.agent-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    const id = el.dataset.agent;
+    currentAgent = id;
+    updateDetail(id);
+  }
+
+  function updateDetail(id) {
+    const a = agents[id];
+    document.getElementById('detail-name').innerHTML = `${a.name} <span class="level">Lv.${a.level}</span>`;
+    document.getElementById('detail-class').textContent = a.class;
+    document.getElementById('detail-task').innerHTML = a.task;
+
+    const statsEl = document.getElementById('detail-stats');
+    statsEl.innerHTML = Object.entries(a.stats).map(([k, v]) =>
+      `<div class="stat-item">
+        <span class="stat-label">${k}</span>
+        <div class="stat-bar"><div class="stat-bar-fill" style="width: ${v}%"></div></div>
+        <span class="stat-value">${v}</span>
+      </div>`
+    ).join('');
+  }
+
+  function openChat() {
+    const a = agents[currentAgent];
+    document.getElementById('chat-avatar').textContent = a.avatar;
+    document.getElementById('chat-name').textContent = a.name;
+    document.getElementById('chat-overlay').classList.add('open');
+  }
+
+  function closeChat() {
+    document.getElementById('chat-overlay').classList.remove('open');
+  }
+
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    const cards = [...document.querySelectorAll('.agent-card')];
+    const idx = cards.findIndex(c => c.classList.contains('selected'));
+
+    if (e.key === 'ArrowRight' && idx < cards.length - 1) { selectAgent(cards[idx + 1]); }
+    if (e.key === 'ArrowLeft' && idx > 0) { selectAgent(cards[idx - 1]); }
+    if (e.key === 'ArrowDown' && idx + 4 < cards.length) { selectAgent(cards[idx + 4]); }
+    if (e.key === 'ArrowUp' && idx - 4 >= 0) { selectAgent(cards[idx - 4]); }
+    if (e.key === 'Enter' || e.key === 'a') {
+      if (document.getElementById('chat-overlay').classList.contains('open')) return;
+      openChat();
+    }
+    if (e.key === 'Escape' || e.key === 'b') { closeChat(); }
+  });
+</script>
+
+</body>
+</html>

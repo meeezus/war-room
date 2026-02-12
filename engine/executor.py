@@ -150,7 +150,7 @@ def _update_agent_status(daimyo_id: str) -> None:
         supabase.table("agent_status").update({
             "status": "idle",
             "current_mission_id": None,
-        }).eq("daimyo_id", daimyo_id).execute()
+        }).eq("id", daimyo_id).execute()
 
 
 # ---------------------------------------------------------------------------
@@ -170,7 +170,7 @@ def execute_step(step: dict) -> dict:
     7. Update agent_status if no more active missions
     8. Return updated step dict
     """
-    daimyo_id = step["assigned_to"]
+    daimyo_id = step.get("daimyo") or step.get("assigned_to", "ed")
     mission_id = step["mission_id"]
     timeout = step.get("timeout_minutes", DEFAULT_TIMEOUT_MINUTES)
     description = step["description"]

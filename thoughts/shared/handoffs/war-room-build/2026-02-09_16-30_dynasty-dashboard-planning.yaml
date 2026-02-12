@@ -1,0 +1,98 @@
+---
+session: war-room-build
+date: 2026-02-09
+status: partial
+outcome: PARTIAL_PLUS
+---
+
+goal: Plan dynasty-wide War Room dashboard — import all Obsidian data, multi-project drill-down, interactive kanban with smart agent routing
+now: Decide architecture (Linear integration vs custom Supabase) and finalize the plan. User is exploring workflow references and unsure which direction to go.
+
+done_this_session:
+  - task: "Resumed from handoff — verified all 10 Sprint 1-4 tasks complete, 24/24 engine tests passing"
+    files: [thoughts/shared/handoffs/kraken-20260209/current.md]
+
+  - task: "Read and cataloged ALL Obsidian data sources for import"
+    files:
+      - ~/Shugyo/Mission-Control.md (16 projects — Folio, Shogunate, HIP Memory, Job Apps, etc.)
+      - ~/Shugyo/Shogunate/Command-Center.md (council status, missions M-001 to M-007, alerts, metrics)
+      - ~/Shugyo/Shogunate/Boards/Daimyo-Council.md (~15 tasks, per-agent profiles, leveling system)
+      - ~/Shugyo/Shogunate/Boards/War-Room-Infrastructure.md (6-layer stack status, v1/v2/v3 features)
+      - ~/Shugyo/Shogunate/Boards/Agent-Protocols.md (4 tasks: Code of Silence, Leveling, Cap Gates, Reaction Matrix)
+      - ~/Shugyo/Shogunate/Boards/Samurai-Workers.md (3 tasks: business samurai, engineering samurai, spawning protocol)
+      - ~/Shugyo/Shogunate/Epics/*.md (4 epics: Daimyo Council, War Room Infra, Protocols, Workers)
+      - ~/Shugyo/ÆOM/Folio/Command-Center.md (7 epics + 2 completed tasks)
+      - ~/Shugyo/ÆOM/Folio/Boards/*.md (7 boards, ~40+ tasks — Chat-Coherence, Content-Creation, Graph, KB, etc.)
+      - ~/Shugyo/ÆOM/Epics/*.md (Multi-Agent-Ops, TokenOS)
+      - ~/Shugyo/Projects/ (11 project directories, mostly inactive)
+
+  - task: "Wrote initial plan: schema extension (projects/boards/tasks tables) + seed SQL + dashboard UI"
+    files: [~/.claude/plans/wobbly-juggling-metcalfe.md]
+
+  - task: "Pivoted — proposed Linear integration instead of custom PM tables"
+    files: [~/Code/war-room/linear-integration-pitch.html]
+
+  - task: "Built 9-slide HTML presentation comparing Linear+WarRoom vs custom-only approach"
+    files: [~/Code/war-room/linear-integration-pitch.html]
+
+blockers:
+  - "User hasn't decided: Linear integration vs keep building custom Supabase PM"
+  - "User exploring external workflow references (6 X/Twitter links) for inspiration before committing"
+  - "User also considering whether primary workflow is terminal (Claude Code / Pip) vs browser (War Room UI)"
+
+questions:
+  - "Should the primary interaction be: (a) talk to Claude/Pip in terminal who orchestrates agents, (b) drag cards in War Room UI, or (c) hybrid?"
+  - "Is Linear the right PM backend, or should we keep custom Supabase tables?"
+  - "How much of the Obsidian data is stale vs still relevant? (Command-Center still says 'Execution Loop: Not built' but engine is done)"
+  - "What did the 6 X/Twitter reference tweets show? (WebFetch failed on all — X blocks scraping)"
+
+decisions:
+  - war_room_is_dynasty_wide: "User confirmed War Room should track ALL projects (Folio, Shogunate, personal), not just Shogunate agent ops. Obsidian stays as passive fallback."
+  - smart_routing_on_drag: "When task dragged to 'running', auto-detect domain and suggest matching Daimyo agent. One-click confirm to launch mission."
+  - active_only_view: "Board views show active/todo/blocked only. Completed tasks behind a 'History' tab."
+  - linear_proposed: "Recommended Linear (free, pro-grade PM) as data layer with War Room as agent command layer on top. User is interested but exploring alternatives."
+
+findings:
+  - data_inventory: "~16 projects, ~20 boards, ~70 tasks, ~7 missions across all Obsidian sources. Current Supabase has only 6 agents seeded, zero operational data."
+  - stale_obsidian_data: "Multiple docs reference old state: Atlas→Ed rename not reflected, execution loop 'Not built' (but it is), War Room v2 'In Progress' (but it's deployed). Need careful data correction during import."
+  - schema_gap: "Current Supabase schema (proposals/missions/steps/events/agent_status/cap_gates) has no project/board/task concept. Needs extension regardless of Linear vs custom."
+  - engine_separate_repo: "Shogunate engine lives at ~/Code/shogunate-engine/ (not war-room/engine/). War-room/engine/ is a copy. 161 tests in shogunate-engine, 24 in war-room."
+  - next16_react19: "War Room uses Next.js 16.1.6, React 19.2.3, Tailwind v4, motion (Framer Motion successor)"
+
+worked:
+  - "Reading ALL obsidian files gave complete picture of data to import"
+  - "HTML presentation effective for communicating architectural trade-offs visually"
+  - "Asking clarifying questions early prevented building wrong thing"
+
+failed:
+  - "WebFetch cannot scrape X/Twitter (JavaScript required) — all 6 reference tweet fetches failed"
+  - "Initial plan was too shallow — missed interactive kanban, smart routing, agent assignment UX that user envisioned"
+  - "Assumed Shogunate-only scope when user meant dynasty-wide — caused confusion"
+
+next:
+  - "1. CRITICAL: Understand user's 6 reference tweets (ask user to describe what they saw, or use browser-use skill to screenshot them)"
+  - "2. Resolve architecture decision: Linear integration vs custom Supabase PM vs hybrid"
+  - "3. Resolve interaction model: terminal-first (Claude/Pip) vs UI-first (War Room browser) vs hybrid"
+  - "4. Rewrite plan based on decisions above"
+  - "5. If custom Supabase: write schema-v2.sql + seed-v2.sql, apply to Supabase, build dashboard UI"
+  - "6. If Linear: set up Linear workspace, import Obsidian data, build Linear API integration + webhook endpoint"
+  - "7. Either way: build smart routing modal (drag task → suggest agent → create mission)"
+  - "8. Commit all uncommitted work (significant uncommitted changes spanning engine + frontend + PWA)"
+
+files:
+  created:
+    - ~/Code/war-room/linear-integration-pitch.html
+    - ~/.claude/plans/wobbly-juggling-metcalfe.md
+  modified: []
+  plan: [~/.claude/plans/wobbly-juggling-metcalfe.md]
+  key_references:
+    - ~/Code/war-room/lib/types.ts (current Supabase types — needs Project/Board/Task additions)
+    - ~/Code/war-room/lib/queries.ts (current query functions — needs project queries)
+    - ~/Code/war-room/app/dashboard/page.tsx (main dashboard — needs project overview tab)
+    - ~/Code/war-room/components/kanban-board.tsx (missions kanban — needs DnD + task-level kanban)
+    - ~/Code/war-room/lib/realtime.ts (realtime hooks — needs project/task subscriptions)
+    - ~/Code/shogunate-engine/schema.sql (engine DB schema — 6 tables)
+    - ~/Code/shogunate-engine/seed.sql (current seed — 6 agents + default cap gates only)
+    - ~/Shugyo/Mission-Control.md (source of truth for all projects)
+    - ~/Shugyo/Shogunate/Command-Center.md (source of truth for Shogunate ops)
+    - ~/Shugyo/ÆOM/Folio/Command-Center.md (source of truth for Folio epics)

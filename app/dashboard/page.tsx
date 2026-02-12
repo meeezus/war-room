@@ -122,14 +122,19 @@ export default function DashboardPage() {
           <span className="hidden sm:inline text-xs text-[rgba(255,255,255,0.4)]">
             Dynasty Command Center
           </span>
-          <span className="ml-auto font-[family-name:var(--font-jetbrains-mono)] text-xs tabular-nums text-[rgba(255,255,255,0.3)]">
-            {dynastyStats.activeProjects}/{dynastyStats.totalProjects} projects
-            {" \u00B7 "}
-            <Link href="/missions" className="transition-colors hover:text-[rgba(255,255,255,0.6)]">
-              {missionStats.active}/{missionStats.total} missions
+          <span className="ml-auto flex items-center gap-3">
+            <Link href="/dojo" className="hidden sm:inline font-[family-name:var(--font-jetbrains-mono)] text-xs text-[rgba(255,255,255,0.4)] hover:text-emerald-400 transition-colors">
+              🥷 Dojo
             </Link>
-            {" \u00B7 "}
-            {dynastyStats.activeTasks}/{dynastyStats.totalTasks} tasks
+            <span className="font-[family-name:var(--font-jetbrains-mono)] text-xs tabular-nums text-[rgba(255,255,255,0.3)]">
+              {dynastyStats.activeProjects}/{dynastyStats.totalProjects} projects
+              {" \u00B7 "}
+              <Link href="/missions" className="transition-colors hover:text-[rgba(255,255,255,0.6)]">
+                {missionStats.active}/{missionStats.total} missions
+              </Link>
+              {" \u00B7 "}
+              {dynastyStats.activeTasks}/{dynastyStats.totalTasks} tasks
+            </span>
           </span>
         </div>
         <StatsBar stats={stats} />
@@ -137,6 +142,9 @@ export default function DashboardPage() {
 
       {/* Mobile nav */}
       <div className="flex gap-2 mb-3 sm:hidden">
+        <Link href="/dojo" className="flex-1 rounded-lg bg-zinc-900 border border-zinc-800 px-3 py-2 text-center text-xs font-medium text-zinc-300 hover:bg-zinc-800">
+          🥷 Dojo
+        </Link>
         <Link href="/chat" className="flex-1 rounded-lg bg-zinc-900 border border-zinc-800 px-3 py-2 text-center text-xs font-medium text-zinc-300 hover:bg-zinc-800">
           💬 Chat
         </Link>

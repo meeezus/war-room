@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Concept B: The Dojo — War Room</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg-deep: #09090b;
+    --bg-card: #18181b;
+    --bg-card-hover: #27272a;
+    --bg-floor: #0c0c0e;
+    --border: #27272a;
+    --emerald: #34d399;
+    --emerald-dim: #065f46;
+    --emerald-glow: rgba(52, 211, 153, 0.3);
+    --text-primary: #f4f4f5;
+    --text-secondary: #a1a1aa;
+    --text-muted: #71717a;
+    --red: #f87171;
+    --yellow: #fbbf24;
+    --blue: #60a5fa;
+  }
+
+  body {
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .header h1 { font-size: 18px; font-weight: 700; }
+  .header h1 span { color: var(--emerald); }
+  .header-stats {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .header-stats .active { color: var(--emerald); }
+
+  .concept-label {
+    text-align: center;
+    padding: 8px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    background: rgba(52, 211, 153, 0.03);
+  }
+
+  .main-area {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* The Dojo Floor */
+  .dojo {
+    flex: 1;
+    position: relative;
+    background:
+      radial-gradient(circle at 50% 50%, rgba(52, 211, 153, 0.02) 0%, transparent 60%),
+      var(--bg-floor);
+    overflow: hidden;
+    cursor: crosshair;
+  }
+
+  /* Grid floor pattern */
+  .dojo::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  /* Room elements */
+  .room-element {
+    position: absolute;
+    text-align: center;
+  }
+
+  .mission-board {
+    position: absolute;
+    top: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 20px;
+    min-width: 220px;
+  }
+  .mission-board h3 {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .board-mission {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 11px;
+  }
+  .board-mission .name { color: var(--text-secondary); flex: 1; }
+  .board-bar {
+    width: 60px;
+    height: 4px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .board-bar-fill { height: 100%; background: var(--emerald); border-radius: 2px; }
+  .board-pct {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    width: 28px;
+    text-align: right;
+  }
+
+  /* Agent characters in the room */
+  .dojo-agent {
+    position: absolute;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.15s ease-out;
+    user-select: none;
+  }
+  .dojo-agent:hover { transform: scale(1.1); }
+  .dojo-agent.nearby { transform: scale(1.15); }
+
+  .dojo-agent .sprite {
+    font-size: 36px;
+    display: block;
+    line-height: 1;
+    position: relative;
+  }
+  .dojo-agent .sprite .status-ring {
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+  }
+  .dojo-agent.status-busy .sprite .status-ring { border-color: var(--yellow); box-shadow: 0 0 12px rgba(251, 191, 36, 0.3); }
+  .dojo-agent.status-online .sprite .status-ring { border-color: var(--emerald); box-shadow: 0 0 12px var(--emerald-glow); }
+  .dojo-agent.status-idle .sprite .status-ring { border-color: var(--blue); }
+  .dojo-agent.status-offline .sprite .status-ring { border-color: var(--text-muted); opacity: 0.3; }
+  .dojo-agent.status-offline { opacity: 0.35; }
+
+  .dojo-agent .name-tag {
+    font-size: 11px;
+    font-weight: 600;
+    margin-top: 4px;
+    white-space: nowrap;
+  }
+  .dojo-agent .status-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+  .dojo-agent .task-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--yellow);
+    white-space: nowrap;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0 auto;
+  }
+
+  /* Player character */
+  .player {
+    position: absolute;
+    text-align: center;
+    transition: left 0.2s ease-out, top 0.2s ease-out;
+    z-index: 10;
+  }
+  .player .sprite {
+    font-size: 32px;
+    display: block;
+    line-height: 1;
+    filter: drop-shadow(0 0 8px var(--emerald-glow));
+  }
+  .player .label {
+    font-size: 10px;
+    color: var(--emerald);
+    font-weight: 600;
+    margin-top: 2px;
+  }
+
+  /* Interaction prompt */
+  .interact-prompt {
+    position: absolute;
+    background: var(--emerald);
+    color: var(--bg-deep);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    transform: translateX(-50%);
+    display: none;
+    z-index: 20;
+  }
+  .interact-prompt::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 4px solid var(--emerald);
+  }
+
+  /* Right sidebar */
+  .sidebar {
+    width: 260px;
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-deep);
+  }
+  .sidebar-section {
+    border-bottom: 1px solid var(--border);
+    padding: 12px;
+  }
+  .sidebar-title {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .sidebar-mission {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 12px;
+  }
+  .sidebar-mission .icon { color: var(--emerald); }
+  .sidebar-mission .name { flex: 1; color: var(--text-secondary); }
+  .sidebar-mission .pct {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .sidebar-bar {
+    height: 3px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+    margin-top: 4px;
+  }
+  .sidebar-bar-fill { height: 100%; background: var(--emerald); border-radius: 2px; }
+
+  .event-feed { flex: 1; overflow-y: auto; }
+  .event-item {
+    display: flex;
+    gap: 8px;
+    padding: 6px 0;
+    font-size: 11px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  .event-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .event-text { color: var(--text-secondary); }
+  .event-text .agent-ref { color: var(--emerald); font-weight: 500; }
+
+  /* Chat panel (slides up from bottom) */
+  .chat-panel {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 260px;
+    height: 0;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border);
+    transition: height 0.25s ease-out;
+    overflow: hidden;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+  }
+  .chat-panel.open { height: 320px; }
+
+  .chat-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .chat-panel-header .avatar { font-size: 22px; }
+  .chat-panel-header h3 { font-size: 13px; font-weight: 600; flex: 1; }
+  .chat-panel-header .close-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px;
+  }
+  .chat-panel-header .close-btn:hover { color: var(--text-primary); }
+
+  .chat-panel-messages {
+    flex: 1;
+    padding: 12px 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .chat-msg {
+    font-size: 13px;
+    line-height: 1.4;
+    max-width: 80%;
+    padding: 8px 12px;
+    border-radius: 10px;
+  }
+  .chat-msg-user {
+    align-self: flex-end;
+    background: var(--emerald-dim);
+    border-bottom-right-radius: 4px;
+  }
+  .chat-msg-agent {
+    align-self: flex-start;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+  }
+  .chat-msg-agent code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: rgba(255,255,255,0.06);
+    padding: 1px 3px;
+    border-radius: 2px;
+  }
+
+  .chat-panel-input {
+    display: flex;
+    gap: 8px;
+    padding: 8px 16px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .chat-panel-input input {
+    flex: 1;
+    background: var(--bg-deep);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-family: 'Space Grotesk', system-ui;
+    font-size: 13px;
+    color: var(--text-primary);
+    outline: none;
+  }
+  .chat-panel-input input:focus { border-color: var(--emerald); }
+  .chat-panel-input input::placeholder { color: var(--text-muted); }
+  .chat-panel-input .voice-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--bg-deep);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .chat-panel-input .voice-btn:hover { border-color: var(--emerald); color: var(--emerald); }
+
+  /* Controller hints */
+  .controller-bar {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    padding: 6px;
+    border-top: 1px solid var(--border);
+    background: var(--bg-deep);
+    flex-shrink: 0;
+  }
+  .hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .hint kbd {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  /* Navigation between mockups */
+  .nav-bar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    display: flex;
+    gap: 4px;
+    padding: 8px;
+    z-index: 200;
+  }
+  .nav-bar a {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+  }
+  .nav-bar a:hover { border-color: var(--emerald); color: var(--emerald); }
+  .nav-bar a.current { border-color: var(--emerald); color: var(--emerald); background: var(--emerald-dim); }
+</style>
+</head>
+<body>
+
+<div class="nav-bar">
+  <a href="concept-a-fighter-select.html">A: Fighter</a>
+  <a href="concept-b-the-dojo.html" class="current">B: Dojo</a>
+  <a href="concept-c-ops-hud.html">C: Ops HUD</a>
+</div>
+
+<div class="header">
+  <h1>THE <span>DOJO</span></h1>
+  <div class="header-stats">
+    <span class="active">4 online</span> · 2 missions active
+  </div>
+</div>
+
+<div class="concept-label">Concept B — The Dojo · WASD / Joystick to move · A / Enter near agent to talk</div>
+
+<div class="main-area">
+  <div class="dojo" id="dojo" onclick="movePlayer(event)">
+    <!-- Mission Board (room furniture) -->
+    <div class="mission-board">
+      <h3>Mission Board</h3>
+      <div class="board-mission">
+        <span class="name">Fix Channel Permissions</span>
+        <div class="board-bar"><div class="board-bar-fill" style="width:80%"></div></div>
+        <span class="board-pct">80%</span>
+      </div>
+      <div class="board-mission">
+        <span class="name">Leveling System</span>
+        <div class="board-bar"><div class="board-bar-fill" style="width:20%"></div></div>
+        <span class="board-pct">20%</span>
+      </div>
+    </div>
+
+    <!-- Agents placed around the room -->
+    <div class="dojo-agent status-busy" id="agent-cc" style="left: 20%; top: 55%;" data-agent="cc" onclick="talkTo('cc')">
+      <span class="sprite">🤖<span class="status-ring"></span></span>
+      <div class="name-tag">CC</div>
+      <div class="task-tag">coding auth...</div>
+    </div>
+
+    <div class="dojo-agent status-idle" id="agent-pip" style="left: 25%; top: 25%;" data-agent="pip" onclick="talkTo('pip')">
+      <span class="sprite">🐿️<span class="status-ring"></span></span>
+      <div class="name-tag">Pip</div>
+      <div class="status-tag">idle</div>
+    </div>
+
+    <div class="dojo-agent status-online" id="agent-ed" style="left: 65%; top: 35%;" data-agent="ed" onclick="talkTo('ed')">
+      <span class="sprite">⚔️<span class="status-ring"></span></span>
+      <div class="name-tag">Ed</div>
+      <div class="status-tag">online</div>
+    </div>
+
+    <div class="dojo-agent status-online" id="agent-light" style="left: 15%; top: 78%;" data-agent="light" onclick="talkTo('light')">
+      <span class="sprite">💡<span class="status-ring"></span></span>
+      <div class="name-tag">Light</div>
+      <div class="status-tag">online</div>
+    </div>
+
+    <div class="dojo-agent status-offline" id="agent-toji" style="left: 70%; top: 72%;" data-agent="toji">
+      <span class="sprite">🛡️<span class="status-ring"></span></span>
+      <div class="name-tag">Toji</div>
+      <div class="status-tag">offline</div>
+    </div>
+
+    <div class="dojo-agent status-offline" id="agent-power" style="left: 55%; top: 80%;" data-agent="power">
+      <span class="sprite">⚡<span class="status-ring"></span></span>
+      <div class="name-tag">Power</div>
+      <div class="status-tag">offline</div>
+    </div>
+
+    <div class="dojo-agent status-offline" id="agent-major" style="left: 80%; top: 55%;" data-agent="major">
+      <span class="sprite">🎯<span class="status-ring"></span></span>
+      <div class="name-tag">Major</div>
+      <div class="status-tag">offline</div>
+    </div>
+
+    <!-- Player character -->
+    <div class="player" id="player" style="left: 45%; top: 55%;">
+      <span class="sprite">😎</span>
+      <div class="label">SENSEI</div>
+    </div>
+
+    <!-- Interaction prompt (shows when near an agent) -->
+    <div class="interact-prompt" id="interact-prompt">Press A to talk</div>
+
+    <!-- Chat panel slides up from bottom of dojo -->
+    <div class="chat-panel" id="chat-panel">
+      <div class="chat-panel-header">
+        <span class="avatar" id="cp-avatar">🤖</span>
+        <h3 id="cp-name">CC</h3>
+        <button class="close-btn" onclick="closeChat()">✕</button>
+      </div>
+      <div class="chat-panel-messages">
+        <div class="chat-msg chat-msg-agent">
+          I found the bug in auth middleware. The <code>exp</code> check had a race condition on fast token refreshes. Fixed with 5s clock skew tolerance.
+        </div>
+        <div class="chat-msg chat-msg-user">
+          Show me what you changed.
+        </div>
+        <div class="chat-msg chat-msg-agent">
+          Updated <code>middleware/auth.ts</code> — reordered iat/exp checks and added SKEW constant. Tests passing.
+        </div>
+        <div class="chat-msg chat-msg-user">
+          Good. Commit it and move to the next step.
+        </div>
+      </div>
+      <div class="chat-panel-input">
+        <input type="text" placeholder="Type or press 🎤 to speak...">
+        <button class="voice-btn">🎤</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">Active Missions</div>
+      <div class="sidebar-mission">
+        <span class="icon">►</span>
+        <span class="name">Fix Channel Permissions</span>
+        <span class="pct">80%</span>
+      </div>
+      <div class="sidebar-bar"><div class="sidebar-bar-fill" style="width:80%"></div></div>
+      <div style="height:8px"></div>
+      <div class="sidebar-mission">
+        <span class="icon">►</span>
+        <span class="name">Leveling System</span>
+        <span class="pct">20%</span>
+      </div>
+      <div class="sidebar-bar"><div class="sidebar-bar-fill" style="width:20%"></div></div>
+    </div>
+
+    <div class="sidebar-section event-feed">
+      <div class="sidebar-title">Event Feed</div>
+      <div class="event-item">
+        <span class="event-time">now</span>
+        <span class="event-text"><span class="agent-ref">CC</span> committed auth fix</span>
+      </div>
+      <div class="event-item">
+        <span class="event-time">2m</span>
+        <span class="event-text"><span class="agent-ref">CC</span> read middleware/auth.ts</span>
+      </div>
+      <div class="event-item">
+        <span class="event-time">5m</span>
+        <span class="event-text"><span class="agent-ref">Ed</span> started reviewing PR #42</span>
+      </div>
+      <div class="event-item">
+        <span class="event-time">8m</span>
+        <span class="event-text"><span class="agent-ref">Light</span> drafted voice spec</span>
+      </div>
+      <div class="event-item">
+        <span class="event-time">12m</span>
+        <span class="event-text"><span class="agent-ref">CC</span> started Fix Channel Permissions</span>
+      </div>
+      <div class="event-item">
+        <span class="event-time">15m</span>
+        <span class="event-text"><span class="agent-ref">Pip</span> completed coordination brief</span>
+      </div>
+      <div class="event-item">
+        <span class="event-time">20m</span>
+        <span class="event-text">Mission Leveling System queued</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="controller-bar">
+  <div class="hint"><kbd>WASD</kbd> / <kbd>Joystick</kbd> Move</div>
+  <div class="hint"><kbd>A</kbd> / <kbd>Enter</kbd> Talk to nearby agent</div>
+  <div class="hint"><kbd>B</kbd> / <kbd>Esc</kbd> Close chat</div>
+  <div class="hint"><kbd>Click</kbd> Move to position</div>
+</div>
+
+<script>
+  const player = document.getElementById('player');
+  const dojo = document.getElementById('dojo');
+  const prompt = document.getElementById('interact-prompt');
+  let playerX = 45;
+  let playerY = 55;
+  let nearbyAgent = null;
+  let chatOpen = false;
+
+  const agents = {
+    cc: { el: document.getElementById('agent-cc'), x: 20, y: 55 },
+    pip: { el: document.getElementById('agent-pip'), x: 25, y: 25 },
+    ed: { el: document.getElementById('agent-ed'), x: 65, y: 35 },
+    light: { el: document.getElementById('agent-light'), x: 15, y: 78 },
+    toji: { el: document.getElementById('agent-toji'), x: 70, y: 72 },
+    power: { el: document.getElementById('agent-power'), x: 55, y: 80 },
+    major: { el: document.getElementById('agent-major'), x: 80, y: 55 },
+  };
+
+  function movePlayerTo(x, y) {
+    playerX = Math.max(5, Math.min(85, x));
+    playerY = Math.max(15, Math.min(90, y));
+    player.style.left = playerX + '%';
+    player.style.top = playerY + '%';
+    checkProximity();
+  }
+
+  function movePlayer(e) {
+    if (chatOpen) return;
+    const rect = dojo.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    movePlayerTo(x, y);
+  }
+
+  function checkProximity() {
+    nearbyAgent = null;
+    const threshold = 12;
+    document.querySelectorAll('.dojo-agent').forEach(el => el.classList.remove('nearby'));
+    prompt.style.display = 'none';
+
+    for (const [id, a] of Object.entries(agents)) {
+      const dx = playerX - a.x;
+      const dy = playerY - a.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < threshold && !a.el.classList.contains('status-offline')) {
+        nearbyAgent = id;
+        a.el.classList.add('nearby');
+        prompt.style.left = a.x + '%';
+        prompt.style.top = (a.y - 8) + '%';
+        prompt.style.display = 'block';
+        break;
+      }
+    }
+  }
+
+  function talkTo(id) {
+    const names = { cc: '🤖 CC', pip: '🐿️ Pip', ed: '⚔️ Ed', light: '💡 Light' };
+    const avatars = { cc: '🤖', pip: '🐿️', ed: '⚔️', light: '💡' };
+    document.getElementById('cp-avatar').textContent = avatars[id] || '🤖';
+    document.getElementById('cp-name').textContent = id.toUpperCase();
+    document.getElementById('chat-panel').classList.add('open');
+    chatOpen = true;
+  }
+
+  function closeChat() {
+    document.getElementById('chat-panel').classList.remove('open');
+    chatOpen = false;
+  }
+
+  // Keyboard movement
+  const keys = {};
+  document.addEventListener('keydown', (e) => {
+    keys[e.key.toLowerCase()] = true;
+
+    if ((e.key === 'Enter' || e.key.toLowerCase() === 'a') && nearbyAgent && !chatOpen) {
+      talkTo(nearbyAgent);
+      e.preventDefault();
+    }
+    if ((e.key === 'Escape' || e.key.toLowerCase() === 'b') && chatOpen) {
+      closeChat();
+    }
+  });
+  document.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
+
+  // Movement loop
+  function gameLoop() {
+    if (!chatOpen) {
+      const speed = 0.8;
+      if (keys['w'] || keys['arrowup']) movePlayerTo(playerX, playerY - speed);
+      if (keys['s'] || keys['arrowdown']) movePlayerTo(playerX, playerY + speed);
+      if (keys['a'] || keys['arrowleft']) movePlayerTo(playerX - speed, playerY);
+      if (keys['d'] || keys['arrowright']) movePlayerTo(playerX + speed, playerY);
+    }
+    requestAnimationFrame(gameLoop);
+  }
+  gameLoop();
+</script>
+
+</body>
+</html>

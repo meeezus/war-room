@@ -1,0 +1,129 @@
+---
+session: war-room-build
+date: 2026-02-09
+status: complete
+outcome: SUCCEEDED
+---
+
+goal: War Room dashboard redesign — project overview grid, per-project lifecycle kanban, proposals triage, CLI, automation triggers
+now: Wire up the proposal→mission→daimyo execution bridge so approving a proposal actually triggers a Daimyo agent via the engine. This is the missing link between War Room (display) and Shogunate Engine (execution).
+
+test: cd ~/Code/war-room && npm run build
+
+done_this_session:
+  - task: "Sprint 0: Panel alignment fix — all 3 dashboard columns now have consistent section headers at same vertical baseline"
+    files: [app/dashboard/page.tsx, components/agent-sidebar.tsx, components/event-feed.tsx]
+
+  - task: "Sprint 0: Task status migration — 'active' → 'in_progress', new lifecycle: todo|assigned|in_progress|review|done|someday|blocked"
+    files: [supabase/migrations/20260210000004_task_lifecycle_statuses.sql, lib/types.ts, lib/queries.ts, lib/data.ts]
+
+  - task: "Sprint 1: ProjectCard enhanced with task counts, progress mini-bar, last activity, pending proposals badge"
+    files: [components/project-card.tsx, lib/types.ts:109-115, lib/queries.ts:115-158]
+
+  - task: "Sprint 1: ProjectOverview grid replaces flat TasksKanban on main dashboard — sorted by status, done/someday toggle"
+    files: [components/project-overview.tsx, app/dashboard/page.tsx]
+
+  - task: "Sprint 1: StatsBar updated — Active Agents | In Progress | Pending Reviews | Pending Proposals"
+    files: [components/stats-bar.tsx, lib/queries.ts:79-99, lib/types.ts:86-91]
+
+  - task: "Sprint 2: ProjectKanban — 6-column lifecycle board (Todo→Assigned→In Progress→Review→Done + conditional Blocked)"
+    files: [components/project-kanban.tsx]
+
+  - task: "Sprint 2: ProposalsSection — approve/reject actions, risk badges, source metadata, duplicate checking"
+    files: [components/proposals-section.tsx, lib/queries.ts:260-290]
+
+  - task: "Sprint 2: Integrated kanban + proposals into project detail page, replaced old BoardSection list view"
+    files: [components/project-detail.tsx, app/projects/[id]/page.tsx]
+
+  - task: "Sprint 3: proposal_id FK on tasks, mission completion → task auto-moves to review, failure → blocked"
+    files: [supabase/migrations/20260210000005_add_task_proposal_link.sql, lib/types.ts:129, engine/executor.py:59-84]
+
+  - task: "Sprint 3: wr CLI — 7 commands (status, tasks, start, done, approve, propose, event) with 22 tests"
+    files: [cli.py, tests/unit/test_cli_wr.py]
+
+  - task: "Sprint 3: Stale detection (7d+ amber badge on cards), duplicate proposal checking with warning UI"
+    files: [components/task-kanban-card.tsx:23, components/proposals-section.tsx:37-62, lib/queries.ts:286]
+
+  - task: "Sprint 3: Council review flag + reviews JSONB on proposals, 'Awaiting Council' badge"
+    files: [supabase/migrations/20260210000006_add_council_review.sql, lib/types.ts:15-16, components/proposals-section.tsx:87-103]
+
+  - task: "Sprint 3: /wr Claude Code skill wrapping CLI commands"
+    files: [~/.claude/skills/wr.md]
+
+  - task: "Applied all 3 SQL migrations to Supabase (fixed CHECK constraint on tasks.status)"
+    files: [supabase/migrations/20260210000004_task_lifecycle_statuses.sql]
+
+  - task: "Committed and pushed to main (501f1af), 22 files, +2608 lines"
+    files: []
+
+blockers:
+  - "Proposal→Mission→Daimyo execution bridge not wired — approving a proposal creates a task but does NOT create a mission or trigger engine execution"
+  - "Pip (Discord bot at ~/clawd/) has no knowledge of War Room changes or Supabase integration"
+  - "No smart routing logic: domain detection → daimyo assignment is manual"
+
+questions:
+  - "User wants project overview as column view (kanban by project status: In Progress | Todo | On Hold) — build this as next UI task?"
+  - "What should the proposal→mission bridge look like? Auto-create mission on approve? Or require explicit 'dispatch to Ed' action?"
+  - "Should Pip get Supabase read access to report War Room state on Discord? Or is wr CLI sufficient for terminal users?"
+  - "User observed 'you and Pip are competing for my right hand' — need to clarify division of labor: Pip=strategy/vibes, CC=build, Engine=execution"
+
+decisions:
+  - check_constraint_fix: "Supabase had a CHECK constraint (tasks_status_check) only allowing old status values. Fixed migration to DROP CONSTRAINT first, then UPDATE, then ADD new constraint."
+  - blocked_column_design: "Blocked tasks show as 6th narrow column in ProjectKanban (only visible when blocked tasks exist) rather than a separate section below."
+  - duplicate_check_ux: "Two-click approve with warning: first click checks for title substring match, shows amber warning if found, second click overrides."
+  - council_review_advisory: "Council reviews are advisory only — user can still approve/reject regardless of Daimyo verdicts."
+
+findings:
+  - execution_gap: "The Shogunate has 4 disconnected layers: Pip (Discord), Claude Code (build), War Room (display), Engine (execution). None automatically trigger each other. The bridge is the critical missing piece."
+  - ed_skill_exists: "Ed's SKILL.md at ~/Shugyo/Shogunate/Daimyo/Ed-SKILL.md is well-defined (code review, debugging, sprint execution protocols). Ready to be used by engine."
+  - engine_worker_model: "Engine config uses WORKER_MODEL='sonnet' for claude -p execution, regardless of Daimyo's listed model (kimi-k2.5). Daimyo model field is informational only."
+  - swarm_effective: "13 tasks across 4 sprints completed via team swarm (up to 5 parallel agents). Groups A→B→C→D→E with proper dependency gates. Total wall time ~12 minutes for ~2600 lines of changes."
+
+worked:
+  - "Team swarm with dependency groups (A/B/C/D/E) — parallel within groups, sequential between"
+  - "Giving agents explicit file paths + current codebase state from previous agents"
+  - "Shutting down completed agents immediately to avoid idle confusion"
+  - "Running npm run build as verification in each agent before reporting done"
+
+failed:
+  - "Initial migration failed due to CHECK constraint on tasks.status — Supabase had constraint not visible in our schema files. Fixed by adding DROP CONSTRAINT IF EXISTS."
+  - "Background dev server exits when task times out — not a real failure, just background process management"
+
+next:
+  - "1. CRITICAL: Wire up proposal→mission→daimyo bridge (approve proposal → auto-create mission → assign to domain daimyo → engine executes)"
+  - "2. Build project column view (kanban by project status) as toggle option on main dashboard"
+  - "3. Test Ed via the actual engine pipeline — create a real mission, execute via shogun execute-mission"
+  - "4. Evaluate Folio curation plan (magical-nibbling-lamport.md) — either via Ed or direct review"
+  - "5. Consider Pip Supabase integration so Pip can read/report War Room state on Discord"
+  - "6. Add drag-and-drop on kanban boards (deferred to Sprint 4 per plan)"
+
+files:
+  created:
+    - components/project-overview.tsx
+    - components/project-kanban.tsx
+    - components/proposals-section.tsx
+    - supabase/migrations/20260210000004_task_lifecycle_statuses.sql
+    - supabase/migrations/20260210000005_add_task_proposal_link.sql
+    - supabase/migrations/20260210000006_add_council_review.sql
+    - ~/.claude/skills/wr.md
+    - tests/unit/test_cli_wr.py
+  modified:
+    - app/dashboard/page.tsx
+    - app/projects/[id]/page.tsx
+    - components/agent-sidebar.tsx
+    - components/event-feed.tsx
+    - components/project-card.tsx
+    - components/project-detail.tsx
+    - components/stats-bar.tsx
+    - components/task-kanban-card.tsx
+    - engine/executor.py
+    - lib/data.ts
+    - lib/queries.ts
+    - lib/types.ts
+    - cli.py
+    - pyproject.toml
+    - uv.lock
+  key_references:
+    - ~/Code/shogunate-engine/engine/config.py (DAIMYO_REGISTRY, WORKER_MODEL)
+    - ~/Shugyo/Shogunate/Daimyo/Ed-SKILL.md (Ed's review/debug/sprint protocols)
+    - ~/.claude/plans/magical-nibbling-lamport.md (Folio curation plan pending Ed review)

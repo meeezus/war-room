@@ -103,7 +103,7 @@ export async function PATCH(
 
     // 5. Trigger engine mission decomposition (async — K2.5 steps)
     const daimyoId = DOMAIN_TO_DAIMYO[proposal.domain ?? ''] ?? 'ed'
-    const engineDir = process.env.SHOGUNATE_ENGINE_DIR || `${process.env.HOME}/Code/shogunate-engine`
+    const engineDir = process.env.SHOGUNATE_ENGINE_DIR || `${process.env.HOME}/Code/war-room`
     exec(
       `cd "${engineDir}" && uv run python -c "from engine.mission import run_pending; missions = run_pending(); print(f'Created {len(missions)} mission(s)')"`,
       { timeout: 60000 },

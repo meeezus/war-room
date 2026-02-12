@@ -45,9 +45,11 @@ export async function POST(
   }).eq('id', mission.assigned_to)
 
   // Spawn engine executor as detached background process
-  const engineDir = process.env.SHOGUNATE_ENGINE_DIR || `${process.env.HOME}/Code/shogunate-engine`
+  const engineDir = process.env.SHOGUNATE_ENGINE_DIR || `${process.env.HOME}/Code/war-room`
+  // Sanitize id to prevent command injection (only allow UUID chars)
+  const safeId = id.replace(/[^a-zA-Z0-9-]/g, '')
   exec(
-    `cd "${engineDir}" && uv run python -c "from engine.executor import execute_mission; execute_mission('${id}')"`,
+    `cd "${engineDir}" && uv run python -c "from engine.executor import execute_mission; execute_mission('${safeId}')"`,
     { timeout: 1800000 }, // 30 min timeout
     (error, stdout, stderr) => {
       if (error) console.error(`Execute mission ${id} error:`, error.message)

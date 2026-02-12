@@ -150,3 +150,25 @@ export interface DynastyStats {
   totalTasks: number
   activeTasks: number
 }
+
+// RPG Stats
+export interface RpgStats {
+  TRU: number  // Trust (0-99) — mission success rate
+  SPD: number  // Speed (0-99) — avg step completion time
+  WIS: number  // Wisdom (0-99) — events + missions count (experience)
+  PWR: number  // Power (0-99) — missions completed
+  level: number
+  totalXP: number
+}
+
+export interface RoleCard {
+  id: string        // agent id (e.g., 'ed', 'pip')
+  name: string      // display name
+  title: string     // RPG title (e.g., 'The Architect', 'The Strategist')
+  class: string     // RPG class (e.g., 'Engineer', 'Coordinator')
+  domain: string    // domain from agent_status
+  emoji: string     // placeholder sprite
+  color: string     // accent color hex
+  description: string  // short flavor text
+  abilities: string[]  // 3 abilities/skills
+}

@@ -1,0 +1,84 @@
+---
+session: war-room-live-dashboard
+date: 2026-02-09
+status: partial
+outcome: STRONG_PARTIAL
+---
+
+goal: Build War Room as live 3-level dashboard (proposals → missions → steps) with real-time feed and PWA
+now: Sprint 0, 1, 4 complete. Resume at Wave 3 — launch S2-T1 (mission detail) + S2-T2 (agent detail) in parallel.
+test: cd ~/Code/war-room && npm run build
+plan: ~/.claude/plans/enchanted-forging-moonbeam.md
+
+done_this_session:
+  - task: "S0-T1: Fixed 4 CLI executor test mock patches (engine.executor.* → cli.*)"
+    files: [~/Code/shogunate-engine/tests/unit/test_cli_executor.py]
+    status: complete
+    verified: "163/163 tests passing"
+
+  - task: "S0-T2: Renamed Atlas-SKILL.md → Ed-SKILL.md with all internal refs updated"
+    files: [~/Shugyo/Shogunate/Daimyo/Ed-SKILL.md]
+    status: complete
+    verified: "grep Atlas returns 0 matches, header says Ed (Edward Wong)"
+
+  - task: "S1-T1: Created full Supabase data layer (client + types + queries)"
+    files: [~/Code/war-room/lib/supabase.ts, ~/Code/war-room/lib/types.ts, ~/Code/war-room/lib/queries.ts, ~/Code/war-room/.env.local.example]
+    status: complete
+    verified: "npm run build passes clean"
+
+  - task: "S1-T2: Replaced all dashboard components with live Supabase data"
+    files: [~/Code/war-room/components/agent-sidebar.tsx, ~/Code/war-room/components/kanban-board.tsx, ~/Code/war-room/components/event-feed.tsx, ~/Code/war-room/components/stats-bar.tsx, ~/Code/war-room/app/dashboard/page.tsx, ~/Code/war-room/lib/data.ts]
+    status: complete
+    verified: "npx next build --webpack passes clean"
+    notes: "DnD removed from kanban (display-only). kanban-column.tsx + task-card.tsx deprecated. ConnectPrompt fallback when no Supabase."
+
+  - task: "S4-T1: PWA manifest + service worker"
+    files: [~/Code/war-room/app/manifest.ts, ~/Code/war-room/app/sw.ts, ~/Code/war-room/app/offline/page.tsx, ~/Code/war-room/next.config.ts, ~/Code/war-room/app/layout.tsx, ~/Code/war-room/public/icon-192.png, ~/Code/war-room/public/icon-512.png]
+    status: complete
+    verified: "npx next build --webpack passes clean"
+    notes: "serwist v9 requires --webpack flag (no Turbopack). Icons are placeholders. Dev server still uses Turbopack (serwist disabled in dev)."
+
+remaining_tasks:
+  - "S2-T1: Mission detail page (/missions/[id]) — create app/missions/[id]/page.tsx, components/mission-detail.tsx, components/step-card.tsx"
+  - "S2-T2: Agent detail page (/agents/[id]) — create app/agents/[id]/page.tsx, components/agent-detail.tsx"
+  - "S2-T3: Navigation links between levels — breadcrumbs, Link wiring"
+  - "S3-T1: Supabase real-time subscriptions — lib/realtime.ts with hooks"
+  - "S3-T2: Toast notifications — sonner, toast-provider.tsx"
+
+blockers:
+  - "Supabase project not yet created (manual: create project, apply schema.sql + seed.sql, get URL + anon key)"
+  - "Moonshot API key still needed (platform.moonshot.ai) for engine execution"
+
+decisions:
+  - skip_obsidian: "Dropped Obsidian vault rewrite entirely. War Room is the single operational dashboard. Obsidian stays for SKILL.md authoring only."
+  - three_level_drilldown: "Dashboard overview → /missions/[id] (steps) → /agents/[id] (history). Full replacement for Obsidian tracking."
+  - pwa_first: "PWA for phone + macbook before native app. Covers 90% of use cases."
+  - anime_names_confirmed: "Ed/Light/Toji/Power/Major in all code. Atlas-SKILL.md renamed to Ed-SKILL.md."
+
+findings:
+  - war_room_static: "War Room v1 was 100% static mock data in lib/data.ts. No API routes, no Supabase, no real-time."
+  - engine_schema_6_tables: "proposals, missions, steps, events, agent_status, cap_gates — all documented in ~/Code/shogunate-engine/schema.sql"
+  - next16_react19: "War Room uses Next.js 16.1.6, React 19.2.3, Tailwind v4, shadcn, motion (Framer Motion successor)"
+  - existing_patterns: "StealthCard (glass-morphic), lib/motion.ts (spring configs), dark theme #050505 with emerald #10b981 accent"
+
+worked:
+  - "Team mode with parallel agents — 3 agents in Wave 1, 2 in Wave 2"
+  - "Background execution for all agents"
+  - "Sprint-based planning with clear task specs and acceptance criteria"
+
+failed:
+  - "Fast mode requires native binary — user has npm install. Needs to install from claude.com/product/claude-code"
+
+next_on_resume:
+  - "1. Verify build: cd ~/Code/war-room && npm run build (uses --webpack flag)"
+  - "2. Launch Wave 3: S2-T1 (mission detail page) + S2-T2 (agent detail page) in parallel"
+  - "3. After Wave 3, launch S2-T3 (navigation links / breadcrumbs)"
+  - "4. Then S3-T1 (real-time subscriptions) and S3-T2 (toast notifications)"
+  - "5. User should set up Supabase project to test live data"
+  - "NOTE: Build requires --webpack flag (serwist v9 incompatible with Turbopack). package.json build script already updated."
+
+files:
+  created: [~/Code/war-room/lib/supabase.ts, ~/Code/war-room/lib/types.ts, ~/Code/war-room/lib/queries.ts, ~/Code/war-room/.env.local.example, ~/Shugyo/Shogunate/Daimyo/Ed-SKILL.md]
+  modified: [~/Code/shogunate-engine/tests/unit/test_cli_executor.py, ~/Code/war-room/package.json]
+  in_progress: [~/Code/war-room/components/agent-sidebar.tsx, ~/Code/war-room/components/kanban-board.tsx, ~/Code/war-room/components/event-feed.tsx, ~/Code/war-room/components/stats-bar.tsx, ~/Code/war-room/app/dashboard/page.tsx]
+  plan: [~/.claude/plans/enchanted-forging-moonbeam.md]

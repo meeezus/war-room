@@ -1,0 +1,70 @@
+---
+session: shogunate-engine-build
+date: 2026-02-09
+status: partial
+outcome: PARTIAL_PLUS
+---
+
+goal: Build the Shogunate execution engine (proposal → mission → steps → events loop)
+now: Rewrite ~/Shugyo/Shogunate/ vault in TLB format, remove stale docs, reflect completed engine build
+test: cd ~/Code/shogunate-engine && pytest tests/ && python cli.py status
+
+done_this_session:
+  - task: Planned and built full Shogunate Engine (4 sprints, 8 tasks)
+    files: [~/Code/shogunate-engine/engine/config.py, ~/Code/shogunate-engine/engine/models.py, ~/Code/shogunate-engine/engine/proposal.py, ~/Code/shogunate-engine/engine/mission.py, ~/Code/shogunate-engine/engine/executor.py, ~/Code/shogunate-engine/engine/events.py, ~/Code/shogunate-engine/engine/heartbeat.py, ~/Code/shogunate-engine/cli.py, ~/Code/shogunate-engine/schema.sql, ~/Code/shogunate-engine/seed.sql]
+  - task: Renamed Daimyos to anime characters (Ed/Light/Toji/Power/Major)
+    files: [~/.claude/plans/ethereal-sleeping-valiant.md]
+  - task: Integrated Pip with engine CLI, disabled Sage bot
+    files: [~/clawd/x/SOUL.md, ~/clawd/x/scripts/use-claude.sh, ~/clawd/x/skills/speaker-lock/DEPRECATED.md]
+  - task: Created 161 passing tests + README + verification docs
+    files: [~/Code/shogunate-engine/tests/**, ~/Code/shogunate-engine/README.md, ~/Code/shogunate-engine/VERIFICATION.md]
+
+blockers:
+  - Supabase project needs to be created and schema applied (manual setup required)
+  - Moonshot API key needed from platform.moonshot.ai
+  - Atlas SKILL.md needs rename: Atlas-SKILL.md → Ed-SKILL.md at ~/Shugyo/Shogunate/Daimyo/
+
+questions:
+  - Should we archive old Shogunate vault or rewrite in place?
+  - What granularity for War Room dashboard (high-level + Obsidian links vs 3-level drill-down)?
+
+decisions:
+  - pip_only_discord: Other Daimyos are SKILL.md execution contexts (not separate Discord bots). Eliminates race conditions.
+  - tri_model_routing: Opus (Pip coordination) → K2.5 (Daimyo planning at $0.45/M) → Sonnet (worker execution). Cost-optimized.
+  - ed_first: Build engineering Daimyo first to prove the loop, then scale to Light/Toji/Power/Major.
+  - anime_names: Ed (Cowboy Bebop), Light (Death Note), Toji (JJK), Power (Chainsaw Man), Major (Ghost in the Shell).
+  - supabase_state: Real database with real-time subscriptions instead of markdown files.
+  - failure_over_retry: VoxYZ pattern — 30min timeout = failure, create new proposal with fresh context.
+  - claude_code_workers: Use `claude -p --system-prompt SKILL.md --model sonnet` for step execution, maximizing 20 OAuth'd Max plans.
+
+findings:
+  - existing_clawd_dirs: 12 clawd-* workspaces exist in ~/ (atlas, sage, vex, spark, bolt, iris + 6 workers). All blank scaffolds. Deferred cleanup to Sprint 4.
+  - clawdbot_gateway: All 14 agents configured in use-claude.sh, all use Opus via OAuth. Sage can be disabled via `"disabled": true`.
+  - kimi_auth: K2.5 uses Moonshot API key (not OAuth). One key shared by all Daimyos. OpenAI-compatible API at api.moonshot.cn/v1.
+  - speaker_lock_broken: File-based lock with 60s timeout. Inherently racy with multiple bots. No longer needed with Pip-only model.
+
+worked:
+  - Parallel agent execution for independent tasks (Group A, Group B)
+  - TDD approach with 161 tests passing
+  - FakeSupabase class in E2E tests (realistic data flow without real DB)
+  - Background agent execution (`run_in_background: true`) for all implementation tasks
+
+failed:
+  - One agent (S3-T1) wrote files to war-room/ instead of shogunate-engine/ (manually fixed with cp)
+  - WebFetch failed on Moonshot docs (got Next.js metadata instead of content)
+
+next:
+  - Rewrite ~/Shugyo/Shogunate/ vault in TLB format matching Folio Command-Center style
+  - Create sub-boards for each sprint/epic
+  - Remove stale docs (old Atlas references, wrong status, outdated priorities)
+  - Update INDEX.md with new structure
+  - Rename Atlas-SKILL.md → Ed-SKILL.md
+  - Create SKILL.md files for Light/Toji/Power/Major (or defer to when they're activated)
+  - Set up Supabase project and apply schema
+  - Get Moonshot API key and configure .env
+  - Test the full loop manually per VERIFICATION.md
+  - Deploy heartbeat cron (*/5 * * * *)
+
+files:
+  created: [~/Code/shogunate-engine/schema.sql, ~/Code/shogunate-engine/seed.sql, ~/Code/shogunate-engine/.env.example, ~/Code/shogunate-engine/pyproject.toml, ~/Code/shogunate-engine/engine/__init__.py, ~/Code/shogunate-engine/engine/config.py, ~/Code/shogunate-engine/engine/models.py, ~/Code/shogunate-engine/engine/proposal.py, ~/Code/shogunate-engine/engine/mission.py, ~/Code/shogunate-engine/engine/executor.py, ~/Code/shogunate-engine/engine/events.py, ~/Code/shogunate-engine/engine/heartbeat.py, ~/Code/shogunate-engine/cli.py, ~/Code/shogunate-engine/README.md, ~/Code/shogunate-engine/VERIFICATION.md, ~/Code/shogunate-engine/tests/**, ~/clawd/x/skills/speaker-lock/DEPRECATED.md]
+  modified: [~/clawd/x/SOUL.md, ~/clawd/x/scripts/use-claude.sh, ~/.claude/plans/ethereal-sleeping-valiant.md]

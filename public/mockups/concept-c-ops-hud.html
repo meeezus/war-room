@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Concept C: Ops HUD — War Room</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg-deep: #09090b;
+    --bg-card: #18181b;
+    --bg-card-hover: #27272a;
+    --border: #27272a;
+    --emerald: #34d399;
+    --emerald-dim: #065f46;
+    --emerald-glow: rgba(52, 211, 153, 0.3);
+    --text-primary: #f4f4f5;
+    --text-secondary: #a1a1aa;
+    --text-muted: #71717a;
+    --red: #f87171;
+    --yellow: #fbbf24;
+    --blue: #60a5fa;
+  }
+
+  body {
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .header h1 { font-size: 16px; font-weight: 700; }
+  .header h1 span { color: var(--emerald); }
+  .header h1 small {
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-left: 8px;
+  }
+  .header-stats {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .header-stats .active { color: var(--emerald); }
+
+  .concept-label {
+    text-align: center;
+    padding: 6px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    background: rgba(52, 211, 153, 0.03);
+    flex-shrink: 0;
+  }
+
+  /* Main layout: 3 columns */
+  .hud-layout {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    grid-template-rows: auto 1fr;
+    overflow: hidden;
+  }
+
+  /* Tactical View — top left */
+  .tactical-view {
+    grid-column: 1;
+    grid-row: 1;
+    border-bottom: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+    max-height: 45vh;
+  }
+
+  .tactical-title {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+  }
+
+  .agent-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .tac-agent {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.12s ease-out;
+    position: relative;
+  }
+  .tac-agent:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--text-muted);
+  }
+  .tac-agent.active {
+    border-color: var(--emerald);
+    box-shadow: 0 0 12px var(--emerald-glow);
+  }
+  .tac-agent.offline { opacity: 0.35; }
+
+  .tac-agent-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .tac-avatar { font-size: 22px; line-height: 1; }
+  .tac-info { flex: 1; }
+  .tac-name { font-size: 12px; font-weight: 600; }
+  .tac-class { font-size: 10px; color: var(--text-muted); }
+
+  .tac-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .tac-status-dot.busy { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); }
+  .tac-status-dot.online { background: var(--emerald); box-shadow: 0 0 6px var(--emerald); }
+  .tac-status-dot.idle { background: var(--blue); }
+  .tac-status-dot.offline { background: var(--text-muted); }
+
+  .tac-stats {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 4px;
+  }
+  .tac-stat-mini {
+    flex: 1;
+    height: 3px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .tac-stat-mini-fill { height: 100%; border-radius: 2px; background: var(--emerald); }
+
+  .tac-task {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--yellow);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tac-task.none { color: var(--text-muted); }
+
+  .tac-level {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--emerald);
+    background: var(--emerald-dim);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  /* Missions in tactical view */
+  .tac-missions {
+    display: flex;
+    gap: 12px;
+  }
+  .tac-mission-card {
+    flex: 1;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .tac-mission-name {
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+  .tac-mission-agent {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .tac-mission-bar {
+    height: 4px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 4px;
+  }
+  .tac-mission-bar-fill { height: 100%; background: var(--emerald); border-radius: 2px; }
+  .tac-mission-pct {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    text-align: right;
+  }
+
+  /* Chat — bottom left */
+  .chat-area {
+    grid-column: 1;
+    grid-row: 2;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .chat-header-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .chat-agent-identity {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .chat-agent-identity .avatar { font-size: 20px; }
+  .chat-agent-identity h3 { font-size: 13px; font-weight: 600; }
+  .chat-agent-identity .class-label { font-size: 10px; color: var(--emerald); }
+  .chat-agent-identity .level {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    background: var(--emerald-dim);
+    color: var(--emerald);
+    padding: 1px 6px;
+    border-radius: 3px;
+    margin-left: 6px;
+  }
+
+  .chat-mission-tag {
+    margin-left: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--yellow);
+    background: rgba(251, 191, 36, 0.1);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  .chat-messages {
+    flex: 1;
+    padding: 16px 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .msg {
+    max-width: 75%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .msg-user {
+    align-self: flex-end;
+    background: var(--emerald-dim);
+    border-bottom-right-radius: 4px;
+  }
+  .msg-agent {
+    align-self: flex-start;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+  }
+  .msg-agent code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: rgba(255,255,255,0.06);
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+  .msg-system {
+    align-self: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    background: rgba(255,255,255,0.03);
+    padding: 4px 12px;
+    border-radius: 999px;
+  }
+
+  .chat-input-row {
+    display: flex;
+    gap: 8px;
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .chat-input {
+    flex: 1;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: 'Space Grotesk', system-ui;
+    font-size: 13px;
+    color: var(--text-primary);
+    outline: none;
+  }
+  .chat-input:focus { border-color: var(--emerald); }
+  .chat-input::placeholder { color: var(--text-muted); }
+  .voice-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .voice-btn:hover { border-color: var(--emerald); color: var(--emerald); }
+
+  /* Canvas — right column */
+  .canvas-column {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid var(--border);
+    background: var(--bg-deep);
+  }
+
+  .canvas-header {
+    display: flex;
+    align-items: center;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .canvas-title {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    flex: 1;
+  }
+
+  .canvas-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .canvas-tab {
+    padding: 8px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.12s;
+  }
+  .canvas-tab:hover { color: var(--text-secondary); }
+  .canvas-tab.active { color: var(--emerald); border-bottom-color: var(--emerald); }
+  .canvas-tab .close {
+    margin-left: 6px;
+    opacity: 0.4;
+    cursor: pointer;
+  }
+  .canvas-tab .close:hover { opacity: 1; }
+
+  .canvas-content {
+    flex: 1;
+    padding: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    overflow-y: auto;
+    white-space: pre;
+  }
+  .canvas-content .kw { color: #c084fc; }
+  .canvas-content .fn { color: #60a5fa; }
+  .canvas-content .str { color: var(--emerald); }
+  .canvas-content .comment { color: var(--text-muted); }
+  .canvas-content .type { color: #fbbf24; }
+
+  /* Event ticker along the right edge */
+  .event-ticker {
+    border-top: 1px solid var(--border);
+    padding: 8px 16px;
+    flex-shrink: 0;
+    max-height: 160px;
+    overflow-y: auto;
+  }
+  .event-ticker-title {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .event-entry {
+    display: flex;
+    gap: 6px;
+    padding: 3px 0;
+    font-size: 10px;
+  }
+  .event-entry .time {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    width: 28px;
+  }
+  .event-entry .text { color: var(--text-secondary); }
+  .event-entry .ref { color: var(--emerald); font-weight: 500; }
+
+  /* Agent quick-switch strip at very bottom */
+  .agent-strip {
+    display: flex;
+    gap: 2px;
+    padding: 6px 12px;
+    border-top: 1px solid var(--border);
+    background: var(--bg-deep);
+    flex-shrink: 0;
+    align-items: center;
+  }
+  .strip-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-right: 8px;
+  }
+  .strip-agent {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 11px;
+    transition: all 0.12s;
+    border: 1px solid transparent;
+  }
+  .strip-agent:hover { background: var(--bg-card-hover); }
+  .strip-agent.active {
+    background: var(--bg-card);
+    border-color: var(--emerald);
+  }
+  .strip-agent .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+  .strip-agent .dot.busy { background: var(--yellow); box-shadow: 0 0 4px var(--yellow); }
+  .strip-agent .dot.online { background: var(--emerald); box-shadow: 0 0 4px var(--emerald); }
+  .strip-agent .dot.idle { background: var(--blue); }
+  .strip-agent .dot.offline { background: var(--text-muted); }
+  .strip-agent.offline { opacity: 0.35; }
+  .strip-agent .name { font-weight: 500; }
+
+  .strip-hints {
+    margin-left: auto;
+    display: flex;
+    gap: 10px;
+  }
+  .hint {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+  .hint kbd {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  /* Navigation between mockups */
+  .nav-bar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    display: flex;
+    gap: 4px;
+    padding: 8px;
+    z-index: 200;
+  }
+  .nav-bar a {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+  }
+  .nav-bar a:hover { border-color: var(--emerald); color: var(--emerald); }
+  .nav-bar a.current { border-color: var(--emerald); color: var(--emerald); background: var(--emerald-dim); }
+</style>
+</head>
+<body>
+
+<div class="nav-bar">
+  <a href="concept-a-fighter-select.html">A: Fighter</a>
+  <a href="concept-b-the-dojo.html">B: Dojo</a>
+  <a href="concept-c-ops-hud.html" class="current">C: Ops HUD</a>
+</div>
+
+<div class="header">
+  <h1><span>WAR</span> ROOM <small>Ops HUD</small></h1>
+  <div class="header-stats">
+    <span class="active">4 online</span> · 2 missions active
+  </div>
+</div>
+
+<div class="concept-label">Concept C — Ops HUD · Click agent or use LB/RB bumpers to switch · Chat + Tactical + Canvas</div>
+
+<div class="hud-layout">
+  <!-- Tactical View -->
+  <div class="tactical-view">
+    <div class="tactical-title">Agents</div>
+    <div class="agent-grid">
+      <div class="tac-agent active" id="tac-cc" onclick="switchAgent('cc')">
+        <span class="tac-level">Lv.8</span>
+        <div class="tac-agent-top">
+          <span class="tac-avatar">🤖</span>
+          <div class="tac-info">
+            <div class="tac-name">CC</div>
+            <div class="tac-class">Artificer</div>
+          </div>
+          <span class="tac-status-dot busy"></span>
+        </div>
+        <div class="tac-stats">
+          <div class="tac-stat-mini"><div class="tac-stat-mini-fill" style="width:72%"></div></div>
+          <div class="tac-stat-mini"><div class="tac-stat-mini-fill" style="width:85%"></div></div>
+          <div class="tac-stat-mini"><div class="tac-stat-mini-fill" style="width:58%"></div></div>
+          <div class="tac-stat-mini"><div class="tac-stat-mini-fill" style="width:91%"></div></div>
+        </div>
+        <div class="tac-task">fixing auth middleware</div>
+      </div>
+
+      <div class="tac-agent" id="tac-pip" onclick="switchAgent('pip')">
+        <span class="tac-level">Lv.6</span>
+        <div class="tac-agent-top">
+          <span class="tac-avatar">🐿️</span>
+          <div class="tac-info">
+            <div class="tac-name">Pip</div>
+            <div class="tac-class">Commander</div>
+          </div>
+          <span class="tac-status-dot idle"></span>
+        </div>
+        <div class="tac-stats">
+          <div class="tac-stat-mini"><div class="tac-stat-mini-fill" style="width:88%"></div></div>
+          <div class="tac-stat-mini"><div class="tac-stat-mini-fill" style="width:65%"></div></div>
+          <div class="tac-stat-mini"><div class="tac-stat-mini-fill" style="width:79%"></div></div>
+          <div class="tac-stat-mini"><div class="tac-stat-mini-fill" style="width:42%"></div></div>
+        </div>
+        <div class="tac-task none">idle</div>
+      </div>
+
+      <div class="tac-agent" id="tac-ed" onclick="switchAgent('ed')">
+        <span class="tac-level">Lv.7</span>
+        <div class="tac-agent-top">
+          <span class="tac-avatar">⚔️</span>
+          <div class="tac-info">
+            <div class="tac-name">Ed</div>
+            <div class="tac-class">Forgemaster</div>
+          </div>
+          <span class="tac-status-dot online"></span>
+        </div>
+        <div class="tac-stats">
+          <div class="tac-stat-mini"><div class="tac-stat-mini-fill" style="width:68%"></div></div>
+          <div class="tac-stat-mini"><div class="tac-stat-mini-fill" style="width:78%"></div></div>
+          <div class="tac-stat-mini"><div class="tac-stat-mini-fill" style="width:52%"></div></div>
+          <div class="tac-stat-mini"><div class="tac-stat-mini-fill" style="width:88%"></div></div>
+        </div>
+        <div class="tac-task">reviewing PR #42</div>
+      </div>
+
+      <div class="tac-agent" id="tac-light" onclick="switchAgent('light')">
+        <span class="tac-level">Lv.5</span>
+        <div class="tac-agent-top">
+          <span class="tac-avatar">💡</span>
+          <div class="tac-info">
+            <div class="tac-name">Light</div>
+            <div class="tac-class">Sage</div>
+          </div>
+          <span class="tac-status-dot online"></span>
+        </div>
+        <div class="tac-stats">
+          <div class="tac-stat-mini"><div class="tac-stat-mini-fill" style="width:82%"></div></div>
+          <div class="tac-stat-mini"><div class="tac-stat-mini-fill" style="width:55%"></div></div>
+          <div class="tac-stat-mini"><div class="tac-stat-mini-fill" style="width:90%"></div></div>
+          <div class="tac-stat-mini"><div class="tac-stat-mini-fill" style="width:35%"></div></div>
+        </div>
+        <div class="tac-task">drafting voice spec</div>
+      </div>
+
+      <div class="tac-agent offline" id="tac-toji">
+        <span class="tac-level">Lv.3</span>
+        <div class="tac-agent-top">
+          <span class="tac-avatar">🛡️</span>
+          <div class="tac-info">
+            <div class="tac-name">Toji</div>
+            <div class="tac-class">Merchant</div>
+          </div>
+          <span class="tac-status-dot offline"></span>
+        </div>
+        <div class="tac-stats">
+          <div class="tac-stat-mini"><div class="tac-stat-mini-fill" style="width:45%"></div></div>
+          <div class="tac-stat-mini"><div class="tac-stat-mini-fill" style="width:40%"></div></div>
+          <div class="tac-stat-mini"><div class="tac-stat-mini-fill" style="width:38%"></div></div>
+          <div class="tac-stat-mini"><div class="tac-stat-mini-fill" style="width:22%"></div></div>
+        </div>
+        <div class="tac-task none">offline</div>
+      </div>
+
+      <div class="tac-agent offline" id="tac-power">
+        <span class="tac-level">Lv.2</span>
+        <div class="tac-agent-top">
+          <span class="tac-avatar">⚡</span>
+          <div class="tac-info">
+            <div class="tac-name">Power</div>
+            <div class="tac-class">Bard</div>
+          </div>
+          <span class="tac-status-dot offline"></span>
+        </div>
+        <div class="tac-stats">
+          <div class="tac-stat-mini"><div class="tac-stat-mini-fill" style="width:35%"></div></div>
+          <div class="tac-stat-mini"><div class="tac-stat-mini-fill" style="width:30%"></div></div>
+          <div class="tac-stat-mini"><div class="tac-stat-mini-fill" style="width:42%"></div></div>
+          <div class="tac-stat-mini"><div class="tac-stat-mini-fill" style="width:18%"></div></div>
+        </div>
+        <div class="tac-task none">offline</div>
+      </div>
+
+      <div class="tac-agent offline" id="tac-major">
+        <span class="tac-level">Lv.4</span>
+        <div class="tac-agent-top">
+          <span class="tac-avatar">🎯</span>
+          <div class="tac-info">
+            <div class="tac-name">Major</div>
+            <div class="tac-class">Ranger</div>
+          </div>
+          <span class="tac-status-dot offline"></span>
+        </div>
+        <div class="tac-stats">
+          <div class="tac-stat-mini"><div class="tac-stat-mini-fill" style="width:55%"></div></div>
+          <div class="tac-stat-mini"><div class="tac-stat-mini-fill" style="width:62%"></div></div>
+          <div class="tac-stat-mini"><div class="tac-stat-mini-fill" style="width:48%"></div></div>
+          <div class="tac-stat-mini"><div class="tac-stat-mini-fill" style="width:50%"></div></div>
+        </div>
+        <div class="tac-task none">offline</div>
+      </div>
+    </div>
+
+    <!-- Mission cards -->
+    <div class="tactical-title" style="margin-top: 4px;">Active Missions</div>
+    <div class="tac-missions">
+      <div class="tac-mission-card">
+        <div class="tac-mission-name">Fix Channel Permissions</div>
+        <div class="tac-mission-agent">🤖 CC · 4/5 steps</div>
+        <div class="tac-mission-bar"><div class="tac-mission-bar-fill" style="width:80%"></div></div>
+        <div class="tac-mission-pct">80%</div>
+      </div>
+      <div class="tac-mission-card">
+        <div class="tac-mission-name">Leveling System</div>
+        <div class="tac-mission-agent">⚔️ Ed · 1/5 steps</div>
+        <div class="tac-mission-bar"><div class="tac-mission-bar-fill" style="width:20%"></div></div>
+        <div class="tac-mission-pct">20%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat Area -->
+  <div class="chat-area">
+    <div class="chat-header-bar">
+      <div class="chat-agent-identity">
+        <span class="avatar" id="chat-avatar">🤖</span>
+        <div>
+          <h3 id="chat-name">CC <span class="level">Lv.8</span></h3>
+          <div class="class-label" id="chat-class">Artificer · Engineering</div>
+        </div>
+      </div>
+      <div class="chat-mission-tag" id="chat-mission">► Fix Channel Permissions</div>
+    </div>
+
+    <div class="chat-messages" id="chat-messages">
+      <div class="msg-system">Conversation with CC</div>
+      <div class="msg msg-agent">
+        I've been working on the auth middleware. Found the issue — the token validation was checking <code>exp</code> before <code>iat</code>, causing race conditions on fast refreshes.
+      </div>
+      <div class="msg msg-user">
+        Show me the fix.
+      </div>
+      <div class="msg msg-agent">
+        Here's the updated <code>middleware/auth.ts</code>. I reordered the checks and added a 5-second clock skew tolerance. Check the canvas panel →
+      </div>
+      <div class="msg msg-user">
+        Looks good. Run the tests and commit it.
+      </div>
+      <div class="msg msg-agent">
+        Running <code>npm test -- auth</code>... All 12 tests passing. Committing now.
+      </div>
+      <div class="msg-system">CC committed: "fix: auth token validation race condition"</div>
+    </div>
+
+    <div class="chat-input-row">
+      <input type="text" class="chat-input" placeholder="Message CC... (or press 🎤 for Spokenly)">
+      <button class="voice-btn" title="Spokenly voice input">🎤</button>
+    </div>
+  </div>
+
+  <!-- Canvas Column -->
+  <div class="canvas-column">
+    <div class="canvas-header">
+      <div class="canvas-title">Canvas</div>
+    </div>
+    <div class="canvas-tabs">
+      <div class="canvas-tab active">auth.ts <span class="close">×</span></div>
+      <div class="canvas-tab">test output <span class="close">×</span></div>
+      <div class="canvas-tab">PR #42 <span class="close">×</span></div>
+    </div>
+    <div class="canvas-content"><span class="comment">// middleware/auth.ts</span>
+<span class="kw">import</span> jwt <span class="kw">from</span> <span class="str">'jsonwebtoken'</span>
+
+<span class="kw">const</span> CLOCK_SKEW = <span class="str">5</span> <span class="comment">// seconds</span>
+
+<span class="kw">export async function</span> <span class="fn">validateToken</span>(
+  token: <span class="type">string</span>
+): <span class="type">Promise</span>&lt;<span class="type">DecodedToken</span>&gt; {
+  <span class="kw">const</span> decoded = jwt.decode(token)
+  <span class="kw">const</span> now = Math.floor(Date.now() / <span class="str">1000</span>)
+
+  <span class="comment">// Fixed: check iat before exp</span>
+  <span class="comment">// with clock skew tolerance</span>
+  <span class="kw">if</span> (decoded.iat &gt; now + CLOCK_SKEW) {
+    <span class="kw">throw new</span> <span class="fn">AuthError</span>(
+      <span class="str">'Token issued in future'</span>
+    )
+  }
+
+  <span class="kw">if</span> (decoded.exp &lt; now - CLOCK_SKEW) {
+    <span class="kw">throw new</span> <span class="fn">AuthError</span>(
+      <span class="str">'Token expired'</span>
+    )
+  }
+
+  <span class="comment">// Verify signature</span>
+  <span class="kw">const</span> verified = jwt.verify(
+    token,
+    process.env.JWT_SECRET!
+  )
+
+  <span class="kw">return</span> verified <span class="kw">as</span> <span class="type">DecodedToken</span>
+}
+
+<span class="kw">export function</span> <span class="fn">requireAuth</span>(
+  req: <span class="type">NextRequest</span>
+) {
+  <span class="kw">const</span> header = req.headers.get(
+    <span class="str">'authorization'</span>
+  )
+  <span class="kw">if</span> (!header?.startsWith(<span class="str">'Bearer '</span>)) {
+    <span class="kw">throw new</span> <span class="fn">AuthError</span>(<span class="str">'Missing token'</span>)
+  }
+  <span class="kw">return</span> <span class="fn">validateToken</span>(
+    header.slice(<span class="str">7</span>)
+  )
+}</div>
+
+    <!-- Event ticker -->
+    <div class="event-ticker">
+      <div class="event-ticker-title">Events</div>
+      <div class="event-entry">
+        <span class="time">now</span>
+        <span class="text"><span class="ref">CC</span> committed auth fix</span>
+      </div>
+      <div class="event-entry">
+        <span class="time">1m</span>
+        <span class="text"><span class="ref">CC</span> tests passed (12/12)</span>
+      </div>
+      <div class="event-entry">
+        <span class="time">3m</span>
+        <span class="text"><span class="ref">CC</span> edited middleware/auth.ts</span>
+      </div>
+      <div class="event-entry">
+        <span class="time">5m</span>
+        <span class="text"><span class="ref">Ed</span> started PR #42 review</span>
+      </div>
+      <div class="event-entry">
+        <span class="time">8m</span>
+        <span class="text"><span class="ref">Light</span> drafted voice spec</span>
+      </div>
+      <div class="event-entry">
+        <span class="time">12m</span>
+        <span class="text"><span class="ref">CC</span> read middleware/auth.ts</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Agent quick-switch strip -->
+<div class="agent-strip">
+  <span class="strip-label">Switch</span>
+  <div class="strip-agent active" onclick="switchAgent('cc')">
+    <span class="dot busy"></span>
+    <span class="name">CC</span>
+  </div>
+  <div class="strip-agent" onclick="switchAgent('pip')">
+    <span class="dot idle"></span>
+    <span class="name">Pip</span>
+  </div>
+  <div class="strip-agent" onclick="switchAgent('ed')">
+    <span class="dot online"></span>
+    <span class="name">Ed</span>
+  </div>
+  <div class="strip-agent" onclick="switchAgent('light')">
+    <span class="dot online"></span>
+    <span class="name">Light</span>
+  </div>
+  <div class="strip-agent offline">
+    <span class="dot offline"></span>
+    <span class="name">Toji</span>
+  </div>
+  <div class="strip-agent offline">
+    <span class="dot offline"></span>
+    <span class="name">Power</span>
+  </div>
+  <div class="strip-agent offline">
+    <span class="dot offline"></span>
+    <span class="name">Major</span>
+  </div>
+
+  <div class="strip-hints">
+    <div class="hint"><kbd>LB</kbd>/<kbd>RB</kbd> Switch agent</div>
+    <div class="hint"><kbd>🎤</kbd> Voice</div>
+  </div>
+</div>
+
+<script>
+  const agentData = {
+    cc: { name: 'CC', avatar: '🤖', class: 'Artificer · Engineering', level: 8, mission: '► Fix Channel Permissions' },
+    pip: { name: 'Pip', avatar: '🐿️', class: 'Commander · Coordination', level: 6, mission: '' },
+    ed: { name: 'Ed', avatar: '⚔️', class: 'Forgemaster · Engineering', level: 7, mission: '► Leveling System' },
+    light: { name: 'Light', avatar: '💡', class: 'Sage · Product', level: 5, mission: '' },
+  };
+
+  let currentAgent = 'cc';
+
+  function switchAgent(id) {
+    if (!agentData[id]) return;
+    currentAgent = id;
+    const a = agentData[id];
+
+    // Update tactical view
+    document.querySelectorAll('.tac-agent').forEach(el => el.classList.remove('active'));
+    const tacEl = document.getElementById('tac-' + id);
+    if (tacEl) tacEl.classList.add('active');
+
+    // Update strip
+    document.querySelectorAll('.strip-agent').forEach(el => el.classList.remove('active'));
+    const stripEls = document.querySelectorAll('.strip-agent');
+    const idx = ['cc','pip','ed','light','toji','power','major'].indexOf(id);
+    if (stripEls[idx]) stripEls[idx].classList.add('active');
+
+    // Update chat header
+    document.getElementById('chat-avatar').textContent = a.avatar;
+    document.getElementById('chat-name').innerHTML = `${a.name} <span class="level">Lv.${a.level}</span>`;
+    document.getElementById('chat-class').textContent = a.class;
+    document.getElementById('chat-mission').textContent = a.mission || 'No active mission';
+    document.getElementById('chat-mission').style.display = a.mission ? '' : 'none';
+
+    // Update input placeholder
+    document.querySelector('.chat-input').placeholder = `Message ${a.name}... (or press 🎤 for Spokenly)`;
+  }
+
+  // Keyboard: LB/RB simulation with [ and ]
+  const agentOrder = ['cc', 'pip', 'ed', 'light'];
+  document.addEventListener('keydown', (e) => {
+    const idx = agentOrder.indexOf(currentAgent);
+    if (e.key === '[' && idx > 0) switchAgent(agentOrder[idx - 1]);
+    if (e.key === ']' && idx < agentOrder.length - 1) switchAgent(agentOrder[idx + 1]);
+  });
+</script>
+
+</body>
+</html>

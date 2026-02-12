@@ -10,6 +10,7 @@ import { StealthCard } from "./stealth-card";
 import { ProjectKanban } from "./project-kanban";
 import { MissionTableView } from "./mission-table-view";
 import { ProposalsSection } from "./proposals-section";
+import { CreateProposalDialog } from "./create-proposal-dialog";
 import type { MissionWithSteps } from "./mission-kanban-card";
 
 interface ProjectDetailProps {
@@ -26,6 +27,7 @@ export function ProjectDetail({ project, boards, proposals, tasks, missions, onU
   const accent = PROJECT_STATUS_COLORS[project.status] ?? "#6b7280";
 
   const [viewMode, setViewMode] = useState<"kanban" | "table">("kanban");
+  const [proposalDialogOpen, setProposalDialogOpen] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem("war-room-view-mode");
@@ -74,16 +76,24 @@ export function ProjectDetail({ project, boards, proposals, tasks, missions, onU
               </p>
             )}
           </div>
-          <span
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 font-[family-name:var(--font-jetbrains-mono)] text-xs font-medium"
-            style={{ backgroundColor: `${accent}20`, color: accent }}
-          >
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              onClick={() => setProposalDialogOpen(true)}
+              className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-700"
+            >
+              + New Proposal
+            </button>
             <span
-              className="inline-block size-2 rounded-full"
-              style={{ backgroundColor: accent }}
-            />
-            {project.status}
-          </span>
+              className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-[family-name:var(--font-jetbrains-mono)] text-xs font-medium"
+              style={{ backgroundColor: `${accent}20`, color: accent }}
+            >
+              <span
+                className="inline-block size-2 rounded-full"
+                style={{ backgroundColor: accent }}
+              />
+              {project.status}
+            </span>
+          </div>
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -167,6 +177,12 @@ export function ProjectDetail({ project, boards, proposals, tasks, missions, onU
           <MissionTableView missions={missions} />
         )}
       </div>
+      <CreateProposalDialog
+        projectId={project.id}
+        open={proposalDialogOpen}
+        onOpenChange={setProposalDialogOpen}
+        onCreated={() => onUpdate?.()}
+      />
     </motion.div>
   );
 }

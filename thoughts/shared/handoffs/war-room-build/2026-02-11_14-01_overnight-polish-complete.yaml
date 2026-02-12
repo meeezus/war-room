@@ -1,0 +1,81 @@
+---
+session: war-room-build
+date: 2026-02-11
+status: complete
+outcome: PARTIAL_PLUS
+---
+
+goal: "Overnight polish: dashboard cleanup, table view, richer mission cards + stale mission triage"
+now: "Interview session — regroup on War Room vision, what's actually useful, how chat/Shoin fits"
+test: npm run build
+
+done_this_session:
+  - task: "Removed Mission Queue from dashboard — was overwhelming"
+    files: [app/dashboard/page.tsx]
+  - task: "Added proposal descriptions to mission queries"
+    files: [lib/queries.ts, components/mission-kanban-card.tsx]
+  - task: "Richer expanded mission cards (description, step summary, result summary)"
+    files: [components/mission-kanban-card.tsx]
+  - task: "Created MissionTableView — sortable table with 6 columns"
+    files: [components/mission-table-view.tsx]
+  - task: "Board/Table toggle on project detail (persists in localStorage)"
+    files: [components/project-detail.tsx]
+  - task: "Triaged 4 stale 'running' missions from migration"
+    files: []
+  - task: "Updated Pip briefing + clawd memory for overnight changes"
+    files: [thoughts/shared/pip-briefing.md]
+  - task: "Merged PR #3 (mission-first board + Tauri) and PR #4 (overnight polish)"
+    files: []
+
+blockers:
+  - "Shoin Chat (Pip's work) has broken buttons and can't actually chat — needs rewrite or investigation"
+  - "User is on the fence about War Room's value proposition — needs interview to clarify"
+
+questions:
+  - "Is War Room a monitoring dashboard, an action surface (chat with agents), or both?"
+  - "Does kanban/table view fit Sensei's workflow or is it overhead?"
+  - "What's the relationship between War Room dashboard and Shoin Chat?"
+  - "Should Shoin Chat be a separate page or replace parts of the dashboard?"
+  - "Vektor Chat (Riley's tweet) has canvas/artifact panel — is that what Sensei wants?"
+
+decisions:
+  - mission_first_board: "Projects now show missions (not tasks) in kanban — missions are the primary work unit"
+  - mission_queue_removed: "Dashboard no longer shows Mission Queue — too overwhelming, missions live in projects"
+  - stale_mission_triage: "2 missions → queued (Fix Channel Permissions, Leveling System), 2 → stale for review (War Room Integration, Level 2 Protocol)"
+
+findings:
+  - vektor_chat_reference: "Riley Ralmuto's Vektor Chat (x.com/rileyralmuto/status/2020980430154191287) — custom chat app with thread sidebar, streaming center panel, canvas/artifact right panel. Opus 4.6. Sensei wants something similar."
+  - pip_shoin_chat_state: "Pip built Shoin Chat with Supabase Realtime, agent presence, voice recording, streaming. Schema at supabase/migrations/20250211_shoin_chat.sql. Build passes but buttons broken, can't chat. Handoff at thoughts/shared/handoffs/war-room-build/ from Pip."
+  - overnight_agent_pattern: "5 parallel background agents completed all tasks in ~90s each. Sonnet model, bypass permissions. Type check + build verified after each group."
+
+worked:
+  - "Parallel agent groups (A then B) — fast, clean, all type-checked"
+  - "Spec-driven delegation with acceptance criteria per task"
+  - "Supabase REST API with service role key for mission status updates"
+
+failed:
+  - "Pip's Shoin Chat — shadcn/ui components installed but buttons non-functional, no actual chat capability"
+
+next:
+  - "Interview session: clarify War Room vision — monitoring vs action surface vs both"
+  - "Decide Shoin Chat direction: fix Pip's work, rewrite from scratch, or different approach"
+  - "Review 2 stale missions (War Room Integration, Level 2 Protocol) — user needs to decide status"
+  - "Consider Vektor Chat-style canvas panel if that's what Sensei wants"
+
+files:
+  created:
+    - components/mission-table-view.tsx
+    - .specs/2026-02-11-overnight-polish.md
+    - thoughts/shared/pip-briefing.md (rewritten)
+  modified:
+    - app/dashboard/page.tsx
+    - components/mission-kanban-card.tsx
+    - components/project-detail.tsx
+    - components/project-kanban.tsx
+    - lib/queries.ts
+  uncommitted_from_pip:
+    - app/chat/ (Shoin Chat page)
+    - components/ui/ (shadcn components)
+    - components/agent-sidebar.tsx (nav link added)
+    - package.json (new deps)
+    - supabase/migrations/20250211_shoin_chat.sql
