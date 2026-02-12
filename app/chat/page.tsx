@@ -6,7 +6,7 @@ import { MessageArea } from '@/components/chat/message-area'
 import { ChatInput } from '@/components/chat/chat-input'
 import { supabase } from '@/lib/supabase'
 import type { ChatMessage } from '@/lib/chat'
-import { ChevronLeft, Menu, Zap } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, Menu, Zap } from 'lucide-react'
 import Link from 'next/link'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
@@ -280,20 +280,27 @@ export default function ChatPage() {
       {/* Main chat area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800 bg-zinc-950">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-800 bg-zinc-950">
+          <Link
+            href="/dashboard"
+            className="h-8 w-8 rounded-md hover:bg-zinc-800 flex items-center justify-center transition-colors flex-shrink-0"
+          >
+            <ArrowLeft className="h-4 w-4 text-zinc-400" />
+          </Link>
+
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="h-8 w-8 rounded-md hover:bg-zinc-800 flex items-center justify-center transition-colors"
+            className="h-8 w-8 rounded-md hover:bg-zinc-800 flex items-center justify-center transition-colors flex-shrink-0"
           >
             {sidebarOpen ? <ChevronLeft className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </button>
 
-          <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+          <div className="flex items-center gap-2">
             <Zap className="h-4 w-4 text-emerald-400" />
             <span className="font-[family-name:var(--font-space-grotesk)] text-sm font-medium">
               Shoin Chat
             </span>
-          </Link>
+          </div>
 
           {activeThreadId && (
             <span className="text-xs text-zinc-500 font-[family-name:var(--font-jetbrains-mono)]">
