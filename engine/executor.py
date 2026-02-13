@@ -8,8 +8,10 @@ import subprocess
 from pathlib import Path
 from datetime import datetime, timezone
 
-from engine.config import supabase, DAIMYO_REGISTRY, WORKER_MODEL, DEFAULT_TIMEOUT_MINUTES
+from engine.config import supabase, DAIMYO_REGISTRY, WORKER_MODEL, ORCHESTRATOR_MODEL, DEFAULT_TIMEOUT_MINUTES
 from engine.events import emit
+from engine.memory import extract_and_store, get_relevant_memories, format_memories_section
+from engine.relationships import apply_drift
 
 
 # ---------------------------------------------------------------------------
@@ -27,6 +29,36 @@ def _load_skill_md(daimyo_id: str) -> str:
     if skill_path and Path(skill_path).exists():
         return Path(skill_path).read_text()
     return ""
+
+
+def _should_escalate(mission_id: str) -> bool:
+    """Check if a mission spans 3+ unique domains, warranting Opus escalation.
+
+    Queries all steps for the mission, maps assigned daimyo to their domain
+    via DAIMYO_REGISTRY, and returns True if 3 or more unique domains exist.
+    """
+    if not supabase:
+        return False
+
+    result = (
+        supabase.table("steps")
+        .select("assigned_to")
+        .eq("mission_id", mission_id)
+        .execute()
+    )
+
+    if not result.data:
+        return False
+
+    domains = set()
+    for step in result.data:
+        daimyo_id = step.get("assigned_to", "")
+        info = DAIMYO_REGISTRY.get(daimyo_id, {})
+        domain = info.get("domain")
+        if domain:
+            domains.add(domain)
+
+    return len(domains) >= 3
 
 
 def _spawn_claude(
@@ -131,6 +163,29 @@ def _check_mission_complete(mission_id: str) -> None:
                 "message": "Mission completed — linked task moved to review",
             })
 
+        # Apply affinity drift for collaborating agents
+        try:
+            # Get all unique daimyo from mission steps
+            steps_result = (
+                supabase.table("steps")
+                .select("daimyo")
+                .eq("mission_id", mission_id)
+                .execute()
+            )
+            daimyos = list({s["daimyo"] for s in steps_result.data if s.get("daimyo")})
+
+            # Build pairs from all unique daimyo combinations
+            pairs = []
+            for i in range(len(daimyos)):
+                for j in range(i + 1, len(daimyos)):
+                    pairs.append((daimyos[i], daimyos[j]))
+
+            if pairs:
+                mission_succeeded = not (failed_result.count and failed_result.count > 0)
+                apply_drift(pairs, success=mission_succeeded)
+        except Exception:
+            pass  # Drift is best-effort
+
 
 def _update_agent_status(daimyo_id: str) -> None:
     """Update agent status. If no running missions, set to idle."""
@@ -178,6 +233,22 @@ def execute_step(step: dict) -> dict:
     # 1. Load skill
     skill_md = _load_skill_md(daimyo_id)
 
+    # Inject relevant memories into skill prompt
+    try:
+        memories = get_relevant_memories(daimyo_id, description, limit=5)
+        memory_section = format_memories_section(memories)
+        if memory_section:
+            skill_md = skill_md + memory_section
+    except Exception:
+        pass  # Memory injection is best-effort
+
+    # Model selection: default Sonnet, escalate to Opus for complex missions
+    model = step.get("model") or WORKER_MODEL
+    if step.get("escalate"):
+        model = ORCHESTRATOR_MODEL
+    elif _should_escalate(mission_id):
+        model = ORCHESTRATOR_MODEL
+
     # 2-3. Spawn claude and capture output
     status = "completed"
     output = None
@@ -186,7 +257,7 @@ def execute_step(step: dict) -> dict:
     try:
         stdout, stderr, returncode = _spawn_claude(
             skill_md=skill_md,
-            model=WORKER_MODEL,
+            model=model,
             description=description,
             timeout_minutes=timeout,
         )
@@ -238,6 +309,13 @@ def execute_step(step: dict) -> dict:
         "error": error,
     })
 
+    # 5b. Extract memories from successful step output
+    if status == "completed" and output:
+        try:
+            extract_and_store(step, output)
+        except Exception:
+            pass  # Memory extraction is best-effort, never block execution
+
     # 6. Check mission completion
     _check_mission_complete(mission_id)
 
@@ -274,12 +352,19 @@ def execute_next() -> dict | None:
 
     step = result.data[0]
 
-    # Mark as running
+    # Atomic claim: only mark as running if still queued (prevents double-execution)
     now = datetime.now(timezone.utc).isoformat()
-    supabase.table("steps").update({
-        "status": "running",
-        "started_at": now,
-    }).eq("id", step["id"]).execute()
+    claim_result = (
+        supabase.table("steps")
+        .update({"status": "running", "started_at": now})
+        .eq("id", step["id"])
+        .eq("status", "queued")  # Only if still queued
+        .execute()
+    )
+
+    if not claim_result.data:
+        # Another poller already claimed this step
+        return None
 
     step["status"] = "running"
     step["started_at"] = now

@@ -94,6 +94,15 @@ export interface DashboardStats {
   pendingProposals: number
 }
 
+// Lightweight RPG-style stats used by the dojo UI.
+export interface RpgStats {
+  level: number
+  xp: number
+  missionsCompleted: number
+  missionsFailed: number
+  missionsActive: number
+}
+
 // Dynasty-wide project tracking
 
 export interface Project {
@@ -149,4 +158,24 @@ export interface DynastyStats {
   activeProjects: number
   totalTasks: number
   activeTasks: number
+}
+
+// Agent role cards (Vox-style 6-layer structure)
+
+export interface RoleCard {
+  id: string
+  name: string
+  title: string
+  class: string
+  domain: string
+  emoji: string
+  color: string
+  description: string
+  abilities: string[]
+  inputs?: string[]           // what info the agent needs to start
+  outputs?: string[]          // what the agent produces
+  definitionOfDone?: string[] // completion criteria
+  hardBans?: string[]         // things agent must NEVER do
+  escalation?: string         // when to escalate to Sensei
+  metrics?: string[]          // how performance is measured
 }
