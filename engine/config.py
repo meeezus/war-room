@@ -30,26 +30,26 @@ DAIMYO_REGISTRY: dict[str, dict] = {
     "ed": {
         "name": "Ed",
         "domain": "engineering",
-        "skill_path": os.path.expanduser("~/Shugyo/Shogunate/Daimyo/Atlas-SKILL.md"),
+        "skill_path": os.path.expanduser("~/Shugyo/Shogunate/Daimyo/Ed-SKILL.md"),
     },
     "light": {
         "name": "Light",
         "domain": "product",
-        "skill_path": os.path.expanduser("~/Shugyo/Shogunate/Daimyo/Sage-SKILL.md"),
+        "skill_path": os.path.expanduser("~/Shugyo/Shogunate/Daimyo/Light-SKILL.md"),
     },
     "toji": {
         "name": "Toji",
         "domain": "commerce",
-        "skill_path": os.path.expanduser("~/Shugyo/Shogunate/Daimyo/Vex-SKILL.md"),
+        "skill_path": os.path.expanduser("~/Shugyo/Shogunate/Daimyo/Toji-SKILL.md"),
     },
     "power": {
-        "name": "Power",
+        "name": "Makima",
         "domain": "influence",
-        "skill_path": os.path.expanduser("~/Shugyo/Shogunate/Daimyo/Spark-SKILL.md"),
+        "skill_path": os.path.expanduser("~/Shugyo/Shogunate/Daimyo/Makima-SKILL.md"),
     },
     "major": {
         "name": "Major",
         "domain": "operations",
-        "skill_path": os.path.expanduser("~/Shugyo/Shogunate/Daimyo/Bolt-SKILL.md"),
+        "skill_path": os.path.expanduser("~/Shugyo/Shogunate/Daimyo/Major-SKILL.md"),
     },
 }

@@ -24,5 +24,8 @@
 - [ ] S3-T2: Add hardBans to all SKILL.md files
 
 ## Sprint 4: Relationships + Affinity Routing
-- [ ] S4-T1: Affinity-influenced step assignment
-- [ ] S4-T2: Drift mechanics on mission completion
+- [x] S4-T1: Affinity-influenced step assignment
+- [x] S4-T2: Drift mechanics on mission completion
+
+## Ongoing
+- [ ] Keep `docs/shogunate-engine-manual.md` updated as engine evolves (roundtable, triggers, voice evolution, RPG stats, frontend HUD)

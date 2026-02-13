@@ -29,9 +29,9 @@ Proposal → Approve → Mission → Steps → Execute via Claude CLI
 |----|------|--------|------------|
 | `ed` | Ed | engineering | `Ed-SKILL.md` |
 | `light` | Light | product | `Light-SKILL.md` |
-| `toji` | Toji | commerce | `Vex.md` |
-| `power` | Makima | influence | `Spark.md` |
-| `major` | Major | operations | `Bolt-SKILL.md` |
+| `toji` | Toji | commerce | `Toji-SKILL.md` |
+| `power` | Makima | influence | `Makima-SKILL.md` |
+| `major` | Major | operations | `Major-SKILL.md` |
 
 SKILL files live at `~/Shugyo/Shogunate/Daimyo/`.
 
@@ -570,9 +570,9 @@ lib/
 ~/Shugyo/Shogunate/Daimyo/
   Ed-SKILL.md        — Engineering VP system prompt
   Light-SKILL.md     — Product VP system prompt
-  Vex.md             — Commerce VP system prompt (Toji)
-  Spark.md           — Influence VP system prompt (Makima)
-  Bolt-SKILL.md      — Operations VP system prompt (Major)
+  Toji-SKILL.md      — Commerce VP system prompt
+  Makima-SKILL.md    — Influence VP system prompt
+  Major-SKILL.md     — Operations VP system prompt
 
 ~/Library/LaunchAgents/
   com.warroom.poller.plist — Auto-start poller daemon

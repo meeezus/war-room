@@ -275,6 +275,17 @@ export async function getProjectProposals(projectId: string): Promise<Proposal[]
   return (data as Proposal[]) ?? []
 }
 
+export async function getAllPendingProposals(): Promise<Proposal[]> {
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from('proposals')
+    .select('*')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+  if (error) { console.error('getAllPendingProposals error:', error); return [] }
+  return (data as Proposal[]) ?? []
+}
+
 export async function approveProposal(proposalId: string, projectId: string): Promise<{ task: Task; missionPending: boolean; daimyo: string } | null> {
   try {
     const res = await fetch(`/api/proposals/${proposalId}`, {
