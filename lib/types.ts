@@ -57,6 +57,8 @@ export interface Event {
     | 'proposal_created' | 'proposal_approved' | 'proposal_rejected'
     | 'mission_started' | 'mission_completed' | 'mission_failed'
     | 'step_started' | 'step_completed' | 'step_failed' | 'step_stale'
+    | 'council_reviewed'
+    | 'task_started' | 'task_completed' | 'task_failed'
     | 'heartbeat' | 'agent_action' | 'user_request'
   source_id: string | null
   agent: string | null
@@ -94,6 +96,15 @@ export interface DashboardStats {
   pendingProposals: number
 }
 
+// Lightweight RPG-style stats used by the dojo UI.
+export interface RpgStats {
+  level: number
+  xp: number
+  missionsCompleted: number
+  missionsFailed: number
+  missionsActive: number
+}
+
 // Dynasty-wide project tracking
 
 export interface Project {
@@ -111,7 +122,7 @@ export interface Project {
 }
 
 export interface ProjectWithMetrics extends Project {
-  taskCounts: { todo: number; assigned: number; in_progress: number; review: number; done: number; blocked: number; someday: number };
+  taskCounts: { todo: number; assigned: number; queued: number; in_progress: number; review: number; done: number; blocked: number; failed: number; someday: number };
   totalTasks: number;
   activeTasks: number;
   lastActivity: string | null;
@@ -133,12 +144,22 @@ export interface Task {
   project_id: string | null
   proposal_id: string | null
   title: string
-  status: 'todo' | 'assigned' | 'in_progress' | 'review' | 'done' | 'someday' | 'blocked'
+  status: 'todo' | 'assigned' | 'queued' | 'in_progress' | 'review' | 'done' | 'someday' | 'blocked' | 'failed'
   priority: number | null
   goal: string | null
   type: string | null
   owner: string | null
   notes: string | null
+  // Execution fields (unified with engine steps)
+  mission_id: string | null
+  description: string | null
+  kind: 'research' | 'code' | 'review' | 'test' | 'deploy' | 'write' | 'analyze' | null
+  daimyo: string | null
+  model: string | null
+  output: string | null
+  error: string | null
+  started_at: string | null
+  timeout_minutes: number | null
   completed_at: string | null
   created_at: string
   updated_at: string
@@ -149,4 +170,24 @@ export interface DynastyStats {
   activeProjects: number
   totalTasks: number
   activeTasks: number
+}
+
+// Agent role cards (Vox-style 6-layer structure)
+
+export interface RoleCard {
+  id: string
+  name: string
+  title: string
+  class: string
+  domain: string
+  emoji: string
+  color: string
+  description: string
+  abilities: string[]
+  inputs?: string[]           // what info the agent needs to start
+  outputs?: string[]          // what the agent produces
+  definitionOfDone?: string[] // completion criteria
+  hardBans?: string[]         // things agent must NEVER do
+  escalation?: string         // when to escalate to Sensei
+  metrics?: string[]          // how performance is measured
 }

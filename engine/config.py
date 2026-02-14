@@ -17,8 +17,10 @@ if _supabase_url and _supabase_key:
 moonshot = None
 
 
-# Worker model for step execution
-WORKER_MODEL = os.getenv("WORKER_MODEL", "claude-sonnet-4-20250514")
+# Three-tier model strategy
+CHEAP_MODEL = os.getenv("CHEAP_MODEL", "claude-haiku-4-5-20251001")       # proposals, memory extraction
+WORKER_MODEL = os.getenv("WORKER_MODEL", "claude-sonnet-4-5-20250929")    # default execution
+ORCHESTRATOR_MODEL = os.getenv("ORCHESTRATOR_MODEL", "claude-opus-4-6")   # complex multi-domain
 
 # Default timeout for steps in minutes
 DEFAULT_TIMEOUT_MINUTES = 30
@@ -28,26 +30,26 @@ DAIMYO_REGISTRY: dict[str, dict] = {
     "ed": {
         "name": "Ed",
         "domain": "engineering",
-        "skill_path": os.path.expanduser("~/Shugyo/Shogunate/Daimyo/Atlas-SKILL.md"),
+        "skill_path": os.path.expanduser("~/Shugyo/Shogunate/Daimyo/Ed-SKILL.md"),
     },
     "light": {
         "name": "Light",
         "domain": "product",
-        "skill_path": os.path.expanduser("~/Shugyo/Shogunate/Daimyo/Sage-SKILL.md"),
+        "skill_path": os.path.expanduser("~/Shugyo/Shogunate/Daimyo/Light-SKILL.md"),
     },
     "toji": {
         "name": "Toji",
         "domain": "commerce",
-        "skill_path": os.path.expanduser("~/Shugyo/Shogunate/Daimyo/Vex-SKILL.md"),
+        "skill_path": os.path.expanduser("~/Shugyo/Shogunate/Daimyo/Toji-SKILL.md"),
     },
     "power": {
-        "name": "Power",
+        "name": "Makima",
         "domain": "influence",
-        "skill_path": os.path.expanduser("~/Shugyo/Shogunate/Daimyo/Spark-SKILL.md"),
+        "skill_path": os.path.expanduser("~/Shugyo/Shogunate/Daimyo/Makima-SKILL.md"),
     },
     "major": {
         "name": "Major",
         "domain": "operations",
-        "skill_path": os.path.expanduser("~/Shugyo/Shogunate/Daimyo/Bolt-SKILL.md"),
+        "skill_path": os.path.expanduser("~/Shugyo/Shogunate/Daimyo/Major-SKILL.md"),
     },
 }

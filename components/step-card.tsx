@@ -2,16 +2,16 @@
 
 import { useState } from "react";
 import { motion } from "motion/react";
-import type { Step } from "@/lib/types";
+import type { Task } from "@/lib/types";
 import { StealthCard } from "./stealth-card";
 import { staggerItem } from "@/lib/motion";
 
 const STATUS_ACCENT: Record<string, string> = {
   queued: "#6b7280",
-  running: "#3b82f6",
-  completed: "#10b981",
+  in_progress: "#3b82f6",
+  done: "#10b981",
   failed: "#ef4444",
-  stale: "#eab308",
+  blocked: "#eab308",
 };
 
 const KIND_COLORS: Record<string, string> = {
@@ -36,7 +36,7 @@ function formatDuration(startedAt: string | null, completedAt: string | null): s
   return `${mins}m ${secs}s`;
 }
 
-export function StepCard({ step }: { step: Step }) {
+export function StepCard({ step }: { step: Task }) {
   const [expanded, setExpanded] = useState(false);
   const statusAccent = STATUS_ACCENT[step.status] ?? "#6b7280";
   const kindColor = step.kind ? KIND_COLORS[step.kind] ?? "#6b7280" : null;
@@ -102,7 +102,7 @@ export function StepCard({ step }: { step: Step }) {
         )}
 
         {/* Output preview for completed steps */}
-        {step.status === "completed" && step.output && (
+        {step.status === "done" && step.output && (
           <div className="mt-2">
             <button
               onClick={() => setExpanded(!expanded)}
