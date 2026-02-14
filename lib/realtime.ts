@@ -142,8 +142,8 @@ export function useRealtimeMissions(initialMissions: Mission[]): Mission[] {
 
 export function useRealtimeSteps(
   missionId: string,
-  initialSteps: Step[],
-): Step[] {
+  initialSteps: Task[],
+): Task[] {
   const [steps, setSteps] = useState(initialSteps)
 
   useEffect(() => {
@@ -155,17 +155,17 @@ export function useRealtimeSteps(
 
     const client = supabase
     const channel: RealtimeChannel = client
-      .channel(`steps-realtime-${missionId}`)
+      .channel(`tasks-realtime-${missionId}`)
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
-          table: "steps",
+          table: "tasks",
           filter: `mission_id=eq.${missionId}`,
         },
         (payload) => {
-          setSteps((prev) => [...prev, payload.new as Step])
+          setSteps((prev) => [...prev, payload.new as Task])
         },
       )
       .on(
@@ -173,11 +173,11 @@ export function useRealtimeSteps(
         {
           event: "UPDATE",
           schema: "public",
-          table: "steps",
+          table: "tasks",
           filter: `mission_id=eq.${missionId}`,
         },
         (payload) => {
-          const updated = payload.new as Step
+          const updated = payload.new as Task
           setSteps((prev) =>
             prev.map((s) => (s.id === updated.id ? updated : s)),
           )

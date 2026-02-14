@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { getMissionWithSteps } from "@/lib/queries";
-import type { Mission, Step } from "@/lib/types";
+import { getMissionWithTasks } from "@/lib/queries";
+import type { Mission, Task } from "@/lib/types";
 import { MissionDetail } from "@/components/mission-detail";
 import { StealthCard } from "@/components/stealth-card";
 
@@ -37,15 +37,15 @@ function ConnectPrompt() {
 export default function MissionPage() {
   const params = useParams<{ id: string }>();
   const [mission, setMission] = useState<Mission | null>(null);
-  const [steps, setSteps] = useState<Step[]>([]);
+  const [steps, setSteps] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
       if (!params.id) return;
-      const data = await getMissionWithSteps(params.id);
+      const data = await getMissionWithTasks(params.id);
       setMission(data.mission);
-      setSteps(data.steps);
+      setSteps(data.tasks);
       setLoading(false);
     }
     fetchData();

@@ -34,21 +34,35 @@ export async function getMissions(status?: string): Promise<Mission[]> {
   return data as Mission[]
 }
 
-export async function getMissionWithSteps(id: string): Promise<{ mission: Mission | null; steps: Step[] }> {
-  if (!supabase) return { mission: null, steps: [] }
+export async function getMissionWithTasks(id: string): Promise<{ mission: Mission | null; tasks: Task[] }> {
+  if (!supabase) return { mission: null, tasks: [] }
 
-  const [missionRes, stepsRes] = await Promise.all([
+  const [missionRes, tasksRes] = await Promise.all([
     supabase.from('missions').select('*').eq('id', id).single(),
-    supabase.from('steps').select('*').eq('mission_id', id).order('created_at', { ascending: true }),
+    supabase.from('tasks').select('*').eq('mission_id', id).order('created_at', { ascending: true }),
   ])
 
-  if (missionRes.error) { console.error('getMissionWithSteps mission error:', missionRes.error) }
-  if (stepsRes.error) { console.error('getMissionWithSteps steps error:', stepsRes.error) }
+  if (missionRes.error) { console.error('getMissionWithTasks mission error:', missionRes.error) }
+  if (tasksRes.error) { console.error('getMissionWithTasks tasks error:', tasksRes.error) }
 
   return {
     mission: (missionRes.data as Mission) ?? null,
-    steps: (stepsRes.data as Step[]) ?? [],
+    tasks: (tasksRes.data as Task[]) ?? [],
   }
+}
+
+/** @deprecated Use getMissionWithTasks instead */
+export const getMissionWithSteps = getMissionWithTasks
+
+export async function getMissionTasks(missionId: string): Promise<Task[]> {
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('mission_id', missionId)
+    .order('created_at', { ascending: true })
+  if (error) { console.error('getMissionTasks error:', error); return [] }
+  return data as Task[]
 }
 
 export async function getEvents(limit = 50): Promise<Event[]> {
@@ -140,10 +154,12 @@ export async function getProjectsWithMetrics(): Promise<ProjectWithMetrics[]> {
     const taskCounts = {
       todo: projectTasks.filter(t => t.status === 'todo').length,
       assigned: projectTasks.filter(t => t.status === 'assigned').length,
+      queued: projectTasks.filter(t => t.status === 'queued').length,
       in_progress: projectTasks.filter(t => t.status === 'in_progress').length,
       review: projectTasks.filter(t => t.status === 'review').length,
       done: projectTasks.filter(t => t.status === 'done').length,
       blocked: projectTasks.filter(t => t.status === 'blocked').length,
+      failed: projectTasks.filter(t => t.status === 'failed').length,
       someday: projectTasks.filter(t => t.status === 'someday').length,
     }
     const totalTasks = projectTasks.filter(t => t.status !== 'someday').length

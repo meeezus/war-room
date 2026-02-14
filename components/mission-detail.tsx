@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "motion/react";
-import type { Mission, Step } from "@/lib/types";
+import type { Mission, Step, Task } from "@/lib/types";
 import { StealthCard } from "./stealth-card";
 import { StepCard } from "./step-card";
 import { staggerContainer } from "@/lib/motion";
@@ -44,7 +44,7 @@ export function MissionDetail({
   steps,
 }: {
   mission: Mission;
-  steps: Step[];
+  steps: Task[];
 }) {
   const [missionStatus, setMissionStatus] = useState(mission.status);
   const [starting, setStarting] = useState(false);
@@ -75,7 +75,7 @@ export function MissionDetail({
     }
     setStarting(false);
   }
-  const completedSteps = liveSteps.filter((s) => s.status === "completed").length;
+  const completedSteps = liveSteps.filter((s) => s.status === "done").length;
   const totalSteps = liveSteps.length;
   const progressPct = totalSteps > 0 ? (completedSteps / totalSteps) * 100 : 0;
 
