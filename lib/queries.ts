@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import type { AgentStatus, Mission, Step, Event, DashboardStats, Project, ProjectWithMetrics, Board, Task, DynastyStats, Proposal } from '@/lib/types'
+import type { AgentStatus, Mission, Step, Event, DashboardStats, Project, ProjectWithMetrics, Board, Task, DynastyStats, Proposal, CouncilSession } from '@/lib/types'
 
 // Domain → Daimyo routing (matches engine/config.py DOMAIN_TO_DAIMYO)
 export const DOMAIN_TO_DAIMYO: Record<string, string> = {
@@ -441,4 +441,43 @@ export async function getStaleTasks(): Promise<Task[]> {
     .order('updated_at', { ascending: true })
   if (error) { console.error('getStaleTasks error:', error); return [] }
   return (data as Task[]) ?? []
+}
+
+// ---------------------------------------------------------------------------
+// Council session queries
+// ---------------------------------------------------------------------------
+
+export async function getCouncilSessions(limit = 20): Promise<CouncilSession[]> {
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from('council_sessions')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (error) { console.error('getCouncilSessions error:', error); return [] }
+  return data as CouncilSession[]
+}
+
+export async function getCouncilSession(id: string): Promise<CouncilSession | null> {
+  if (!supabase) return null
+  const { data, error } = await supabase
+    .from('council_sessions')
+    .select('*')
+    .eq('id', id)
+    .single()
+  if (error) { console.error('getCouncilSession error:', error); return null }
+  return data as CouncilSession
+}
+
+export async function createCouncilSession(
+  session: Omit<CouncilSession, 'id' | 'created_at'>
+): Promise<CouncilSession | null> {
+  if (!supabase) return null
+  const { data, error } = await supabase
+    .from('council_sessions')
+    .insert(session)
+    .select()
+    .single()
+  if (error) { console.error('createCouncilSession error:', error); return null }
+  return data as CouncilSession
 }

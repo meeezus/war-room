@@ -130,6 +130,10 @@ export default function DashboardPage() {
             </Link>
             {" \u00B7 "}
             {dynastyStats.activeTasks}/{dynastyStats.totalTasks} tasks
+            {" \u00B7 "}
+            <Link href="/council" className="transition-colors hover:text-[rgba(255,255,255,0.6)]">
+              ⚔️ council
+            </Link>
           </span>
         </div>
         <StatsBar stats={stats} />

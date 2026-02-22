@@ -172,6 +172,25 @@ export interface DynastyStats {
   activeTasks: number
 }
 
+export interface CouncilReview {
+  name: string
+  verdict: 'approve' | 'concern' | 'reject' | 'abstain'
+  voice_text: string
+}
+
+export interface CouncilSession {
+  id: string
+  topic: string
+  council_type: string
+  reviews: CouncilReview[]
+  synthesis: string | null
+  recommendation: string | null
+  dissent: string | null
+  source: string
+  metadata: Record<string, unknown>
+  created_at: string
+}
+
 // Agent role cards (Vox-style 6-layer structure)
 
 export interface RoleCard {
@@ -182,6 +201,7 @@ export interface RoleCard {
   domain: string
   emoji: string
   color: string
+  avatarPath?: string
   description: string
   abilities: string[]
   inputs?: string[]           // what info the agent needs to start
