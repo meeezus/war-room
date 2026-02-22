@@ -5,7 +5,7 @@
   "identifier": "com.shogunate.warroom",
   "build": {
     "beforeDevCommand": "",
-    "devUrl": "http://localhost:3000",
+    "devUrl": "http://localhost:3001",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../.next"
   },
