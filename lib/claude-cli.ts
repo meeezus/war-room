@@ -63,7 +63,7 @@ export function spawnClaude(
     start(controller) {
       proc = spawn(CLAUDE_PATH, args, {
         cwd,
-        env: { ...process.env, TZ: TIMEZONE },
+        env: { ...process.env, TZ: TIMEZONE, CLAUDECODE: undefined },
         stdio: ['ignore', 'pipe', 'pipe'],
       })
 
