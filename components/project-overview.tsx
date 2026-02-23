@@ -6,8 +6,7 @@ import { ProjectCard } from "./project-card";
 import { PROJECT_STATUS_COLORS } from "@/lib/data";
 
 const KANBAN_COLUMNS = [
-  { key: "someday", label: "Queue", accent: PROJECT_STATUS_COLORS.someday },
-  { key: "todo", label: "Todo", accent: PROJECT_STATUS_COLORS.todo },
+  { key: "queue", label: "Queue", accent: PROJECT_STATUS_COLORS.queue },
   { key: "inprogress", label: "In Progress", accent: PROJECT_STATUS_COLORS.inprogress },
   { key: "onhold", label: "On Hold", accent: PROJECT_STATUS_COLORS.onhold },
   { key: "done", label: "Done", accent: PROJECT_STATUS_COLORS.done },

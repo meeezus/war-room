@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { getRoleCard } from "@/lib/role-cards";
 import type { CouncilReview } from "@/lib/types";
@@ -16,6 +17,18 @@ const VERDICT_STYLES: Record<string, { label: string; className: string }> = {
 };
 
 export function CouncilCard({ review }: CouncilCardProps) {
+  const [expanded, setExpanded] = useState(false);
+  const [clamped, setClamped] = useState(false);
+  const textRef = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    const el = textRef.current;
+    if (el) {
+      // Check if text overflows 3 lines (line-clamp-3)
+      setClamped(el.scrollHeight > el.clientHeight);
+    }
+  }, [review.voice_text]);
+
   const roleCard = getRoleCard(review.name.toLowerCase());
   const verdict = VERDICT_STYLES[review.verdict] ?? VERDICT_STYLES.abstain;
   const color = roleCard.color ?? "#6b7280";
@@ -80,9 +93,22 @@ export function CouncilCard({ review }: CouncilCardProps) {
       </div>
 
       {/* Voice text */}
-      <p className="text-xs text-[rgba(255,255,255,0.6)] leading-relaxed line-clamp-4">
+      <p
+        ref={textRef}
+        className={`text-xs text-[rgba(255,255,255,0.6)] leading-relaxed ${expanded ? "" : "line-clamp-3"}`}
+      >
         {review.voice_text}
       </p>
+
+      {/* Show more / Show less */}
+      {(clamped || expanded) && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="text-[11px] text-[rgba(255,255,255,0.4)] hover:text-[rgba(255,255,255,0.7)] transition-colors self-start -mt-1"
+        >
+          {expanded ? "Show less" : "Show more"}
+        </button>
+      )}
     </div>
   );
 }

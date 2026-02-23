@@ -111,7 +111,7 @@ export const ROLE_CARDS: Record<string, RoleCard> = {
   },
   // Makima is also known as power in the system
   makima: {
-    id: 'power',
+    id: 'makima',
     name: 'Makima',
     title: 'The Controller',
     class: 'Influencer',
@@ -179,7 +179,7 @@ export const ROLE_CARDS: Record<string, RoleCard> = {
   },
   // CC is also known as pip in the system
   cc: {
-    id: 'pip',
+    id: 'cc',
     name: 'CC',
     title: 'The Coordinator',
     class: 'Strategist',

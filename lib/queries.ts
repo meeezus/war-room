@@ -6,9 +6,9 @@ export const DOMAIN_TO_DAIMYO: Record<string, string> = {
   engineering: 'ed',
   product: 'light',
   commerce: 'toji',
-  influence: 'power',
+  influence: 'makima',
   operations: 'major',
-  coordination: 'pip',
+  coordination: 'cc',
 }
 
 export async function getAgents(): Promise<AgentStatus[]> {
@@ -147,7 +147,7 @@ export async function getProjectsWithMetrics(): Promise<ProjectWithMetrics[]> {
   const tasks = (tasksRes.data ?? []) as { id: number; project_id: string | null; status: string; updated_at: string }[]
   const pendingProposals = (proposalsRes.data ?? []) as { id: string; project_id: string | null }[]
 
-  const STATUS_ORDER: Record<string, number> = { inprogress: 0, todo: 1, onhold: 2, done: 3, someday: 4 }
+  const STATUS_ORDER: Record<string, number> = { inprogress: 0, queue: 1, onhold: 2, done: 3 }
 
   return projects.map(project => {
     const projectTasks = tasks.filter(t => t.project_id === project.id)
@@ -262,7 +262,7 @@ export async function getDynastyStats(): Promise<DynastyStats> {
 
   const [projectsRes, activeProjectsRes, tasksRes, activeTasksRes] = await Promise.all([
     supabase.from('projects').select('id', { count: 'exact', head: true }),
-    supabase.from('projects').select('id', { count: 'exact', head: true }).in('status', ['inprogress', 'todo']),
+    supabase.from('projects').select('id', { count: 'exact', head: true }).in('status', ['inprogress', 'queue']),
     supabase.from('tasks').select('id', { count: 'exact', head: true }),
     supabase.from('tasks').select('id', { count: 'exact', head: true }).in('status', ['in_progress', 'assigned', 'todo', 'review', 'blocked']),
   ])
@@ -437,7 +437,7 @@ export async function getStaleTasks(): Promise<Task[]> {
     .from('tasks')
     .select('*')
     .lt('updated_at', cutoff)
-    .not('status', 'in', '("done","someday")')
+    .not('status', 'in', '("done","queue")')
     .order('updated_at', { ascending: true })
   if (error) { console.error('getStaleTasks error:', error); return [] }
   return (data as Task[]) ?? []
@@ -480,4 +480,49 @@ export async function createCouncilSession(
     .single()
   if (error) { console.error('createCouncilSession error:', error); return null }
   return data as CouncilSession
+}
+
+// ---------------------------------------------------------------------------
+// Create project / mission (used by council actions + dashboard)
+// ---------------------------------------------------------------------------
+
+export async function createProject(input: {
+  title: string
+  description?: string
+  status?: string
+}): Promise<Project | null> {
+  if (!supabase) return null
+  const { data, error } = await supabase
+    .from('projects')
+    .insert({
+      title: input.title,
+      goal: input.description ?? null,
+      status: input.status ?? 'todo',
+      priority: 50,
+    })
+    .select()
+    .single()
+  if (error) { console.error('createProject error:', error); return null }
+  return data as Project
+}
+
+export async function createMission(input: {
+  title: string
+  project_id: string
+  assigned_to?: string
+  status?: string
+}): Promise<Mission | null> {
+  if (!supabase) return null
+  const { data, error } = await supabase
+    .from('missions')
+    .insert({
+      title: input.title,
+      project_id: input.project_id,
+      assigned_to: input.assigned_to ?? 'unassigned',
+      status: input.status ?? 'queued',
+    })
+    .select()
+    .single()
+  if (error) { console.error('createMission error:', error); return null }
+  return data as Mission
 }

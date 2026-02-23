@@ -27,7 +27,7 @@ export interface Mission {
   project_id: string | null
   title: string
   assigned_to: string
-  status: 'queued' | 'running' | 'completed' | 'failed' | 'stale'
+  status: 'queued' | 'running' | 'review' | 'completed' | 'deployed' | 'failed' | 'stale'
   started_at: string | null
   completed_at: string | null
   result: Record<string, unknown> | null
@@ -110,7 +110,7 @@ export interface RpgStats {
 export interface Project {
   id: string
   title: string
-  status: 'inprogress' | 'todo' | 'done' | 'someday' | 'onhold'
+  status: 'inprogress' | 'queue' | 'done' | 'onhold'
   priority: number
   goal: string | null
   type: string | null
@@ -186,6 +186,7 @@ export interface CouncilSession {
   synthesis: string | null
   recommendation: string | null
   dissent: string | null
+  plan_html: string | null
   source: string
   metadata: Record<string, unknown>
   created_at: string
@@ -210,4 +211,18 @@ export interface RoleCard {
   hardBans?: string[]         // things agent must NEVER do
   escalation?: string         // when to escalate to Sensei
   metrics?: string[]          // how performance is measured
+}
+
+export interface DaimyoStats {
+  agent_id: string
+  level: number
+  spd: number
+  tru: number
+  wis: number
+  cre: number
+  domain_stat_1: number
+  domain_stat_2: number
+  domain_stat_1_name: string
+  domain_stat_2_name: string
+  rpg_class: string
 }

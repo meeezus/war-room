@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Offline - War Room",
+  title: "Offline - Dynasty Tenshu",
 };
 
 export default function OfflinePage() {
@@ -29,7 +29,7 @@ export default function OfflinePage() {
           </svg>
         </div>
         <h1 className="mb-2 font-[family-name:var(--font-space-grotesk)] text-xl font-medium tracking-tight text-[#E5E5E5]">
-          Reconnecting to War Room...
+          Reconnecting to Dynasty Tenshu...
         </h1>
         <p className="text-sm text-[rgba(255,255,255,0.4)]">
           Waiting for network connection

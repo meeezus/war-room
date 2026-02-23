@@ -10,6 +10,7 @@ import { AgentSidebar } from "@/components/agent-sidebar";
 import { EventFeed } from "@/components/event-feed";
 import { StealthCard } from "@/components/stealth-card";
 import { ProjectOverview } from "@/components/project-overview";
+import { CreateProjectModal } from "@/components/create-project-modal";
 
 
 const defaultStats: DashboardStats = {
@@ -59,6 +60,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [feedOpen, setFeedOpen] = useState(true);
+  const [createProjectOpen, setCreateProjectOpen] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -89,7 +91,7 @@ export default function DashboardPage() {
         <div className="mb-4 flex-shrink-0">
           <div className="mb-3 flex items-baseline gap-3">
             <h1 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold tracking-tight text-[#E5E5E5]">
-              War Room
+              Dynasty Tenshu
             </h1>
             <span className="text-xs text-[rgba(255,255,255,0.4)]">
               Shogunate Command Center
@@ -117,10 +119,10 @@ export default function DashboardPage() {
       <div className="mb-4 flex-shrink-0">
         <div className="mb-3 flex items-baseline gap-3">
           <h1 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold tracking-tight text-[#E5E5E5]">
-            War Room
+            Dynasty Tenshu
           </h1>
           <span className="text-xs text-[rgba(255,255,255,0.4)]">
-            Dynasty Command Center
+            Shogunate Command Center
           </span>
           <span className="ml-auto font-[family-name:var(--font-jetbrains-mono)] text-xs tabular-nums text-[rgba(255,255,255,0.3)]">
             {dynastyStats.activeProjects}/{dynastyStats.totalProjects} projects
@@ -134,7 +136,17 @@ export default function DashboardPage() {
             <Link href="/council" className="transition-colors hover:text-[rgba(255,255,255,0.6)]">
               ⚔️ council
             </Link>
+            {" \u00B7 "}
+            <Link href="/chat" className="transition-colors hover:text-[rgba(255,255,255,0.6)]">
+              ⚡ chat
+            </Link>
           </span>
+          <button
+            onClick={() => setCreateProjectOpen(true)}
+            className="ml-3 px-2.5 py-1 rounded-sm border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs font-medium hover:bg-emerald-500/20 transition-colors"
+          >
+            + Project
+          </button>
         </div>
         <StatsBar stats={stats} />
       </div>
@@ -213,6 +225,19 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      <CreateProjectModal
+        open={createProjectOpen}
+        onOpenChange={setCreateProjectOpen}
+        onCreated={async () => {
+          const [projectsData, dynastyData] = await Promise.all([
+            getProjectsWithMetrics(),
+            getDynastyStats(),
+          ]);
+          setProjects(projectsData);
+          setDynastyStats(dynastyData);
+        }}
+      />
     </div>
   );
 }

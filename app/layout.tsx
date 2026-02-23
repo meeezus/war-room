@@ -22,13 +22,13 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Shogunate War Room",
+  title: "Dynasty Tenshu",
   description: "Command dashboard for the AI executive council",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "War Room",
+    title: "Dynasty Tenshu",
   },
 };
 

@@ -1,6 +1,7 @@
 import { createServiceClient } from '@/lib/supabase-server'
 import { CouncilCard } from '@/components/council/council-card'
 import { CouncilSynthesis } from '@/components/council/council-synthesis'
+import { CouncilActions } from '@/components/council/council-actions'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { CouncilSession } from '@/lib/types'
@@ -75,19 +76,38 @@ export default async function CouncilSessionPage({
           </p>
         </div>
 
-        {/* Daimyo grid */}
-        {session.reviews.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-            {session.reviews.map((review, i) => (
-              <CouncilCard key={i} review={review} />
-            ))}
-          </div>
+        {/* Plan visual — embedded HTML from council run */}
+        {session.plan_html && (
+          <iframe
+            srcDoc={session.plan_html}
+            sandbox="allow-scripts"
+            className="w-full rounded-lg border border-white/10 mb-8"
+            style={{ minHeight: '600px' }}
+          />
         )}
 
-        {/* Makima synthesis */}
+        {/* Daimyo grid — exclude Makima/Power (synthesis rendered separately) */}
+        {session.reviews.length > 0 && (() => {
+          const MAKIMA_KEYS = new Set(['makima', 'power']);
+          const voiceReviews = session.reviews.filter(
+            (r) => !MAKIMA_KEYS.has(r.name.toLowerCase())
+          );
+          return voiceReviews.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+              {voiceReviews.map((review, i) => (
+                <CouncilCard key={i} review={review} />
+              ))}
+            </div>
+          ) : null;
+        })()}
+
+        {/* Makima synthesis — full-width distinct block */}
         {(session.synthesis || session.recommendation) && (
           <CouncilSynthesis session={session} />
         )}
+
+        {/* Action bar — create project/mission from council output */}
+        <CouncilActions session={session} />
       </div>
     </div>
   )

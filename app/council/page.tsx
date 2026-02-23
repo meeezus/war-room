@@ -33,7 +33,7 @@ export default async function CouncilPage() {
               </Link>
             </div>
             <h1 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold text-[#E5E5E5]">
-              Council Sessions
+              Shogunate Council
             </h1>
             <p className="mt-1 text-sm text-[rgba(255,255,255,0.4)]">
               Strategic reviews by the Daimyo council
