@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import type { Event } from "@/lib/types";
 import { timing, easing } from "@/lib/motion";
@@ -39,11 +39,15 @@ function formatRelativeTime(dateStr: string): string {
 }
 
 function EventRow({ event }: { event: Event }) {
+  const [expanded, setExpanded] = useState(false);
   const color = EVENT_TYPE_COLORS[event.type] ?? "#6b7280";
   const label = event.type.replace(/_/g, " ");
 
   return (
-    <div className="flex gap-3 px-3 py-2 transition-colors duration-150 hover:bg-white/[0.02]">
+    <div
+      className="flex gap-3 px-3 py-2 transition-colors duration-150 hover:bg-white/[0.02] cursor-pointer select-none"
+      onClick={() => setExpanded((v) => !v)}
+    >
       <span className="flex-shrink-0 font-[family-name:var(--font-jetbrains-mono)] text-xs text-[rgba(255,255,255,0.3)]">
         {formatRelativeTime(event.created_at)}
       </span>
@@ -58,12 +62,20 @@ function EventRow({ event }: { event: Event }) {
         >
           {label}
         </span>
-        {event.agent && (
-          <span className="mr-1.5 text-xs font-medium text-[#E5E5E5]">
-            {event.agent}
+        {expanded ? (
+          <>
+            {event.agent && (
+              <span className="mr-1.5 text-xs font-medium text-[#E5E5E5]">
+                {event.agent}
+              </span>
+            )}
+            <span className="text-xs text-[rgba(255,255,255,0.5)]">{event.message}</span>
+          </>
+        ) : (
+          <span className="text-xs text-[rgba(255,255,255,0.3)] truncate">
+            {event.agent ? `${event.agent} — ` : ""}{event.message}
           </span>
         )}
-        <span className="text-xs text-[rgba(255,255,255,0.5)]">{event.message}</span>
       </div>
     </div>
   );

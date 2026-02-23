@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import type { AgentStatus, Mission, Step, Event, DashboardStats, Project, ProjectWithMetrics, Board, Task, DynastyStats, Proposal, CouncilSession } from '@/lib/types'
+import type { AgentStatus, Mission, Step, Event, DashboardStats, Project, ProjectWithMetrics, Board, Task, DynastyStats, Proposal, CouncilSession, ActiveAgent } from '@/lib/types'
 
 // Domain → Daimyo routing (matches engine/config.py DOMAIN_TO_DAIMYO)
 export const DOMAIN_TO_DAIMYO: Record<string, string> = {
@@ -25,6 +25,7 @@ export async function getMissions(status?: string): Promise<Mission[]> {
   let query = supabase
     .from('missions')
     .select('*')
+    .order('priority', { ascending: true })
     .order('created_at', { ascending: false })
   if (status) {
     query = query.eq('status', status)
@@ -67,9 +68,11 @@ export async function getMissionTasks(missionId: string): Promise<Task[]> {
 
 export async function getEvents(limit = 50): Promise<Event[]> {
   if (!supabase) return []
+  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
   const { data, error } = await supabase
     .from('events')
     .select('*')
+    .gte('created_at', threeDaysAgo)
     .order('created_at', { ascending: false })
     .limit(limit)
   if (error) { console.error('getEvents error:', error); return [] }
@@ -104,18 +107,16 @@ export async function getStats(): Promise<DashboardStats> {
   const defaults: DashboardStats = { activeAgents: 0, inProgressTasks: 0, pendingReviews: 0, pendingProposals: 0 }
   if (!supabase) return defaults
 
-  const [agentsRes, inProgressRes, reviewRes, proposalsRes] = await Promise.all([
+  const [agentsRes, inProgressRes] = await Promise.all([
     supabase.from('agent_status').select('id', { count: 'exact', head: true }).in('status', ['online', 'busy']),
     supabase.from('tasks').select('id', { count: 'exact', head: true }).eq('status', 'in_progress'),
-    supabase.from('tasks').select('id', { count: 'exact', head: true }).eq('status', 'review'),
-    supabase.from('proposals').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
   ])
 
   return {
     activeAgents: agentsRes.count ?? 0,
     inProgressTasks: inProgressRes.count ?? 0,
-    pendingReviews: reviewRes.count ?? 0,
-    pendingProposals: proposalsRes.count ?? 0,
+    pendingReviews: 0,
+    pendingProposals: 0,
   }
 }
 
@@ -194,7 +195,7 @@ export async function getProjectWithBoards(id: string): Promise<{
   const [projectRes, boardsRes, tasksRes] = await Promise.all([
     supabase.from('projects').select('*').eq('id', id).single(),
     supabase.from('boards').select('*').eq('project_id', id).order('created_at', { ascending: true }),
-    supabase.from('tasks').select('*').eq('project_id', id).order('created_at', { ascending: true }),
+    supabase.from('tasks').select('*').eq('project_id', id).order('priority', { ascending: true }).order('created_at', { ascending: true }),
   ])
 
   if (projectRes.error) { console.error('getProjectWithBoards project error:', projectRes.error) }
@@ -222,7 +223,7 @@ export async function getBoardWithTasks(id: string): Promise<{
 
   const [boardRes, tasksRes] = await Promise.all([
     supabase.from('boards').select('*').eq('id', id).single(),
-    supabase.from('tasks').select('*').eq('board_id', id).order('created_at', { ascending: true }),
+    supabase.from('tasks').select('*').eq('board_id', id).order('priority', { ascending: true }).order('created_at', { ascending: true }),
   ])
 
   if (boardRes.error) { console.error('getBoardWithTasks board error:', boardRes.error) }
@@ -447,15 +448,38 @@ export async function getStaleTasks(): Promise<Task[]> {
 // Council session queries
 // ---------------------------------------------------------------------------
 
-export async function getCouncilSessions(limit = 20): Promise<CouncilSession[]> {
+export async function getCouncilSessions(limit = 20, filter?: { status?: 'active' | 'archived' }): Promise<CouncilSession[]> {
   if (!supabase) return []
-  const { data, error } = await supabase
+  let query = supabase
     .from('council_sessions')
     .select('*')
     .order('created_at', { ascending: false })
     .limit(limit)
+  const statusFilter = filter?.status ?? 'active'
+  query = query.eq('status', statusFilter)
+  const { data, error } = await query
   if (error) { console.error('getCouncilSessions error:', error); return [] }
   return data as CouncilSession[]
+}
+
+export async function archiveCouncilSession(id: string): Promise<boolean> {
+  if (!supabase) return false
+  const { error } = await supabase
+    .from('council_sessions')
+    .update({ status: 'archived' })
+    .eq('id', id)
+  if (error) { console.error('archiveCouncilSession error:', error); return false }
+  return true
+}
+
+export async function deleteCouncilSession(id: string): Promise<boolean> {
+  if (!supabase) return false
+  const { error } = await supabase
+    .from('council_sessions')
+    .delete()
+    .eq('id', id)
+  if (error) { console.error('deleteCouncilSession error:', error); return false }
+  return true
 }
 
 export async function getCouncilSession(id: string): Promise<CouncilSession | null> {
@@ -490,11 +514,13 @@ export async function createProject(input: {
   title: string
   description?: string
   status?: string
+  councilSessionId?: string
 }): Promise<Project | null> {
   if (!supabase) return null
   const { data, error } = await supabase
     .from('projects')
     .insert({
+      id: crypto.randomUUID(),
       title: input.title,
       goal: input.description ?? null,
       status: input.status ?? 'todo',
@@ -503,6 +529,9 @@ export async function createProject(input: {
     .select()
     .single()
   if (error) { console.error('createProject error:', error); return null }
+  if (input.councilSessionId) {
+    await archiveCouncilSession(input.councilSessionId)
+  }
   return data as Project
 }
 
@@ -511,18 +540,65 @@ export async function createMission(input: {
   project_id: string
   assigned_to?: string
   status?: string
+  councilSessionId?: string
+  priority?: 1 | 2 | 3 | 4
 }): Promise<Mission | null> {
   if (!supabase) return null
   const { data, error } = await supabase
     .from('missions')
     .insert({
+      id: crypto.randomUUID(),
       title: input.title,
       project_id: input.project_id,
       assigned_to: input.assigned_to ?? 'unassigned',
       status: input.status ?? 'queued',
+      priority: input.priority ?? 3,
     })
     .select()
     .single()
   if (error) { console.error('createMission error:', error); return null }
+  if (input.councilSessionId) {
+    await archiveCouncilSession(input.councilSessionId)
+  }
   return data as Mission
+}
+
+// ---------------------------------------------------------------------------
+// Active agents queries
+// ---------------------------------------------------------------------------
+
+export async function getActiveAgents(): Promise<ActiveAgent[]> {
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from('active_agents')
+    .select('*')
+    .in('status', ['running', 'idle'])
+    .order('started_at', { ascending: false })
+  if (error) { console.error('getActiveAgents error:', error); return [] }
+  return data as ActiveAgent[]
+}
+
+export async function createMissionFromPlan(planData: {
+  title: string
+  description: string
+  projectId?: string
+  tasks: Array<{ subject: string; description: string }>
+  source?: string
+}): Promise<{ missionId: string; taskIds: string[] } | null> {
+  const res = await fetch('/api/missions/from-plan', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: planData.title,
+      description: planData.description,
+      projectId: planData.projectId,
+      tasks: planData.tasks,
+      source: planData.source ?? 'claude-code',
+    }),
+  })
+  if (!res.ok) {
+    console.error('createMissionFromPlan failed:', await res.text())
+    return null
+  }
+  return res.json() as Promise<{ missionId: string; taskIds: string[] }>
 }

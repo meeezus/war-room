@@ -1,9 +1,12 @@
 import { NextRequest } from 'next/server'
-import { getThreads, createThread } from '@/lib/chat'
+import { getThreads, createThread, cleanupArchivedThreads } from '@/lib/chat'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const threads = await getThreads()
+    const { searchParams } = new URL(req.url)
+    const status = (searchParams.get('status') as 'active' | 'archived') ?? 'active'
+    await cleanupArchivedThreads()
+    const threads = await getThreads({ status })
     return Response.json({ threads })
   } catch (err) {
     console.error('[threads/route] Error:', err)

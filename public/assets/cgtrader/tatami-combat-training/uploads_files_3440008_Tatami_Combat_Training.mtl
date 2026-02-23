@@ -1,0 +1,51 @@
+# Blender MTL File: 'Matrix_Tatami3a.blend'
+# Material Count: 4
+
+newmtl M_Katana_support1
+Ns 76.165300
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.100000 0.100000 0.100000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Bump -bm 0.200000 E:\\VB MARKET\\2.TEXTURE SETS\\MATRIX\\Tatami_Wood_trim1\\Wood_plane4K_M_Tatami_wood1_Normal.png
+map_Kd E:\\VB MARKET\\2.TEXTURE SETS\\MATRIX\\Tatami_Wood_trim2\\M_Tatami_wood1_BaseColor.png
+map_Ns E:\\VB MARKET\\2.TEXTURE SETS\\MATRIX\\Tatami_Wood_trim1\\Wood_plane4K_M_Tatami_wood1_OcclusionRoughnessMetallic.png
+
+newmtl M_Tatami_border
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.005984 0.005984 0.005984
+Ks 0.309091 0.309091 0.309091
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 3
+
+newmtl M_Tatami_texture
+Ns 76.165300
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 1
+map_Bump -bm 1.200000 E:\\MIS DISEÑOS\\HIMUROS 5\\TextureSets\\Tatami_floor\\TexturesCom_TatamiFloor_Old_1K_normal.tif
+map_Kd E:\\MIS DISEÑOS\\HIMUROS 5\\TextureSets\\Tatami_floor\\TexturesCom_TatamiFloor_Old_1K_albedo.tif
+map_Ns E:\\MIS DISEÑOS\\HIMUROS 5\\TextureSets\\Tatami_floor\\TexturesCom_TatamiFloor_Old_1K_roughness.tif
+
+newmtl M_Tatami_wood1
+Ns 76.165300
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.004545 0.004545 0.004545
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Bump E:\\VB MARKET\\2.TEXTURE SETS\\MATRIX\\Tatami_Wood_trim2\\M_Tatami_wood1_Normal.png
+map_Kd E:\\VB MARKET\\2.TEXTURE SETS\\MATRIX\\Tatami_Wood_trim2\\M_Tatami_wood1_BaseColor.png
+map_Ns E:\\VB MARKET\\2.TEXTURE SETS\\MATRIX\\Tatami_Wood_trim2\\M_Tatami_wood1_Roughness.png

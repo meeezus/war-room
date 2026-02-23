@@ -12,6 +12,7 @@ import { MissionTableView } from "./mission-table-view";
 import { ProposalsSection } from "./proposals-section";
 import { CreateMissionModal } from "./create-mission-modal";
 import type { MissionWithSteps } from "./mission-kanban-card";
+import { TerminalPanel } from "./terminal/terminal-panel";
 
 interface ProjectDetailProps {
   project: Project;
@@ -45,8 +46,9 @@ export function ProjectDetail({ project, boards, proposals, tasks, missions, onU
   const progressPct = totalMissions > 0 ? (completedMissions / totalMissions) * 100 : 0;
 
   return (
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
     <motion.div
-      className="mx-auto max-w-[1600px] space-y-4 p-4"
+      className="mx-auto w-full max-w-[1600px] flex-1 overflow-y-auto space-y-4 p-4"
       {...(prefersReducedMotion ? {} : fadeInUp)}
     >
       {/* Breadcrumb */}
@@ -183,5 +185,7 @@ export function ProjectDetail({ project, boards, proposals, tasks, missions, onU
         onCreated={() => onUpdate?.()}
       />
     </motion.div>
+    <TerminalPanel missions={missions} />
+    </div>
   );
 }

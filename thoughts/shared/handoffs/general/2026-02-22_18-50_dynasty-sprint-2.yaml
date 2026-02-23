@@ -1,0 +1,83 @@
+---
+session: general
+date: 2026-02-22
+status: complete
+outcome: SUCCEEDED
+---
+
+goal: Dynasty Sprint 2 — close the loop (Shoin Chat + council visual plan embed)
+now: Apply Supabase migrations, run /council to test the full loop end-to-end
+
+test: cd ~/Code/war-room && npm run build
+
+done_this_session:
+  - task: Council skill updated — Opus model, visual HTML generation, Supabase persistence
+    files: [~/.claude/skills/council/SKILL.md]
+  - task: plan_html column migration created
+    files: [supabase/migrations/20260223000001_council_plan_html.sql]
+  - task: CouncilSession type updated with plan_html field
+    files: [lib/types.ts:181-193]
+  - task: Council detail page — iframe embed for plan_html above voice cards
+    files: [app/council/[id]/page.tsx:80-92]
+  - task: Shoin Chat — all 10 files checked out from feature/shoin-chat-rebuild (no full merge)
+    files: [app/chat/page.tsx, app/api/chat/route.ts, app/api/chat/threads/route.ts, lib/chat.ts, lib/claude-cli.ts, components/chat/, supabase/migrations/20250211_shoin_chat.sql]
+  - task: Sprint 1 completion committed — council-actions, modals, avatars, queries
+    files: [components/council/council-actions.tsx, components/create-project-modal.tsx, components/create-mission-modal.tsx, lib/queries.ts]
+  - task: All 43 files committed and pushed to feature/council-ui
+    files: [committed ad95374]
+
+blockers: []
+
+questions:
+  - Have the two Supabase migrations been applied? (20250211_shoin_chat.sql + 20260223000001_council_plan_html.sql)
+  - Does the council skill correctly read SUPABASE_SERVICE_ROLE_KEY from ~/Code/war-room/.env.local?
+
+decisions:
+  - no_full_git_merge: Cherry-picked chat files individually instead of git merge — shoin-chat-rebuild was based on older main and would have regressed Sprint 1 lib/types.ts additions (RpgStats, Task status fields, CouncilSession)
+  - parallel_agents: T1-skill (council SKILL.md) and T2 (Shoin Chat files) ran in parallel since they touched different directories. T1 war-room changes (migration, types, page) ran after T2 completed.
+  - install_anthropic_sdk: lib/query-analyzer.ts had a pre-existing missing @anthropic-ai/sdk dep — installed it to get clean build
+
+findings:
+  - build_passes_clean: npm run build passes with /chat + /council/[id] both rendering correctly
+  - shoin_chat_types_independent: lib/chat.ts defines ChatThread/ChatMessage locally — no imports from lib/types.ts, zero conflict with Sprint 1 types
+  - council_action_bar_already_done: CouncilActions component with Create Project/Mission modals was already built in Sprint 1 (just not committed). Plan_html iframe is the only new UI addition to council/[id].
+
+worked:
+  - Selective file checkout (git checkout branch -- file) to avoid merge conflicts on diverged branches
+  - Parallel background agents for independent directory work
+  - Two-agent dispatch: T1-skill modifies ~/.claude/skills/, T2 modifies ~/Code/war-room/ — zero file conflicts
+
+failed:
+  - Full git merge of shoin-chat-rebuild would have caused lib/types.ts regressions (confirmed by reviewing the diff — branch removes council_reviewed, RpgStats, task status fields added in Sprint 1)
+
+next:
+  - Apply migrations to Supabase: 20250211_shoin_chat.sql + 20260223000001_council_plan_html.sql
+  - Test end-to-end: run /council from CLI, verify session appears in localhost:3001/council, open session detail, confirm iframe renders
+  - Test Shoin Chat: navigate to /chat, create thread, send message, verify Claude CLI streaming works
+  - Sprint 3 planning: health glow on project cards (Option A), /health route, "Ready for Council" button in Shoin
+
+files:
+  created:
+    - supabase/migrations/20260223000001_council_plan_html.sql
+    - app/chat/page.tsx
+    - app/api/chat/route.ts
+    - app/api/chat/threads/route.ts
+    - components/chat/chat-input.tsx
+    - components/chat/message-area.tsx
+    - components/chat/message-bubble.tsx
+    - components/chat/thread-list.tsx
+    - lib/chat.ts
+    - lib/claude-cli.ts
+    - supabase/migrations/20250211_shoin_chat.sql
+    - components/council/council-actions.tsx
+    - components/create-project-modal.tsx
+    - components/create-mission-modal.tsx
+    - components/rpg-stat-bar.tsx
+  modified:
+    - ~/.claude/skills/council/SKILL.md
+    - lib/types.ts
+    - app/council/[id]/page.tsx
+    - app/dashboard/page.tsx (nav link to /chat)
+    - lib/queries.ts
+    - lib/role-cards.ts
+    - package.json (react-markdown, @anthropic-ai/sdk)

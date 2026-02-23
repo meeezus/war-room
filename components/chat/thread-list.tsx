@@ -1,6 +1,7 @@
 "use client"
 
-import { Plus, MessageSquare } from 'lucide-react'
+import { useState } from 'react'
+import { Plus, MessageSquare, Archive, Trash2 } from 'lucide-react'
 
 export interface ThreadSummary {
   id: string
@@ -16,6 +17,10 @@ interface ThreadListProps {
   onSelectThread: (id: string) => void
   onNewThread: () => void
   isCreating?: boolean
+  onArchive?: (id: string) => void
+  onDelete?: (id: string) => void
+  showArchived?: boolean
+  onToggleArchived?: () => void
 }
 
 function timeAgo(dateStr: string): string {
@@ -29,7 +34,31 @@ function timeAgo(dateStr: string): string {
   return `${days}d`
 }
 
-export function ThreadList({ threads, activeThreadId, onSelectThread, onNewThread, isCreating }: ThreadListProps) {
+export function ThreadList({
+  threads,
+  activeThreadId,
+  onSelectThread,
+  onNewThread,
+  isCreating,
+  onArchive,
+  onDelete,
+  showArchived,
+  onToggleArchived,
+}: ThreadListProps) {
+  const [hoveredId, setHoveredId] = useState<string | null>(null)
+
+  const handleDelete = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation()
+    if (window.confirm('Delete this thread?')) {
+      onDelete?.(id)
+    }
+  }
+
+  const handleArchive = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation()
+    onArchive?.(id)
+  }
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -46,6 +75,32 @@ export function ThreadList({ threads, activeThreadId, onSelectThread, onNewThrea
         </button>
       </div>
 
+      {/* Active / Archived toggle */}
+      {onToggleArchived && (
+        <div className="flex border-b border-zinc-800">
+          <button
+            onClick={() => showArchived && onToggleArchived()}
+            className={`flex-1 py-2 text-xs font-medium transition-colors ${
+              !showArchived
+                ? 'text-emerald-400 border-b-2 border-emerald-500'
+                : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            Active
+          </button>
+          <button
+            onClick={() => !showArchived && onToggleArchived()}
+            className={`flex-1 py-2 text-xs font-medium transition-colors ${
+              showArchived
+                ? 'text-emerald-400 border-b-2 border-emerald-500'
+                : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            Archived
+          </button>
+        </div>
+      )}
+
       {/* Thread list */}
       <div className="flex-1 overflow-y-auto">
         {threads.length === 0 && (
@@ -54,34 +109,64 @@ export function ThreadList({ threads, activeThreadId, onSelectThread, onNewThrea
           </div>
         )}
         {threads.map((thread) => (
-          <button
+          <div
             key={thread.id}
-            onClick={() => onSelectThread(thread.id)}
-            className={`w-full text-left px-4 py-3 border-b border-zinc-800/50 transition-colors ${
-              activeThreadId === thread.id
-                ? 'bg-emerald-500/10 border-l-2 border-l-emerald-500'
-                : 'hover:bg-zinc-900/50'
-            }`}
+            className="relative"
+            onMouseEnter={() => setHoveredId(thread.id)}
+            onMouseLeave={() => setHoveredId(null)}
           >
-            <div className="flex items-start gap-2">
-              <MessageSquare className="h-3.5 w-3.5 text-zinc-500 mt-0.5 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm text-zinc-200 truncate font-medium">
-                    {thread.title}
-                  </span>
-                  <span className="text-[10px] text-zinc-600 flex-shrink-0 font-[family-name:var(--font-jetbrains-mono)]">
-                    {timeAgo(thread.last_message_at)}
-                  </span>
+            <button
+              onClick={() => onSelectThread(thread.id)}
+              className={`w-full text-left px-4 py-3 border-b border-zinc-800/50 transition-colors ${
+                activeThreadId === thread.id
+                  ? 'bg-emerald-500/10 border-l-2 border-l-emerald-500'
+                  : 'hover:bg-zinc-900/50'
+              }`}
+            >
+              <div className="flex items-start gap-2">
+                <MessageSquare className="h-3.5 w-3.5 text-zinc-500 mt-0.5 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm text-zinc-200 truncate font-medium">
+                      {thread.title}
+                    </span>
+                    <span className="text-[10px] text-zinc-600 flex-shrink-0 font-[family-name:var(--font-jetbrains-mono)]">
+                      {timeAgo(thread.last_message_at)}
+                    </span>
+                  </div>
+                  {thread.last_message && (
+                    <p className="text-xs text-zinc-500 truncate mt-0.5">
+                      {thread.last_message}
+                    </p>
+                  )}
                 </div>
-                {thread.last_message && (
-                  <p className="text-xs text-zinc-500 truncate mt-0.5">
-                    {thread.last_message}
-                  </p>
+              </div>
+            </button>
+
+            {/* Hover actions */}
+            {hoveredId === thread.id && (onArchive || onDelete) && (
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                {onArchive && (
+                  <button
+                    onClick={(e) => handleArchive(e, thread.id)}
+                    className="h-6 w-6 rounded flex items-center justify-center bg-zinc-800 hover:bg-zinc-700 transition-colors"
+                    title="Archive thread"
+                  >
+                    <Archive className="h-3 w-3 text-zinc-400" />
+                  </button>
+                )}
+                {onDelete && (
+                  <button
+                    onClick={(e) => handleDelete(e, thread.id)}
+                    className="h-6 w-6 rounded flex items-center justify-center bg-zinc-800 hover:bg-red-900/60 transition-colors"
+                    title="Delete thread"
+                  >
+                    <Trash2 className="h-3 w-3 text-zinc-400 hover:text-red-400" />
+                  </button>
                 )}
               </div>
-            </div>
-          </button>
+            )}
+          </div>
         ))}
       </div>
     </div>

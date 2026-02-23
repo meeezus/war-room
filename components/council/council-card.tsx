@@ -46,15 +46,15 @@ export function CouncilCard({ review }: CouncilCardProps) {
 
       {/* Header: avatar + name + verdict */}
       <div className="flex items-center gap-3">
-        <div className="relative flex-shrink-0">
+        <div className="relative flex-shrink-0 w-12 h-12 rounded-full overflow-hidden">
           {roleCard.avatarPath ? (
             <Image
               src={roleCard.avatarPath}
               alt={roleCard.name}
               width={48}
               height={48}
-              className="rounded-full object-cover ring-1"
-              style={{ ringColor: color } as React.CSSProperties}
+              className="w-12 h-12 rounded-full object-cover"
+              style={{ border: `1px solid ${color}44` }}
               onError={(e) => {
                 // Fallback to emoji on image error
                 const target = e.target as HTMLImageElement;

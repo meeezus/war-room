@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { getProjectWithBoards, getProjectProposals, getProjectMissionsWithSteps } from "@/lib/queries";
@@ -18,7 +18,7 @@ export default function ProjectPage() {
   const [missions, setMissions] = useState<MissionWithSteps[]>([]);
   const [loading, setLoading] = useState(true);
 
-  async function fetchData() {
+  const fetchData = useCallback(async () => {
     if (!params.id) return;
     const [projectData, proposalsData, missionsData] = await Promise.all([
       getProjectWithBoards(params.id),
@@ -31,11 +31,11 @@ export default function ProjectPage() {
     setProposals(proposalsData);
     setMissions(missionsData);
     setLoading(false);
-  }
+  }, [params.id]);
 
   useEffect(() => {
-    fetchData();
-  }, [params.id]);
+    void fetchData();
+  }, [fetchData]);
 
   if (!supabase) {
     return (
@@ -77,8 +77,6 @@ export default function ProjectPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <ProjectDetail project={project} boards={boards} tasks={tasks} proposals={proposals} missions={missions} onUpdate={fetchData} />
-    </div>
+    <ProjectDetail project={project} boards={boards} tasks={tasks} proposals={proposals} missions={missions} onUpdate={fetchData} />
   );
 }

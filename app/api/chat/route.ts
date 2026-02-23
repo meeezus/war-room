@@ -2,16 +2,20 @@ import { NextRequest } from 'next/server'
 import { randomUUID } from 'crypto'
 import { spawnClaude, type ClaudeSession } from '@/lib/claude-cli'
 import { saveMessage, getThreadSessionId, setThreadSessionId } from '@/lib/chat'
+import { createRequestContext } from '@/lib/request-context'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300 // 5 min max for long Claude responses
 
 export async function POST(req: NextRequest) {
+  const ctx = createRequestContext()
   const { threadId, content } = await req.json()
 
   if (!threadId || !content) {
     return Response.json({ error: 'threadId and content are required' }, { status: 400 })
   }
+
+  ctx.log('request_received', { threadId })
 
   // Save user message
   await saveMessage(threadId, 'user', content)
@@ -86,6 +90,7 @@ export async function POST(req: NextRequest) {
     },
   })
 
+  ctx.log('response_sent')
   return new Response(stream, {
     headers: {
       'Content-Type': 'text/event-stream',

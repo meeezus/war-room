@@ -11,6 +11,7 @@ import { EventFeed } from "@/components/event-feed";
 import { StealthCard } from "@/components/stealth-card";
 import { ProjectOverview } from "@/components/project-overview";
 import { CreateProjectModal } from "@/components/create-project-modal";
+import { TerminalPanel } from "@/components/terminal/terminal-panel";
 
 
 const defaultStats: DashboardStats = {
@@ -225,6 +226,9 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {/* Bottom - Terminal Panel */}
+      <TerminalPanel missions={missions} />
 
       <CreateProjectModal
         open={createProjectOpen}

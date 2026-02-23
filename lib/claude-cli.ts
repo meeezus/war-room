@@ -21,6 +21,62 @@ interface StreamChunk {
 }
 
 /**
+ * Spawn `claude --print` with stream-json output and return a ReadableStream of raw lines.
+ * Each chunk is a raw newline-delimited JSON string from Claude's stdout.
+ */
+export function spawnClaudeRaw(prompt: string): ReadableStream<string> {
+  const args = [
+    '--print',
+    '--output-format', 'stream-json',
+    '-p', prompt,
+  ]
+
+  let proc: ReturnType<typeof spawn>
+
+  return new ReadableStream<string>({
+    start(controller) {
+      proc = spawn(CLAUDE_PATH, args, {
+        env: { ...process.env, CLAUDECODE: undefined },
+        stdio: ['ignore', 'pipe', 'pipe'],
+      })
+
+      let buffer = ''
+      let stderrOutput = ''
+
+      proc.stdout!.on('data', (data: Buffer) => {
+        buffer += data.toString()
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+        for (const line of lines) {
+          if (line.trim()) controller.enqueue(line)
+        }
+      })
+
+      proc.stderr!.on('data', (data: Buffer) => {
+        stderrOutput += data.toString()
+      })
+
+      proc.on('close', (code) => {
+        if (buffer.trim()) controller.enqueue(buffer)
+
+        if (code !== 0 && code !== null) {
+          controller.error(new Error(`Claude CLI exited with code ${code}: ${stderrOutput.slice(0, 500)}`))
+        } else {
+          controller.close()
+        }
+      })
+
+      proc.on('error', (err) => {
+        controller.error(err)
+      })
+    },
+    cancel() {
+      proc?.kill()
+    },
+  })
+}
+
+/**
  * Spawn `claude --print` and return a ReadableStream of text chunks.
  * Each chunk is a piece of Claude's response text as it arrives.
  */

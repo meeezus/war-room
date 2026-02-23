@@ -9,6 +9,7 @@ export interface ChatThread {
   last_message: string | null
   last_message_at: string
   unread: boolean
+  status?: 'active' | 'archived'
   metadata: Record<string, unknown>
   created_at: string
   updated_at: string
@@ -37,14 +38,71 @@ function getServiceClient(): SupabaseClient {
   })
 }
 
-export async function getThreads(): Promise<ChatThread[]> {
+export async function getThreads(
+  filter?: { status?: 'active' | 'archived' }
+): Promise<ChatThread[]> {
   const sb = getServiceClient()
+  const status = filter?.status ?? 'active'
   const { data, error } = await sb
     .from('chat_threads')
     .select('*')
+    .eq('status', status)
     .order('last_message_at', { ascending: false })
   if (error) throw error
   return data ?? []
+}
+
+export async function archiveThread(id: string): Promise<void> {
+  const sb = getServiceClient()
+  const { error } = await sb
+    .from('chat_threads')
+    .update({ status: 'archived', updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) throw error
+}
+
+export async function deleteThread(id: string): Promise<void> {
+  const sb = getServiceClient()
+  const { error: msgError } = await sb
+    .from('chat_messages')
+    .delete()
+    .eq('thread_id', id)
+  if (msgError) throw msgError
+  const { error } = await sb
+    .from('chat_threads')
+    .delete()
+    .eq('id', id)
+  if (error) throw error
+}
+
+export async function cleanupArchivedThreads(olderThanDays = 30): Promise<void> {
+  const sb = getServiceClient()
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() - olderThanDays)
+  const cutoffIso = cutoff.toISOString()
+
+  // Fetch archived thread IDs older than cutoff
+  const { data, error: fetchError } = await sb
+    .from('chat_threads')
+    .select('id')
+    .eq('status', 'archived')
+    .lt('updated_at', cutoffIso)
+  if (fetchError) throw fetchError
+  if (!data || data.length === 0) return
+
+  const ids = data.map((t) => t.id)
+
+  const { error: msgError } = await sb
+    .from('chat_messages')
+    .delete()
+    .in('thread_id', ids)
+  if (msgError) throw msgError
+
+  const { error } = await sb
+    .from('chat_threads')
+    .delete()
+    .in('id', ids)
+  if (error) throw error
 }
 
 export async function getThread(id: string): Promise<ChatThread | null> {

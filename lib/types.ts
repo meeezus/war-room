@@ -28,6 +28,7 @@ export interface Mission {
   title: string
   assigned_to: string
   status: 'queued' | 'running' | 'review' | 'completed' | 'deployed' | 'failed' | 'stale'
+  priority: number
   started_at: string | null
   completed_at: string | null
   result: Record<string, unknown> | null
@@ -189,6 +190,7 @@ export interface CouncilSession {
   plan_html: string | null
   source: string
   metadata: Record<string, unknown>
+  status: 'active' | 'archived'
   created_at: string
 }
 
@@ -225,4 +227,14 @@ export interface DaimyoStats {
   domain_stat_1_name: string
   domain_stat_2_name: string
   rpg_class: string
+}
+
+export interface ActiveAgent {
+  id: string
+  agent_type: string
+  task_summary: string | null
+  progress: number
+  mission_id: string | null
+  started_at: string
+  status: 'running' | 'idle' | 'completed' | 'failed'
 }

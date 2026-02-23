@@ -71,7 +71,9 @@ export function ProjectKanban({ missions: initialMissions, projectId }: ProjectK
   return (
     <div className="flex h-full gap-3 overflow-x-auto">
       {KANBAN_COLUMNS.map((col) => {
-        const allCards = missions.filter((m) => m.status === col.status);
+        const allCards = missions
+          .filter((m) => m.status === col.status)
+          .sort((a, b) => (a.priority ?? 3) - (b.priority ?? 3));
         // For completed column: show last 7 days by default
         const cards =
           col.status === "completed" && !showAllCompleted

@@ -20,6 +20,7 @@ export default function ChatPage() {
   const [isCreatingThread, setIsCreatingThread] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(typeof window !== 'undefined' ? window.innerWidth >= 768 : true)
   const [error, setError] = useState<string | null>(null)
+  const [showArchived, setShowArchived] = useState(false)
   const channelRef = useRef<RealtimeChannel | null>(null)
 
   // Fetch threads on mount
@@ -86,9 +87,10 @@ export default function ChatPage() {
     }
   }, [])
 
-  const fetchThreads = async () => {
+  const fetchThreads = async (archived = showArchived) => {
     try {
-      const res = await fetch('/api/chat/threads')
+      const status = archived ? 'archived' : 'active'
+      const res = await fetch(`/api/chat/threads?status=${status}`)
       const data = await res.json()
       if (data.threads) {
         setThreads(data.threads)
@@ -100,6 +102,38 @@ export default function ChatPage() {
     } catch (err) {
       console.error('Failed to fetch threads:', err)
     }
+  }
+
+  const handleArchiveThread = async (id: string) => {
+    try {
+      await fetch(`/api/chat/threads/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'archived' }),
+      })
+      fetchThreads()
+    } catch (err) {
+      console.error('Failed to archive thread:', err)
+    }
+  }
+
+  const handleDeleteThread = async (id: string) => {
+    try {
+      await fetch(`/api/chat/threads/${id}`, { method: 'DELETE' })
+      if (activeThreadId === id) {
+        setActiveThreadId(null)
+        setMessages([])
+      }
+      fetchThreads()
+    } catch (err) {
+      console.error('Failed to delete thread:', err)
+    }
+  }
+
+  const handleToggleArchived = () => {
+    const next = !showArchived
+    setShowArchived(next)
+    fetchThreads(next)
   }
 
   const fetchMessages = async (threadId: string) => {
@@ -274,6 +308,10 @@ export default function ChatPage() {
           }}
           onNewThread={createThread}
           isCreating={isCreatingThread}
+          onArchive={handleArchiveThread}
+          onDelete={handleDeleteThread}
+          showArchived={showArchived}
+          onToggleArchived={handleToggleArchived}
         />
       </div>
 

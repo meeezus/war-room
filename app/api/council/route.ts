@@ -1,22 +1,16 @@
 import { NextRequest } from 'next/server'
 import { createServiceClient } from '@/lib/supabase-server'
+import { getCouncilSessions } from '@/lib/queries'
 import type { CouncilReview } from '@/lib/types'
 
-export async function GET() {
-  const sb = createServiceClient()
-  if (!sb) return Response.json({ sessions: [] })
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url)
+  const statusParam = searchParams.get('status')
+  const status =
+    statusParam === 'active' || statusParam === 'archived' ? statusParam : 'active'
 
-  const { data, error } = await sb
-    .from('council_sessions')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(20)
-
-  if (error) {
-    console.error('[council/route] GET error:', error)
-    return Response.json({ error: 'Failed to fetch sessions' }, { status: 500 })
-  }
-  return Response.json({ sessions: data ?? [] })
+  const sessions = await getCouncilSessions(20, { status })
+  return Response.json({ sessions })
 }
 
 export async function POST(req: NextRequest) {
