@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reflexive Execution — Plan Visual</title>
+<style>
+  :root {
+    --bg: #0a0a0a; --surface: #141414; --surface-2: #1a1a1a;
+    --text: #fafafa; --text-dim: #888; --text-muted: #555;
+    --green: #22c55e; --red: #ef4444; --amber: #f59e0b; --blue: #3b82f6;
+    --purple: #a855f7; --cyan: #06b6d4;
+    --border: #222;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    padding: 20px; max-width: 100vw; overflow-x: hidden;
+    line-height: 1.5;
+  }
+  h1 { font-size: 1.4rem; margin-bottom: 4px; }
+  h2 { font-size: 1.1rem; color: var(--cyan); margin: 28px 0 12px; }
+  h3 { font-size: 0.9rem; color: var(--text-dim); margin: 16px 0 8px; font-weight: normal; }
+  p, li { font-size: 0.85rem; color: var(--text-dim); }
+  .subtitle { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 24px; }
+
+  /* The Loop — the hero visual */
+  .loop-container {
+    position: relative;
+    margin: 32px auto;
+    max-width: 360px;
+  }
+  .loop-ring {
+    width: 300px; height: 300px;
+    border: 2px solid var(--border);
+    border-radius: 50%;
+    margin: 0 auto;
+    position: relative;
+    animation: pulse-ring 4s ease-in-out infinite;
+  }
+  @keyframes pulse-ring {
+    0%, 100% { border-color: var(--border); }
+    50% { border-color: var(--purple); box-shadow: 0 0 30px rgba(168, 85, 247, 0.15); }
+  }
+  .loop-node {
+    position: absolute;
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column;
+    font-size: 0.65rem; text-align: center;
+    font-weight: 600;
+    transition: all 0.3s;
+  }
+  .loop-node:hover { transform: scale(1.15); }
+  .loop-node .icon { font-size: 1.4rem; margin-bottom: 2px; }
+  .loop-node .label { font-size: 0.6rem; color: var(--text); letter-spacing: 0.5px; }
+
+  .node-objective {
+    top: -40px; left: 50%; transform: translateX(-50%);
+    background: linear-gradient(135deg, var(--purple), #7c3aed);
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+  }
+  .node-execute {
+    top: 50%; right: -40px; transform: translateY(-50%);
+    background: linear-gradient(135deg, var(--blue), #2563eb);
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  }
+  .node-evaluate {
+    bottom: -40px; left: 50%; transform: translateX(-50%);
+    background: linear-gradient(135deg, var(--amber), #d97706);
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+  }
+  .node-replan {
+    top: 50%; left: -40px; transform: translateY(-50%);
+    background: linear-gradient(135deg, var(--cyan), #0891b2);
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+  }
+
+  /* Arrows between nodes */
+  .loop-arrow {
+    position: absolute;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    animation: flow 2s ease-in-out infinite;
+  }
+  @keyframes flow {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+  .arrow-top-right { top: 18%; right: 12%; animation-delay: 0s; }
+  .arrow-bottom-right { bottom: 18%; right: 12%; animation-delay: 0.5s; }
+  .arrow-bottom-left { bottom: 18%; left: 12%; animation-delay: 1s; }
+  .arrow-top-left { top: 18%; left: 12%; animation-delay: 1.5s; }
+
+  /* Center label */
+  .loop-center {
+    position: absolute;
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+    text-align: center;
+  }
+  .loop-center .big { font-size: 2rem; color: var(--green); }
+  .loop-center .small { font-size: 0.65rem; color: var(--text-dim); margin-top: 2px; }
+
+  /* Exit arrow */
+  .exit-path {
+    text-align: center;
+    margin-top: 48px;
+    padding: 12px;
+    border: 1px dashed var(--green);
+    border-radius: 8px;
+    max-width: 360px;
+    margin-left: auto; margin-right: auto;
+  }
+  .exit-path .verdict { color: var(--green); font-weight: 700; font-size: 0.9rem; }
+  .exit-path .desc { color: var(--text-dim); font-size: 0.75rem; margin-top: 4px; }
+
+  /* Before/After comparison */
+  .compare {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    margin: 16px 0;
+  }
+  .compare-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .compare-box.before { border-top: 3px solid var(--red); }
+  .compare-box.after { border-top: 3px solid var(--green); }
+  .compare-box h4 {
+    font-size: 0.7rem; text-transform: uppercase;
+    letter-spacing: 1px; margin-bottom: 8px;
+  }
+  .compare-box.before h4 { color: var(--red); }
+  .compare-box.after h4 { color: var(--green); }
+  .compare-box code {
+    font-size: 0.65rem; color: var(--text-dim);
+    display: block; line-height: 1.8;
+  }
+  .compare-box code .dim { color: var(--text-muted); }
+  .compare-box code .hi { color: var(--text); }
+  .compare-box code .new { color: var(--green); }
+
+  /* Safety layers */
+  .safety-grid {
+    display: grid; gap: 8px; margin: 12px 0;
+  }
+  .safety-row {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+  }
+  .safety-num {
+    width: 24px; height: 24px;
+    background: var(--surface-2);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; color: var(--amber);
+    flex-shrink: 0;
+  }
+  .safety-text { font-size: 0.75rem; color: var(--text-dim); }
+  .safety-text strong { color: var(--text); }
+
+  /* Sprint timeline */
+  .timeline { margin: 16px 0; }
+  .sprint-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 8px;
+    border-left: 3px solid var(--border);
+  }
+  .sprint-block.s1 { border-left-color: var(--purple); }
+  .sprint-block.s2 { border-left-color: var(--blue); }
+  .sprint-block.s3 { border-left-color: var(--cyan); }
+  .sprint-name {
+    font-size: 0.8rem; font-weight: 700; margin-bottom: 6px;
+  }
+  .sprint-name.s1 { color: var(--purple); }
+  .sprint-name.s2 { color: var(--blue); }
+  .sprint-name.s3 { color: var(--cyan); }
+  .task-list { list-style: none; }
+  .task-list li {
+    font-size: 0.7rem; color: var(--text-dim);
+    padding: 3px 0;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .task-list li::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .task-list li .parallel {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    background: var(--surface-2);
+    padding: 1px 5px;
+    border-radius: 3px;
+    margin-left: auto;
+  }
+
+  /* Key insight callout */
+  .insight {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(6, 182, 212, 0.08));
+    border: 1px solid rgba(168, 85, 247, 0.2);
+    border-radius: 8px;
+    padding: 16px;
+    margin: 20px 0;
+  }
+  .insight .key { color: var(--purple); font-size: 0.8rem; font-weight: 700; margin-bottom: 6px; }
+  .insight p { font-size: 0.8rem; color: var(--text-dim); }
+
+  /* Files touched */
+  .file-grid {
+    display: grid; gap: 4px; margin: 8px 0;
+  }
+  .file-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 10px;
+    background: var(--surface);
+    border-radius: 4px;
+    font-size: 0.7rem;
+  }
+  .file-path { color: var(--text-dim); }
+  .file-action {
+    font-size: 0.6rem; padding: 2px 6px;
+    border-radius: 3px; font-weight: 600;
+  }
+  .file-action.create { background: rgba(34, 197, 94, 0.15); color: var(--green); }
+  .file-action.modify { background: rgba(59, 130, 246, 0.15); color: var(--blue); }
+
+  .footer {
+    margin-top: 40px; padding-top: 16px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    font-size: 0.65rem; color: var(--text-muted);
+  }
+</style>
+</head>
+<body>
+
+<h1>Reflexive Execution</h1>
+<div class="subtitle">Closed-loop autonomous goal pursuit for Shogunate</div>
+
+<!-- The Loop -->
+<div class="loop-container">
+  <div class="loop-ring">
+    <div class="loop-node node-objective">
+      <span class="icon">&#127919;</span>
+      <span class="label">OBJECTIVE</span>
+    </div>
+    <div class="loop-node node-execute">
+      <span class="icon">&#9889;</span>
+      <span class="label">EXECUTE</span>
+    </div>
+    <div class="loop-node node-evaluate">
+      <span class="icon">&#128269;</span>
+      <span class="label">EVALUATE</span>
+    </div>
+    <div class="loop-node node-replan">
+      <span class="icon">&#128260;</span>
+      <span class="label">REPLAN</span>
+    </div>
+
+    <div class="loop-arrow arrow-top-right">&#8600;</div>
+    <div class="loop-arrow arrow-bottom-right">&#8601;</div>
+    <div class="loop-arrow arrow-bottom-left">&#8598;</div>
+    <div class="loop-arrow arrow-top-left">&#8599;</div>
+
+    <div class="loop-center">
+      <div class="big">&#8734;</div>
+      <div class="small">until done<br>or budget hit</div>
+    </div>
+  </div>
+
+  <div class="exit-path">
+    <div class="verdict">&#10003; verdict: "complete"</div>
+    <div class="desc">Objective marked done. Loop exits. You wake up to a PR.</div>
+  </div>
+</div>
+
+<!-- Key Insight -->
+<div class="insight">
+  <div class="key">The Word You Were Looking For</div>
+  <p><strong>Reflexive</strong> &mdash; from Latin <em>reflexus</em>, "bent back." A system that acts on its own output. The engine stops being a CI pipeline (open-loop) and becomes a cybernetic agent (closed-loop). Sprint 2 is <em>emergent</em> from Sprint 1's actual results, not pre-planned.</p>
+</div>
+
+<!-- Before / After -->
+<h2>Open-Loop vs Closed-Loop</h2>
+<div class="compare">
+  <div class="compare-box before">
+    <h4>Today (Open)</h4>
+    <code>
+      <span class="hi">proposal</span><br>
+      <span class="dim">&nbsp;&nbsp;&#8627;</span> council<br>
+      <span class="dim">&nbsp;&nbsp;&#8627;</span> mission<br>
+      <span class="dim">&nbsp;&nbsp;&#8627;</span> tasks<br>
+      <span class="dim">&nbsp;&nbsp;&#8627;</span> <span class="hi">done. stop.</span><br>
+      <br>
+      <span class="dim">// dead end</span><br>
+      <span class="dim">// no feedback</span><br>
+      <span class="dim">// fire &amp; forget</span>
+    </code>
+  </div>
+  <div class="compare-box after">
+    <h4>Reflexive (Closed)</h4>
+    <code>
+      <span class="new">objective</span><br>
+      <span class="dim">&nbsp;&nbsp;&#8627;</span> proposal<br>
+      <span class="dim">&nbsp;&nbsp;&#8627;</span> mission<br>
+      <span class="dim">&nbsp;&nbsp;&#8627;</span> tasks<br>
+      <span class="dim">&nbsp;&nbsp;&#8627;</span> <span class="new">evaluate</span><br>
+      <span class="dim">&nbsp;&nbsp;&#8627;</span> <span class="new">replan &#8627; proposal</span><br>
+      <span class="dim">&nbsp;&nbsp;&nbsp;&nbsp;</span> <span class="new">&#8627; loop...</span>
+    </code>
+  </div>
+</div>
+
+<!-- Safety -->
+<h2>5 Safety Layers</h2>
+<div class="safety-grid">
+  <div class="safety-row">
+    <div class="safety-num">1</div>
+    <div class="safety-text"><strong>Iteration cap</strong> &mdash; max 5 missions per objective (configurable)</div>
+  </div>
+  <div class="safety-row">
+    <div class="safety-num">2</div>
+    <div class="safety-text"><strong>Kill switch</strong> &mdash; SET status='paused' stops loop instantly</div>
+  </div>
+  <div class="safety-row">
+    <div class="safety-num">3</div>
+    <div class="safety-text"><strong>Council gate</strong> &mdash; follow-ups enter normal review pipeline</div>
+  </div>
+  <div class="safety-row">
+    <div class="safety-num">4</div>
+    <div class="safety-text"><strong>Cost gate</strong> &mdash; existing cap_gates auto-approve limits apply</div>
+  </div>
+  <div class="safety-row">
+    <div class="safety-num">5</div>
+    <div class="safety-text"><strong>Stall detection</strong> &mdash; poller catches orphaned objectives</div>
+  </div>
+</div>
+
+<!-- Sprints -->
+<h2>Implementation</h2>
+<div class="timeline">
+  <div class="sprint-block s1">
+    <div class="sprint-name s1">Sprint 1 &mdash; Schema + Evaluator Core</div>
+    <ul class="task-list">
+      <li>Migration: objectives table + FK columns <span class="parallel">G1</span></li>
+      <li>evaluator.py: evaluate + verdict + replan <span class="parallel">G1</span></li>
+      <li>Hook into executor + mission propagation <span class="parallel">G2</span></li>
+    </ul>
+  </div>
+  <div class="sprint-block s2">
+    <div class="sprint-name s2">Sprint 2 &mdash; Poller + Tests</div>
+    <ul class="task-list">
+      <li>Poller stall detection step <span class="parallel">G3</span></li>
+      <li>Unit tests for evaluator <span class="parallel">G3</span></li>
+      <li>Update existing test mocks <span class="parallel">G4</span></li>
+    </ul>
+  </div>
+  <div class="sprint-block s3">
+    <div class="sprint-name s3">Sprint 3 &mdash; Notifications + Docs</div>
+    <ul class="task-list">
+      <li>Discord notification routing <span class="parallel">G3</span></li>
+      <li>Engine manual update <span class="parallel">G3</span></li>
+    </ul>
+  </div>
+</div>
+
+<h3>Parallel Groups (4 waves)</h3>
+<p style="font-size: 0.75rem;">
+  G1: S1-T1 + S1-T2 &rarr; G2: S1-T3 &rarr; G3: S2-T1 + S2-T2 + S3-T1 + S3-T2 &rarr; G4: S2-T3
+</p>
+
+<!-- Files -->
+<h2>Files Touched</h2>
+<div class="file-grid">
+  <div class="file-row"><span class="file-path">engine/evaluator.py</span><span class="file-action create">create</span></div>
+  <div class="file-row"><span class="file-path">migrations/...objectives.sql</span><span class="file-action create">create</span></div>
+  <div class="file-row"><span class="file-path">tests/unit/test_evaluator.py</span><span class="file-action create">create</span></div>
+  <div class="file-row"><span class="file-path">engine/executor.py</span><span class="file-action modify">modify</span></div>
+  <div class="file-row"><span class="file-path">engine/mission.py</span><span class="file-action modify">modify</span></div>
+  <div class="file-row"><span class="file-path">engine/config.py</span><span class="file-action modify">modify</span></div>
+  <div class="file-row"><span class="file-path">engine/poller.py</span><span class="file-action modify">modify</span></div>
+  <div class="file-row"><span class="file-path">engine/notifications.py</span><span class="file-action modify">modify</span></div>
+  <div class="file-row"><span class="file-path">docs/engine-manual.md</span><span class="file-action modify">modify</span></div>
+</div>
+
+<div class="insight" style="margin-top: 28px;">
+  <div class="key">Overnight Execution via Ralph</div>
+  <p>Approve plan &rarr; save to .specs/ &rarr; start Ralph &rarr; sleep. Ralph re-anchors each iteration, reads the spec, works through parallel groups. Existing missions kanban shows progress live. Kill switch available if needed.</p>
+</div>
+
+<div class="footer">
+  Reflexive Execution &mdash; Shogunate Engine &mdash; 2026-02-23<br>
+  3 creates &bull; 6 modifies &bull; 8 tasks &bull; 4 parallel waves
+</div>
+
+</body>
+</html>
