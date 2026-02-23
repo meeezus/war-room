@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { CouncilSession } from "@/lib/types";
 
 interface CouncilSynthesisProps {
@@ -11,9 +12,18 @@ export function CouncilSynthesis({ session }: CouncilSynthesisProps) {
     <div className="mb-8">
       {/* Makima synthesis — distinct full-width block */}
       <div className="border-l-2 border-[#ef4444] pl-4 py-2">
-        <h3 className="font-[family-name:var(--font-space-grotesk)] font-semibold text-base text-[#E5E5E5] mb-3">
-          Makima &mdash; Final Assessment
-        </h3>
+        <div className="flex items-center gap-3 mb-3">
+          <Image
+            src="/avatars/makima.webp"
+            alt="Makima"
+            width={48}
+            height={48}
+            className="rounded-full object-cover ring-1 ring-red-500/30"
+          />
+          <h3 className="font-[family-name:var(--font-space-grotesk)] font-semibold text-base text-[#E5E5E5]">
+            Makima &mdash; Final Assessment
+          </h3>
+        </div>
 
         {session.synthesis && (
           <p className="text-sm text-[rgba(255,255,255,0.7)] leading-relaxed mb-4">
