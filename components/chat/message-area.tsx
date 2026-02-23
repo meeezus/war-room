@@ -10,9 +10,10 @@ interface MessageAreaProps {
   streamingContent?: string
   isLoading?: boolean
   isFetching?: boolean
+  agentId?: string | null
 }
 
-export function MessageArea({ messages, streamingContent, isLoading, isFetching }: MessageAreaProps) {
+export function MessageArea({ messages, streamingContent, isLoading, isFetching, agentId }: MessageAreaProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -56,7 +57,7 @@ export function MessageArea({ messages, streamingContent, isLoading, isFetching 
         <MessageBubble
           role="assistant"
           content={streamingContent}
-          agentId="cc"
+          agentId={agentId || 'cc'}
           isStreaming={isLoading}
         />
       )}
@@ -65,7 +66,7 @@ export function MessageArea({ messages, streamingContent, isLoading, isFetching 
         <MessageBubble
           role="assistant"
           content=""
-          agentId="cc"
+          agentId={agentId || 'cc'}
           isStreaming
         />
       )}

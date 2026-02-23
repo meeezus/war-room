@@ -86,6 +86,7 @@ export function spawnClaude(
   options?: {
     resume?: boolean
     workingDir?: string
+    systemPrompt?: string
   }
 ): ReadableStream<string> {
   const resume = options?.resume ?? false
@@ -107,10 +108,11 @@ export function spawnClaude(
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
     hour: 'numeric', minute: '2-digit', hour12: true, timeZone: TIMEZONE,
   })
-  args.push(
-    '--append-system-prompt',
-    `Current date/time: ${now}. User: Michael Enriquez (Sensei). This is Shoin Chat — War Room's chat interface.`
-  )
+  const systemContext = [
+    options?.systemPrompt,
+    `Current date/time: ${now}. User: Michael Enriquez (Sensei). This is Shoin Chat — War Room's chat interface.`,
+  ].filter(Boolean).join('\n\n')
+  args.push('--append-system-prompt', systemContext)
   args.push('-p', prompt)
 
   let proc: ReturnType<typeof spawn>

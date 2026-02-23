@@ -127,21 +127,27 @@ export function MessageBubble({ role, content, agentId, timestamp, isStreaming }
   return (
     <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
       {/* Avatar */}
-      <div className={`flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center ${
-        isUser ? 'bg-emerald-500/20' : 'bg-zinc-800'
-      }`}>
-        {isUser ? (
+      {isUser ? (
+        <div className="flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center bg-emerald-500/20">
           <User className="h-4 w-4 text-emerald-400" />
-        ) : (
+        </div>
+      ) : agentId && agentId !== 'cc' ? (
+        <img
+          src={`/avatars/${agentId}.webp`}
+          alt={agentId}
+          className="flex-shrink-0 h-8 w-8 rounded-full object-cover"
+        />
+      ) : (
+        <div className="flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center bg-zinc-800">
           <Bot className="h-4 w-4 text-zinc-400" />
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Message content */}
       <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[80%]`}>
         {!isUser && agentId && (
           <span className="text-[10px] text-zinc-500 mb-1 font-[family-name:var(--font-jetbrains-mono)]">
-            {agentId === 'cc' ? 'Claude Code' : agentId}
+            {agentId === 'cc' ? 'Claude Code' : agentId.charAt(0).toUpperCase() + agentId.slice(1)}
           </span>
         )}
         <div className={`rounded-lg ${

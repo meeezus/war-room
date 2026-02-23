@@ -124,7 +124,15 @@ export function ThreadList({
               }`}
             >
               <div className="flex items-start gap-2">
-                <MessageSquare className="h-3.5 w-3.5 text-zinc-500 mt-0.5 flex-shrink-0" />
+                {thread.agent_id && thread.agent_id !== 'cc' ? (
+                  <img
+                    src={`/avatars/${thread.agent_id}.webp`}
+                    alt={thread.agent_id}
+                    className="h-5 w-5 rounded-full object-cover mt-0.5 flex-shrink-0"
+                  />
+                ) : (
+                  <MessageSquare className="h-3.5 w-3.5 text-zinc-500 mt-0.5 flex-shrink-0" />
+                )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-sm text-zinc-200 truncate font-medium">

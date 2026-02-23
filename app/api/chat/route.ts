@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server'
 import { randomUUID } from 'crypto'
 import { spawnClaude, type ClaudeSession } from '@/lib/claude-cli'
-import { saveMessage, getThreadSessionId, setThreadSessionId } from '@/lib/chat'
+import { saveMessage, getThread, getThreadSessionId, setThreadSessionId } from '@/lib/chat'
+import { getAgentSystemPrompt } from '@/lib/agent-identity'
 import { createRequestContext } from '@/lib/request-context'
 
 export const runtime = 'nodejs'
@@ -30,12 +31,17 @@ export async function POST(req: NextRequest) {
 
   const session: ClaudeSession = { sessionId, threadId }
 
+  // Load agent identity for this thread
+  const thread = await getThread(threadId)
+  const agentId = thread?.agent_id || 'cc'
+  const systemPrompt = agentId !== 'cc' ? getAgentSystemPrompt(agentId) : null
+
   // Spawn Claude CLI and stream response
   const encoder = new TextEncoder()
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        const claudeStream = spawnClaude(content, session, { resume: isResume })
+        const claudeStream = spawnClaude(content, session, { resume: isResume, systemPrompt: systemPrompt || undefined })
         const reader = claudeStream.getReader()
         let fullResponse = ''
 
@@ -50,7 +56,7 @@ export async function POST(req: NextRequest) {
               const newSessionId = randomUUID()
               await setThreadSessionId(threadId, newSessionId)
               const newSession: ClaudeSession = { sessionId: newSessionId, threadId }
-              const retryStream = spawnClaude(content, newSession, { resume: false })
+              const retryStream = spawnClaude(content, newSession, { resume: false, systemPrompt: systemPrompt || undefined })
               const retryReader = retryStream.getReader()
 
               while (true) {
@@ -75,8 +81,8 @@ export async function POST(req: NextRequest) {
 
         // Save complete assistant message
         if (fullResponse) {
-          const msg = await saveMessage(threadId, 'assistant', fullResponse, 'cc')
-          const doneData = JSON.stringify({ type: 'done', messageId: msg.id })
+          const msg = await saveMessage(threadId, 'assistant', fullResponse, agentId)
+          const doneData = JSON.stringify({ type: 'done', messageId: msg.id, agentId })
           controller.enqueue(encoder.encode(`data: ${doneData}\n\n`))
         }
       } catch (err) {

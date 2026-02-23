@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { ThreadList, type ThreadSummary } from '@/components/chat/thread-list'
 import { MessageArea } from '@/components/chat/message-area'
 import { ChatInput } from '@/components/chat/chat-input'
+import { AgentSelector } from '@/components/chat/agent-selector'
+import { ChatActions } from '@/components/chat/chat-actions'
 import { supabase } from '@/lib/supabase'
 import type { ChatMessage } from '@/lib/chat'
 import { ArrowLeft, ChevronLeft, Menu, Zap } from 'lucide-react'
@@ -21,6 +23,7 @@ export default function ChatPage() {
   const [sidebarOpen, setSidebarOpen] = useState(typeof window !== 'undefined' ? window.innerWidth >= 768 : true)
   const [error, setError] = useState<string | null>(null)
   const [showArchived, setShowArchived] = useState(false)
+  const [agentSelectorOpen, setAgentSelectorOpen] = useState(false)
   const channelRef = useRef<RealtimeChannel | null>(null)
 
   // Fetch threads on mount
@@ -162,13 +165,13 @@ export default function ChatPage() {
     fetchMessages(threadId)
   }
 
-  const createThread = async () => {
+  const createThread = async (agentId?: string) => {
     setIsCreatingThread(true)
     try {
       const res = await fetch('/api/chat/threads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'New Thread' }),
+        body: JSON.stringify({ title: 'New Thread', agentId: agentId || 'cc' }),
       })
       const data = await res.json()
       if (data.thread) {
@@ -241,12 +244,13 @@ export default function ChatPage() {
             } else if (event.type === 'done') {
               // Add the complete message directly to state
               // Don't rely solely on Realtime (WebSocket can be flaky)
+              const activeAgent = threads.find(t => t.id === activeThreadId)?.agent_id || 'cc'
               const assistantMsg: ChatMessage = {
                 id: event.messageId || `done-${Date.now()}`,
                 thread_id: activeThreadId!,
                 role: 'assistant',
                 content: accumulated,
-                agent_id: 'cc',
+                agent_id: event.agentId || activeAgent,
                 user_id: null,
                 streaming: false,
                 streaming_complete: true,
@@ -261,12 +265,13 @@ export default function ChatPage() {
             } else if (event.type === 'error') {
               // If we already have content, keep it as the message
               if (accumulated) {
+                const activeAgentPartial = threads.find(t => t.id === activeThreadId)?.agent_id || 'cc'
                 const partialMsg: ChatMessage = {
                   id: `partial-${Date.now()}`,
                   thread_id: activeThreadId!,
                   role: 'assistant',
                   content: accumulated,
-                  agent_id: 'cc',
+                  agent_id: activeAgentPartial,
                   user_id: null,
                   streaming: false,
                   streaming_complete: true,
@@ -306,7 +311,7 @@ export default function ChatPage() {
             // Close sidebar on mobile
             if (window.innerWidth < 768) setSidebarOpen(false)
           }}
-          onNewThread={createThread}
+          onNewThread={() => setAgentSelectorOpen(true)}
           isCreating={isCreatingThread}
           onArchive={handleArchiveThread}
           onDelete={handleDeleteThread}
@@ -355,7 +360,15 @@ export default function ChatPage() {
               streamingContent={streamingContent}
               isLoading={isLoading}
               isFetching={isFetchingMessages}
+              agentId={threads.find(t => t.id === activeThreadId)?.agent_id}
             />
+            {/* Chat actions — show after last assistant message */}
+            {!isLoading && messages.length > 0 && messages[messages.length - 1]?.role === 'assistant' && (
+              <ChatActions
+                messageContent={messages[messages.length - 1].content}
+                threadId={activeThreadId}
+              />
+            )}
             {error && (
               <div className="px-4 py-2 bg-red-500/10 border-t border-red-500/20">
                 <p className="text-xs text-red-400">{error}</p>
@@ -379,6 +392,15 @@ export default function ChatPage() {
 
       {/* Right panel — future canvas placeholder */}
       <div className="hidden lg:block w-0 border-l border-zinc-800" />
+
+      <AgentSelector
+        open={agentSelectorOpen}
+        onSelect={(agentId) => {
+          setAgentSelectorOpen(false)
+          createThread(agentId)
+        }}
+        onClose={() => setAgentSelectorOpen(false)}
+      />
     </div>
   )
 }
