@@ -61,6 +61,9 @@ export interface Event {
     | 'council_reviewed'
     | 'task_started' | 'task_completed' | 'task_failed'
     | 'heartbeat' | 'agent_action' | 'user_request'
+    | 'patrol_started' | 'patrol_complete'
+    | 'discovery_created' | 'discovery_approved' | 'discovery_dismissed'
+    | 'skill_patch_extracted' | 'skill_applied' | 'skill_sunset' | 'cross_pollination'
   source_id: string | null
   agent: string | null
   message: string
