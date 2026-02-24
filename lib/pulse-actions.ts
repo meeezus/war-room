@@ -30,12 +30,12 @@ const KNOWN_TYPES = new Set([
 // parseActions — extract [ACTION]...[/ACTION] blocks from response text
 // ---------------------------------------------------------------------------
 
-const ACTION_BLOCK_RE = /\[ACTION\]([\s\S]*?)\[\/ACTION\]/g
+const actionBlockRe = () => /\[ACTION\]([\s\S]*?)\[\/ACTION\]/g
 
 export function parseActions(response: string): PulseAction[] {
   const actions: PulseAction[] = []
 
-  for (const match of response.matchAll(ACTION_BLOCK_RE)) {
+  for (const match of response.matchAll(actionBlockRe())) {
     const raw = match[1].trim()
     try {
       const parsed = JSON.parse(raw)
@@ -58,7 +58,7 @@ export function parseActions(response: string): PulseAction[] {
 
 export function stripActionBlocks(response: string): string {
   return response
-    .replace(ACTION_BLOCK_RE, '')
+    .replace(actionBlockRe(), '')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
 }
