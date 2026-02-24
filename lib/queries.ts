@@ -614,6 +614,28 @@ export async function getDiscoveryCountByRepo(repo: string): Promise<number> {
   return count ?? 0
 }
 
+export async function getDiscoveryFeedbackStats(): Promise<
+  { agent_id: string; category: string; approved_count: number; dismissed_count: number; total_count: number }[]
+> {
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from('discoveries')
+    .select('agent_id, category, status')
+    .in('status', ['approved', 'dismissed'])
+  if (error) { console.error('getDiscoveryFeedbackStats error:', error); return [] }
+  const rows = (data ?? []) as { agent_id: string; category: string; status: string }[]
+  const groups: Record<string, { agent_id: string; category: string; approved_count: number; dismissed_count: number }> = {}
+  for (const row of rows) {
+    const key = `${row.agent_id}:${row.category}`
+    if (!groups[key]) {
+      groups[key] = { agent_id: row.agent_id, category: row.category, approved_count: 0, dismissed_count: 0 }
+    }
+    if (row.status === 'approved') groups[key].approved_count++
+    else groups[key].dismissed_count++
+  }
+  return Object.values(groups).map(g => ({ ...g, total_count: g.approved_count + g.dismissed_count }))
+}
+
 export async function createMission(input: {
   title: string
   project_id: string
