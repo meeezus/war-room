@@ -26,6 +26,7 @@ const EVENT_TYPE_COLORS: Record<string, string> = {
   task_completed: "#10b981",
   task_failed: "#ef4444",
   task_updated: "#f59e0b",
+  skill_patch_extracted: "#8b5cf6",
 };
 
 type FilterCategory = "all" | "proposals" | "missions" | "tasks" | "system";
@@ -38,7 +39,7 @@ const FILTER_TYPES: Record<FilterCategory, string[] | null> = {
     "task_started", "task_completed", "task_failed", "task_updated", "task_created",
     "step_started", "step_completed", "step_failed", "step_stale",
   ],
-  system: ["heartbeat", "user_request", "agent_action", "council_reviewed"],
+  system: ["heartbeat", "user_request", "agent_action", "council_reviewed", "skill_patch_extracted"],
 };
 
 const NEEDS_YOU_TYPES = new Set([
@@ -50,6 +51,7 @@ const ACTIVE_TYPES = new Set([
 const COMPLETE_TYPES = new Set([
   "mission_completed", "step_completed", "task_completed",
   "proposal_approved", "proposal_created", "council_reviewed",
+  "skill_patch_extracted",
 ]);
 const SYSTEM_TYPES = new Set(["heartbeat", "user_request"]);
 
