@@ -18,6 +18,16 @@
             "command": "bash /Users/michaelenriquez/Code/war-room/engine/hooks/plan-sync.sh"
           }
         ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/michaelenriquez/Code/war-room/engine/hooks/migration-push.sh",
+            "timeout": 30
+          }
+        ]
       }
     ]
   }

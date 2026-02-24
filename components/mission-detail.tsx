@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion } from "motion/react";
 import type { Mission, Step, Task } from "@/lib/types";
 import { StealthCard } from "./stealth-card";
+import { Breadcrumb } from "./breadcrumb";
 import { StepCard } from "./step-card";
 import { staggerContainer } from "@/lib/motion";
 import { useRealtimeSteps } from "@/lib/realtime";
@@ -108,23 +109,16 @@ export function MissionDetail({
   return (
     <div className="mx-auto max-w-3xl space-y-4 p-4">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-xs text-[rgba(255,255,255,0.4)]">
-        <Link
-          href="/dashboard"
-          className="hover:text-[#E5E5E5] transition-colors"
-        >
-          Dashboard
-        </Link>
-        <span>/</span>
-        <span className="text-[rgba(255,255,255,0.6)]">
-          Mission: {mission.title}
-        </span>
-      </nav>
+      <Breadcrumb segments={[
+        { label: "Dashboard", href: "/dashboard" },
+        { label: "Missions", href: "/missions" },
+        { label: mission.title },
+      ]} />
 
       {/* Mission header card */}
       <StealthCard className="p-4">
         <div className="flex items-start justify-between gap-3">
-          <h1 className="font-[family-name:var(--font-space-grotesk)] text-xl font-bold text-[#E5E5E5]">
+          <h1 className="font-[family-name:var(--font-space-grotesk)] text-xl font-bold text-foreground">
             {mission.title}
           </h1>
           <div className="flex shrink-0 items-center gap-2">
@@ -153,7 +147,7 @@ export function MissionDetail({
           </div>
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[rgba(255,255,255,0.4)]">
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
           {/* Priority selector */}
           <span className="flex items-center gap-1.5">
             Priority:{" "}
@@ -169,7 +163,7 @@ export function MissionDetail({
                     className={`rounded px-1.5 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-medium transition-colors disabled:opacity-50 ${
                       isActive
                         ? `${style.bg} ${style.text}`
-                        : "bg-white/[0.04] text-white/30 hover:bg-white/[0.08] hover:text-white/50"
+                        : "bg-muted/50 text-muted-foreground/75 hover:bg-accent hover:text-muted-foreground"
                     }`}
                   >
                     P{p}
@@ -218,7 +212,7 @@ export function MissionDetail({
       {/* Progress bar */}
       {totalSteps > 0 && (
         <div className="space-y-1.5">
-          <div className="flex items-center justify-between text-xs text-[rgba(255,255,255,0.4)]">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span className="font-[family-name:var(--font-space-grotesk)] font-medium">
               Steps
             </span>
@@ -226,7 +220,7 @@ export function MissionDetail({
               {completedSteps} / {totalSteps}
             </span>
           </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
             <div
               className="h-full rounded-full bg-emerald-500 transition-all duration-500"
               style={{ width: `${progressPct}%` }}
@@ -257,7 +251,7 @@ export function MissionDetail({
         </motion.div>
       ) : (
         <StealthCard className="p-6 text-center">
-          <p className="text-sm text-[rgba(255,255,255,0.4)]">
+          <p className="text-sm text-muted-foreground">
             No steps found for this mission.
           </p>
         </StealthCard>

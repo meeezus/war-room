@@ -25,16 +25,16 @@ export function RpgStatBar({ label, value, color, showValue = true }: RpgStatBar
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-center justify-between">
-        <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.6)]">
+        <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] uppercase tracking-wider text-foreground/60">
           {label}
         </span>
         {showValue && (
-          <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-[rgba(255,255,255,0.4)]">
+          <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground">
             {Math.round(percentage)}
           </span>
         )}
       </div>
-      <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
+      <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted">
         <motion.div
           className="absolute inset-y-0 left-0 rounded-full"
           style={{

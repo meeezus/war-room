@@ -1,5 +1,5 @@
 import { createServiceClient } from '@/lib/supabase-server'
-import type { Mission, Task, Project } from '@/lib/types'
+import type { Mission, Task, Project, Discovery } from '@/lib/types'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -24,7 +24,7 @@ export async function generateAlerts(): Promise<PulseAlert[]> {
     const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString()
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
 
-    const [failedMissionsRes, failedTasksRes, staleTasksRes, projectsRes, recentActivityRes] = await Promise.all([
+    const [failedMissionsRes, failedTasksRes, staleTasksRes, projectsRes, recentActivityRes, pendingDiscoveriesRes] = await Promise.all([
       // Failed missions in last 24h
       sb.from('missions')
         .select('id, title, assigned_to')
@@ -52,6 +52,10 @@ export async function generateAlerts(): Promise<PulseAlert[]> {
         .select('id', { count: 'exact', head: true })
         .neq('type', 'heartbeat')
         .gte('created_at', oneDayAgo),
+      // Pending discoveries
+      sb.from('discoveries')
+        .select('id, severity', { count: 'exact' })
+        .eq('status', 'pending'),
     ])
 
     const failedMissions = (failedMissionsRes.data ?? []) as Pick<Mission, 'id' | 'title' | 'assigned_to'>[]
@@ -59,6 +63,7 @@ export async function generateAlerts(): Promise<PulseAlert[]> {
     const staleTasks = (staleTasksRes.data ?? []) as Pick<Task, 'id' | 'title' | 'project_id'>[]
     const projects = (projectsRes.data ?? []) as Project[]
     const recentActivityCount = recentActivityRes.count ?? 0
+    const pendingDiscoveries = (pendingDiscoveriesRes.data ?? []) as Pick<Discovery, 'id' | 'severity'>[]
 
     const alerts: PulseAlert[] = []
 
@@ -118,6 +123,15 @@ export async function generateAlerts(): Promise<PulseAlert[]> {
       alerts.push({
         severity: 'warning',
         message: `${staleTasks.length} task${staleTasks.length > 1 ? 's' : ''} with no activity for 7+ days`,
+      })
+    }
+
+    // Pending discoveries — info (or warning if critical ones)
+    if (pendingDiscoveries.length > 0) {
+      const criticalCount = pendingDiscoveries.filter(d => d.severity === 'critical').length
+      alerts.push({
+        severity: criticalCount > 0 ? 'warning' : 'info',
+        message: `${pendingDiscoveries.length} overnight discover${pendingDiscoveries.length === 1 ? 'y' : 'ies'} awaiting your review${criticalCount > 0 ? ` (${criticalCount} critical)` : ''}`,
       })
     }
 

@@ -90,12 +90,12 @@ export function ProposalsSection({ proposals, projectId, onUpdate }: ProposalsSe
         className="mb-2 flex items-center gap-2"
       >
         <span
-          className="text-xs text-[rgba(255,255,255,0.3)] transition-transform duration-150"
+          className="text-xs text-muted-foreground/75 transition-transform duration-150"
           style={{ transform: collapsed ? "rotate(-90deg)" : "rotate(0)" }}
         >
           ▾
         </span>
-        <span className="font-[family-name:var(--font-space-grotesk)] text-sm font-medium uppercase tracking-wider text-[rgba(255,255,255,0.4)]">
+        <span className="font-[family-name:var(--font-space-grotesk)] text-sm font-medium uppercase tracking-wider text-muted-foreground">
           Proposals
         </span>
         <span className="inline-flex size-5 items-center justify-center rounded bg-amber-500/15 font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-medium text-amber-400">
@@ -111,15 +111,15 @@ export function ProposalsSection({ proposals, projectId, onUpdate }: ProposalsSe
               <StealthCard key={proposal.id} className="p-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <h4 className="font-[family-name:var(--font-space-grotesk)] text-sm font-semibold text-[#E5E5E5]">
+                    <h4 className="font-[family-name:var(--font-space-grotesk)] text-sm font-semibold text-foreground">
                       {proposal.title}
                     </h4>
                     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                      <span className="rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[10px] text-white/40">
+                      <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
                         {proposal.source}
                       </span>
                       {proposal.domain && (
-                        <span className="rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[10px] text-white/40">
+                        <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
                           {proposal.domain}
                         </span>
                       )}
@@ -133,7 +133,7 @@ export function ProposalsSection({ proposals, projectId, onUpdate }: ProposalsSe
                           Awaiting Council
                         </span>
                       )}
-                      <span className="text-[10px] text-[rgba(255,255,255,0.3)]">
+                      <span className="text-[10px] text-muted-foreground/75">
                         by {proposal.requested_by}
                       </span>
                     </div>
@@ -141,12 +141,12 @@ export function ProposalsSection({ proposals, projectId, onUpdate }: ProposalsSe
                       <div className="mt-2">
                         {expandedId === proposal.id ? (
                           <>
-                            <p className="whitespace-pre-wrap text-xs leading-relaxed text-[rgba(255,255,255,0.5)]">
+                            <p className="whitespace-pre-wrap text-xs leading-relaxed text-muted-foreground">
                               {proposal.description}
                             </p>
                             <button
                               onClick={() => setExpandedId(null)}
-                              className="mt-1 text-[10px] text-white/30 hover:text-white/50"
+                              className="mt-1 text-[10px] text-muted-foreground/75 hover:text-muted-foreground"
                             >
                               Show less
                             </button>
@@ -154,7 +154,7 @@ export function ProposalsSection({ proposals, projectId, onUpdate }: ProposalsSe
                         ) : (
                           <button
                             onClick={() => setExpandedId(proposal.id)}
-                            className="text-[10px] text-white/30 hover:text-white/50"
+                            className="text-[10px] text-muted-foreground/75 hover:text-muted-foreground"
                           >
                             {proposal.description.length > 80
                               ? `${proposal.description.slice(0, 80)}... Show more`
@@ -169,9 +169,9 @@ export function ProposalsSection({ proposals, projectId, onUpdate }: ProposalsSe
                           const verdictColor = review.verdict === 'approve' ? 'text-emerald-400' : review.verdict === 'concern' ? 'text-amber-400' : 'text-red-400';
                           return (
                             <div key={i} className="flex items-center gap-2 text-[10px]">
-                              <span className="text-[rgba(255,255,255,0.4)]">{review.agent}</span>
+                              <span className="text-muted-foreground">{review.agent}</span>
                               <span className={verdictColor}>{review.verdict}</span>
-                              {review.note && <span className="text-[rgba(255,255,255,0.3)]">{review.note}</span>}
+                              {review.note && <span className="text-muted-foreground/75">{review.note}</span>}
                             </div>
                           );
                         })}
@@ -202,7 +202,7 @@ export function ProposalsSection({ proposals, projectId, onUpdate }: ProposalsSe
                       <button onClick={() => proceedApprove(proposal.id)} className="text-emerald-400 hover:text-emerald-300">
                         Proceed anyway
                       </button>
-                      <button onClick={() => setDuplicateWarning(null)} className="text-[rgba(255,255,255,0.4)] hover:text-[#E5E5E5]">
+                      <button onClick={() => setDuplicateWarning(null)} className="text-muted-foreground hover:text-foreground">
                         Cancel
                       </button>
                     </div>

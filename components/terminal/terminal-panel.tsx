@@ -22,12 +22,12 @@ export function TerminalPanel({ missions }: TerminalPanelProps) {
     runningMissions.find((m) => m.id === selectedId) ?? runningMissions[0]
 
   return (
-    <div className="flex-shrink-0 border-t border-white/[0.06] bg-[#0a0a0a]">
+    <div className="flex-shrink-0 border-t border-border bg-card">
       {/* Panel header / collapse bar */}
-      <div className="flex items-center gap-3 px-4 py-1.5 border-b border-white/[0.06] bg-white/[0.02]">
+      <div className="flex items-center gap-3 px-4 py-1.5 border-b border-border bg-muted/50">
         <button
           onClick={() => setCollapsed((c) => !c)}
-          className="flex items-center gap-1.5 text-[rgba(255,255,255,0.4)] hover:text-[rgba(255,255,255,0.7)] transition-colors"
+          className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground/70 transition-colors"
           aria-label={collapsed ? 'Expand terminal' : 'Collapse terminal'}
         >
           <span
@@ -52,8 +52,8 @@ export function TerminalPanel({ missions }: TerminalPanelProps) {
                 onClick={() => setSelectedId(m.id)}
                 className={`px-2 py-0.5 rounded-sm text-xs font-[family-name:var(--font-jetbrains-mono)] transition-colors truncate max-w-[160px] ${
                   m.id === activeMission.id
-                    ? 'bg-white/[0.08] text-white/80'
-                    : 'text-white/30 hover:text-white/50'
+                    ? 'bg-accent text-foreground/70'
+                    : 'text-muted-foreground/75 hover:text-muted-foreground'
                 }`}
                 title={m.title}
               >
@@ -65,7 +65,7 @@ export function TerminalPanel({ missions }: TerminalPanelProps) {
 
         {/* Single mission title when not selecting */}
         {runningMissions.length === 1 && !collapsed && (
-          <span className="font-[family-name:var(--font-jetbrains-mono)] text-xs text-white/30 truncate max-w-xs">
+          <span className="font-[family-name:var(--font-jetbrains-mono)] text-xs text-muted-foreground/75 truncate max-w-xs">
             {activeMission.title}
           </span>
         )}

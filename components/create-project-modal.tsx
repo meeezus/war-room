@@ -6,7 +6,7 @@ import { createProject } from "@/lib/queries";
 import type { Project } from "@/lib/types";
 
 const inputClass =
-  "w-full rounded-sm border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-sm text-[#E5E5E5] placeholder:text-[rgba(255,255,255,0.25)] focus:border-white/[0.2] focus:outline-none focus:ring-1 focus:ring-white/[0.1] transition-colors";
+  "w-full rounded-sm border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring/20 transition-colors";
 
 interface CreateProjectModalProps {
   open: boolean;
@@ -49,13 +49,13 @@ export function CreateProjectModal({
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-sm border border-white/[0.08] bg-[rgba(10,10,10,0.95)] backdrop-blur-xl p-6 shadow-2xl focus:outline-none">
-          <Dialog.Title className="font-[family-name:var(--font-space-grotesk)] text-base font-semibold text-[#E5E5E5] mb-4">
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-sm border border-border bg-popover backdrop-blur-xl p-6 shadow-2xl focus:outline-none">
+          <Dialog.Title className="font-[family-name:var(--font-space-grotesk)] text-base font-semibold text-foreground mb-4">
             Create Project
           </Dialog.Title>
           <form onSubmit={handleSubmit}>
             <label className="block mb-3">
-              <span className="text-[10px] font-medium uppercase tracking-wider text-[rgba(255,255,255,0.4)] mb-1 block">
+              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1 block">
                 Title
               </span>
               <input
@@ -67,7 +67,7 @@ export function CreateProjectModal({
               />
             </label>
             <label className="block mb-3">
-              <span className="text-[10px] font-medium uppercase tracking-wider text-[rgba(255,255,255,0.4)] mb-1 block">
+              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1 block">
                 Goal
               </span>
               <textarea
@@ -82,7 +82,7 @@ export function CreateProjectModal({
               <button
                 type="button"
                 onClick={() => onOpenChange(false)}
-                className="px-3 py-1.5 text-xs text-[rgba(255,255,255,0.5)] hover:text-[#E5E5E5] transition-colors"
+                className="px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
                 Cancel
               </button>

@@ -55,10 +55,10 @@ export function MissionQueue({ missions }: MissionQueueProps) {
 
               {/* Info */}
               <div className="min-w-0 flex-1">
-                <p className="truncate font-[family-name:var(--font-space-grotesk)] text-xs font-medium text-[#E5E5E5]">
+                <p className="truncate font-[family-name:var(--font-space-grotesk)] text-xs font-medium text-foreground">
                   {mission.title}
                 </p>
-                <p className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-[rgba(255,255,255,0.4)]">
+                <p className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground">
                   {mission.assigned_to}
                 </p>
               </div>
@@ -68,7 +68,7 @@ export function MissionQueue({ missions }: MissionQueueProps) {
                 <button
                   onClick={(e) => handleExecute(e, mission.id)}
                   disabled={executing === mission.id}
-                  className="flex-shrink-0 rounded border border-white/[0.12] px-2 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-[rgba(255,255,255,0.5)] transition-colors hover:border-white/[0.25] hover:text-[#E5E5E5] disabled:opacity-40"
+                  className="flex-shrink-0 rounded border border-border px-2 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground transition-colors hover:border-border hover:text-foreground disabled:opacity-40"
                 >
                   {executing === mission.id ? "..." : "Exec"}
                 </button>

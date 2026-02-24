@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
 import type { Project, Board, Task, Proposal } from "@/lib/types";
 import { PROJECT_STATUS_COLORS } from "@/lib/data";
 import { fadeInUp } from "@/lib/motion";
 import { StealthCard } from "./stealth-card";
+import { Breadcrumb } from "./breadcrumb";
 import { ProjectKanban } from "./project-kanban";
 import { MissionTableView } from "./mission-table-view";
 import { ProposalsSection } from "./proposals-section";
@@ -52,28 +52,21 @@ export function ProjectDetail({ project, boards, proposals, tasks, missions, onU
       {...(prefersReducedMotion ? {} : fadeInUp)}
     >
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-xs text-[rgba(255,255,255,0.4)]">
-        <Link
-          href="/dashboard"
-          className="transition-colors hover:text-[#E5E5E5]"
-        >
-          Dashboard
-        </Link>
-        <span>/</span>
-        <span className="text-[rgba(255,255,255,0.6)]">
-          {project.title}
-        </span>
-      </nav>
+      <Breadcrumb segments={[
+        { label: "Dashboard", href: "/dashboard" },
+        { label: "Projects", href: "/dashboard" },
+        { label: project.title },
+      ]} />
 
       {/* Project header card */}
       <StealthCard className="p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h1 className="font-[family-name:var(--font-space-grotesk)] text-xl font-bold text-[#E5E5E5]">
+            <h1 className="font-[family-name:var(--font-space-grotesk)] text-xl font-bold text-foreground">
               {project.title}
             </h1>
             {project.goal && (
-              <p className="mt-1 text-sm text-[rgba(255,255,255,0.4)]">
+              <p className="mt-1 text-sm text-muted-foreground">
                 {project.goal}
               </p>
             )}
@@ -92,12 +85,12 @@ export function ProjectDetail({ project, boards, proposals, tasks, missions, onU
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
           {project.type && (
-            <span className="rounded-sm bg-white/[0.06] px-2 py-1 font-[family-name:var(--font-jetbrains-mono)] text-xs text-[rgba(255,255,255,0.5)]">
+            <span className="rounded-sm bg-muted px-2 py-1 font-[family-name:var(--font-jetbrains-mono)] text-xs text-muted-foreground">
               {project.type}
             </span>
           )}
           {project.owner && (
-            <span className="rounded-sm bg-white/[0.06] px-2 py-1 font-[family-name:var(--font-jetbrains-mono)] text-xs text-[rgba(255,255,255,0.5)]">
+            <span className="rounded-sm bg-muted px-2 py-1 font-[family-name:var(--font-jetbrains-mono)] text-xs text-muted-foreground">
               {project.owner}
             </span>
           )}
@@ -113,11 +106,11 @@ export function ProjectDetail({ project, boards, proposals, tasks, missions, onU
         </div>
 
         {project.next_action && (
-          <div className="mt-3 border-t border-white/[0.06] pt-3">
-            <span className="text-[10px] font-medium uppercase tracking-wider text-[rgba(255,255,255,0.3)]">
+          <div className="mt-3 border-t border-border pt-3">
+            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/75">
               Next Action
             </span>
-            <p className="mt-0.5 text-xs text-[rgba(255,255,255,0.5)]">
+            <p className="mt-0.5 text-xs text-muted-foreground">
               {project.next_action}
             </p>
           </div>
@@ -127,7 +120,7 @@ export function ProjectDetail({ project, boards, proposals, tasks, missions, onU
       {/* Progress bar */}
       {totalMissions > 0 && (
         <div className="space-y-1.5">
-          <div className="flex items-center justify-between text-xs text-[rgba(255,255,255,0.4)]">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
             <div className="flex items-center gap-2">
               <span className="font-[family-name:var(--font-space-grotesk)] font-medium">
                 Missions
@@ -136,8 +129,8 @@ export function ProjectDetail({ project, boards, proposals, tasks, missions, onU
                 onClick={() => setViewMode("kanban")}
                 className={`rounded px-2 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] transition-colors ${
                   viewMode === "kanban"
-                    ? "bg-white/[0.1] text-[rgba(255,255,255,0.6)]"
-                    : "text-[rgba(255,255,255,0.3)] hover:text-[rgba(255,255,255,0.5)]"
+                    ? "bg-accent text-foreground/60"
+                    : "text-muted-foreground/75 hover:text-muted-foreground"
                 }`}
               >
                 Board
@@ -146,8 +139,8 @@ export function ProjectDetail({ project, boards, proposals, tasks, missions, onU
                 onClick={() => setViewMode("table")}
                 className={`rounded px-2 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] transition-colors ${
                   viewMode === "table"
-                    ? "bg-white/[0.1] text-[rgba(255,255,255,0.6)]"
-                    : "text-[rgba(255,255,255,0.3)] hover:text-[rgba(255,255,255,0.5)]"
+                    ? "bg-accent text-foreground/60"
+                    : "text-muted-foreground/75 hover:text-muted-foreground"
                 }`}
               >
                 Table
@@ -157,7 +150,7 @@ export function ProjectDetail({ project, boards, proposals, tasks, missions, onU
               {completedMissions} / {totalMissions}
             </span>
           </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
             <div
               className="h-full rounded-full bg-emerald-500 transition-all duration-500"
               style={{ width: `${progressPct}%` }}

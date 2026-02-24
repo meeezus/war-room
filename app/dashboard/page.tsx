@@ -2,24 +2,17 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { getAgents, getMissions, getEvents, getStats, getProjectsWithMetrics, getDynastyStats, getMissionStats } from "@/lib/queries";
-import type { AgentStatus, Mission, Event, DashboardStats, DynastyStats, ProjectWithMetrics } from "@/lib/types";
+import { getAgents, getMissions, getEvents, getProjectsWithMetrics, getDynastyStats, getMissionStats, getPendingDiscoveryCount, getSkillPatchStats, getLastPatrolSummary, getActiveObjectiveCount, getActiveCouncilSessionCount } from "@/lib/queries";
+import type { AgentStatus, Mission, Event, DynastyStats, ProjectWithMetrics } from "@/lib/types";
 import Link from "next/link";
-import { StatsBar } from "@/components/stats-bar";
+import { StatusRibbon } from "@/components/status-ribbon";
 import { AgentSidebar } from "@/components/agent-sidebar";
 import { EventFeed } from "@/components/event-feed";
 import { StealthCard } from "@/components/stealth-card";
 import { ProjectOverview } from "@/components/project-overview";
-import { CreateProjectModal } from "@/components/create-project-modal";
 import { TerminalPanel } from "@/components/terminal/terminal-panel";
+import { ThemeToggle } from "@/components/theme-toggle";
 
-
-const defaultStats: DashboardStats = {
-  activeAgents: 0,
-  inProgressTasks: 0,
-  pendingReviews: 0,
-  pendingProposals: 0,
-};
 
 const defaultDynastyStats: DynastyStats = {
   totalProjects: 0,
@@ -55,17 +48,17 @@ function ConnectPrompt() {
   return (
     <div className="flex h-full items-center justify-center">
       <StealthCard className="max-w-md p-8 text-center">
-        <h2 className="mb-3 font-[family-name:var(--font-space-grotesk)] text-lg font-semibold text-[#E5E5E5]">
+        <h2 className="mb-3 font-[family-name:var(--font-space-grotesk)] text-lg font-semibold text-foreground">
           Connect Supabase to see live data
         </h2>
-        <p className="mb-4 text-sm text-[rgba(255,255,255,0.5)]">
-          Add these environment variables to your <code className="rounded bg-white/[0.06] px-1.5 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-xs">.env.local</code> file:
+        <p className="mb-4 text-sm text-muted-foreground">
+          Add these environment variables to your <code className="rounded bg-muted px-1.5 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-xs">.env.local</code> file:
         </p>
-        <div className="rounded-sm bg-white/[0.04] p-4 text-left font-[family-name:var(--font-jetbrains-mono)] text-xs text-[rgba(255,255,255,0.5)]">
+        <div className="rounded-sm bg-muted/50 p-4 text-left font-[family-name:var(--font-jetbrains-mono)] text-xs text-muted-foreground">
           <p>NEXT_PUBLIC_SUPABASE_URL=your-url</p>
           <p>NEXT_PUBLIC_SUPABASE_ANON_KEY=your-key</p>
         </div>
-        <p className="mt-4 text-xs text-[rgba(255,255,255,0.3)]">
+        <p className="mt-4 text-xs text-muted-foreground/75">
           Then restart the dev server.
         </p>
       </StealthCard>
@@ -77,14 +70,17 @@ export default function DashboardPage() {
   const [agents, setAgents] = useState<AgentStatus[]>([]);
   const [missions, setMissions] = useState<Mission[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
-  const [stats, setStats] = useState<DashboardStats>(defaultStats);
+  const [skillStats, setSkillStats] = useState({ recentPatches: 0, appliedPatches: 0 });
+  const [lastPatrol, setLastPatrol] = useState<{ timestamp: string | null; discoveryCount: number }>({ timestamp: null, discoveryCount: 0 });
+  const [activeObjectives, setActiveObjectives] = useState(0);
   const [projects, setProjects] = useState<ProjectWithMetrics[]>([]);
   const [dynastyStats, setDynastyStats] = useState<DynastyStats>(defaultDynastyStats);
   const [missionStats, setMissionStats] = useState({ active: 0, total: 0 });
+  const [pendingDiscoveries, setPendingDiscoveries] = useState(0);
+  const [councilSessions, setCouncilSessions] = useState(0);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [feedOpen, setFeedOpen] = useState(true);
-  const [createProjectOpen, setCreateProjectOpen] = useState(false);
 
   const refreshProjects = useCallback(async () => {
     const [projectsData, dynastyData] = await Promise.all([
@@ -97,22 +93,30 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function fetchData() {
-      const [agentsData, missionsData, eventsData, statsData, projectsData, dynastyData, missionStatsData] = await Promise.all([
+      const [agentsData, missionsData, eventsData, projectsData, dynastyData, missionStatsData, discoveryCount, skillStatsData, lastPatrolData, objectiveCount, councilSessionCount] = await Promise.all([
         getAgents(),
         getMissions(),
         getEvents(),
-        getStats(),
         getProjectsWithMetrics(),
         getDynastyStats(),
         getMissionStats(),
+        getPendingDiscoveryCount(),
+        getSkillPatchStats(),
+        getLastPatrolSummary(),
+        getActiveObjectiveCount(),
+        getActiveCouncilSessionCount(),
       ]);
       setAgents(agentsData);
       setMissions(missionsData);
       setEvents(eventsData);
-      setStats(statsData);
       setProjects(applySmartPriority(projectsData));
       setDynastyStats(dynastyData);
       setMissionStats(missionStatsData);
+      setPendingDiscoveries(discoveryCount);
+      setSkillStats(skillStatsData);
+      setLastPatrol(lastPatrolData);
+      setActiveObjectives(objectiveCount);
+      setCouncilSessions(councilSessionCount);
       setLoading(false);
     }
     fetchData();
@@ -123,10 +127,10 @@ export default function DashboardPage() {
       <div className="flex h-screen flex-col overflow-hidden bg-background p-4">
         <div className="mb-4 flex-shrink-0">
           <div className="mb-3 flex items-baseline gap-3">
-            <h1 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold tracking-tight text-[#E5E5E5]">
+            <h1 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold tracking-tight text-foreground">
               Dynasty Tenshu
             </h1>
-            <span className="text-xs text-[rgba(255,255,255,0.4)]">
+            <span className="text-xs text-muted-foreground">
               Shogunate Command Center
             </span>
           </div>
@@ -139,7 +143,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
-        <p className="font-[family-name:var(--font-jetbrains-mono)] text-sm text-[rgba(255,255,255,0.4)]">
+        <p className="font-[family-name:var(--font-jetbrains-mono)] text-sm text-muted-foreground">
           Loading...
         </p>
       </div>
@@ -151,37 +155,30 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="mb-4 flex-shrink-0">
         <div className="mb-3 flex items-baseline gap-3">
-          <h1 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold tracking-tight text-[#E5E5E5]">
+          <h1 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold tracking-tight text-foreground">
             Dynasty Tenshu
           </h1>
-          <span className="text-xs text-[rgba(255,255,255,0.4)]">
+          <span className="text-xs text-muted-foreground">
             Shogunate Command Center
           </span>
-          <span className="ml-auto font-[family-name:var(--font-jetbrains-mono)] text-xs tabular-nums text-[rgba(255,255,255,0.3)]">
+          <span className="ml-auto font-[family-name:var(--font-jetbrains-mono)] text-xs tabular-nums text-muted-foreground/75">
             {dynastyStats.activeProjects}/{dynastyStats.totalProjects} projects
             {" \u00B7 "}
-            <Link href="/missions" className="transition-colors hover:text-[rgba(255,255,255,0.6)]">
+            <Link href="/missions" className="transition-colors hover:text-foreground/60">
               {missionStats.active}/{missionStats.total} missions
             </Link>
             {" \u00B7 "}
             {dynastyStats.activeTasks}/{dynastyStats.totalTasks} tasks
-            {" \u00B7 "}
-            <Link href="/council" className="transition-colors hover:text-[rgba(255,255,255,0.6)]">
-              ⚔️ council
-            </Link>
-            {" \u00B7 "}
-            <Link href="/chat" className="transition-colors hover:text-[rgba(255,255,255,0.6)]">
-              ⚡ chat
-            </Link>
           </span>
-          <button
-            onClick={() => setCreateProjectOpen(true)}
-            className="ml-3 px-2.5 py-1 rounded-sm border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs font-medium hover:bg-emerald-500/20 transition-colors"
-          >
-            + Project
-          </button>
+          <ThemeToggle />
         </div>
-        <StatsBar stats={stats} />
+        <StatusRibbon
+          pendingDiscoveries={pendingDiscoveries}
+          lastPatrol={lastPatrol}
+          skillStats={skillStats}
+          activeObjectives={activeObjectives}
+          councilSessions={councilSessions}
+        />
       </div>
 
       {/* Main Content */}
@@ -191,12 +188,12 @@ export default function DashboardPage() {
           {sidebarOpen ? (
             <div className="flex h-full flex-col">
               <div className="mb-2 flex h-6 items-center justify-between">
-                <span className="font-[family-name:var(--font-space-grotesk)] text-xs font-medium uppercase tracking-wider text-[rgba(255,255,255,0.4)]">
+                <span className="font-[family-name:var(--font-space-grotesk)] text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   Daimyo Council
                 </span>
                 <button
                   onClick={() => setSidebarOpen(false)}
-                  className="text-[rgba(255,255,255,0.4)] font-[family-name:var(--font-space-grotesk)] text-xs hover:text-[rgba(255,255,255,0.6)]"
+                  className="text-muted-foreground font-[family-name:var(--font-space-grotesk)] text-xs hover:text-foreground/60"
                 >
                   &laquo;
                 </button>
@@ -208,7 +205,7 @@ export default function DashboardPage() {
           ) : (
             <button
               onClick={() => setSidebarOpen(true)}
-              className="flex h-full w-10 flex-col items-center pt-2 text-[rgba(255,255,255,0.4)] hover:text-[rgba(255,255,255,0.6)]"
+              className="flex h-full w-10 flex-col items-center pt-2 text-muted-foreground hover:text-foreground/60"
             >
               <span className="font-[family-name:var(--font-space-grotesk)] text-xs [writing-mode:vertical-rl]">DC</span>
               <span className="mt-2 font-[family-name:var(--font-space-grotesk)] text-xs">&raquo;</span>
@@ -218,10 +215,15 @@ export default function DashboardPage() {
 
         {/* Center - Project Overview */}
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          <div className="mb-2 flex h-6 items-center">
-            <span className="font-[family-name:var(--font-space-grotesk)] text-xs font-medium uppercase tracking-wider text-[rgba(255,255,255,0.4)]">
+          <div className="mb-2 flex h-6 items-center gap-2">
+            <span className="font-[family-name:var(--font-space-grotesk)] text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Projects
             </span>
+            {pendingDiscoveries > 0 && (
+              <span className="rounded-full bg-blue-500/15 px-1.5 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-medium text-blue-400">
+                {pendingDiscoveries} discover{pendingDiscoveries === 1 ? "y" : "ies"}
+              </span>
+            )}
           </div>
           <div className="flex-1 overflow-hidden">
             <ProjectOverview projects={projects} onUpdate={refreshProjects} />
@@ -233,12 +235,12 @@ export default function DashboardPage() {
           {feedOpen ? (
             <div className="flex h-full flex-col">
               <div className="mb-2 flex h-6 items-center justify-between">
-                <span className="font-[family-name:var(--font-space-grotesk)] text-xs font-medium uppercase tracking-wider text-[rgba(255,255,255,0.4)]">
+                <span className="font-[family-name:var(--font-space-grotesk)] text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   Event Feed
                 </span>
                 <button
                   onClick={() => setFeedOpen(false)}
-                  className="text-[rgba(255,255,255,0.4)] font-[family-name:var(--font-space-grotesk)] text-xs hover:text-[rgba(255,255,255,0.6)]"
+                  className="text-muted-foreground font-[family-name:var(--font-space-grotesk)] text-xs hover:text-foreground/60"
                 >
                   &raquo;
                 </button>
@@ -250,7 +252,7 @@ export default function DashboardPage() {
           ) : (
             <button
               onClick={() => setFeedOpen(true)}
-              className="flex h-full w-10 flex-col items-center pt-2 text-[rgba(255,255,255,0.4)] hover:text-[rgba(255,255,255,0.6)]"
+              className="flex h-full w-10 flex-col items-center pt-2 text-muted-foreground hover:text-foreground/60"
             >
               <span className="font-[family-name:var(--font-space-grotesk)] text-xs [writing-mode:vertical-rl]">EF</span>
               <span className="mt-2 font-[family-name:var(--font-space-grotesk)] text-xs">&laquo;</span>
@@ -261,12 +263,6 @@ export default function DashboardPage() {
 
       {/* Bottom - Terminal Panel */}
       <TerminalPanel missions={missions} />
-
-      <CreateProjectModal
-        open={createProjectOpen}
-        onOpenChange={setCreateProjectOpen}
-        onCreated={refreshProjects}
-      />
     </div>
   );
 }

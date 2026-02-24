@@ -81,21 +81,21 @@ export function AgentSpawnCard({ event, status = 'spawning' }: AgentSpawnCardPro
         {/* Status indicator */}
         <div className="ml-auto flex items-center gap-1.5">
           <span className={`inline-block w-1.5 h-1.5 rounded-full ${statusConfig.dot}`} />
-          <span className="text-[10px] text-white/30">{statusConfig.label}</span>
+          <span className="text-[10px] text-muted-foreground/75">{statusConfig.label}</span>
         </div>
       </div>
 
       {/* Task preview */}
       {event.task && (
         <div className="px-2.5 py-1.5">
-          <p className={`text-[11px] leading-relaxed text-white/50 ${expanded ? '' : 'line-clamp-2'}`}>
+          <p className={`text-[11px] leading-relaxed text-muted-foreground ${expanded ? '' : 'line-clamp-2'}`}>
             {taskPreview}
             {taskTruncated && !expanded && '…'}
           </p>
           {(taskTruncated || event.task.split('\n').length > 2) && (
             <button
               onClick={() => setExpanded((v) => !v)}
-              className="mt-0.5 text-[10px] text-white/25 hover:text-white/50 transition-colors"
+              className="mt-0.5 text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors"
             >
               {expanded ? 'collapse' : 'expand'}
             </button>

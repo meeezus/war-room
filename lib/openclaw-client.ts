@@ -37,6 +37,7 @@ const GATEWAY_URL = `ws://127.0.0.1:${process.env.OPENCLAW_GATEWAY_PORT || "1878
 const GATEWAY_TOKEN = process.env.OPENCLAW_GATEWAY_TOKEN ?? "";
 
 const CONNECT_TIMEOUT_MS = 5_000;
+const STREAM_TIMEOUT_MS = 30_000;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -151,6 +152,7 @@ function waitForResponse(
  */
 export function sendToOpenClaw(message: string): ReadableStream<string> {
   let ws: WebSocket | null = null;
+  let inactivityTimer: ReturnType<typeof setTimeout> | null = null;
 
   return new ReadableStream<string>({
     async start(controller) {
@@ -191,6 +193,18 @@ export function sendToOpenClaw(message: string): ReadableStream<string> {
         // early chunks. We handle the res frame inside the message listener.
 
         // 4. Listen for chat events
+        // Start inactivity timer — resets on each delta, errors after 30s of silence
+        const resetInactivityTimer = () => {
+          if (inactivityTimer) clearTimeout(inactivityTimer);
+          inactivityTimer = setTimeout(() => {
+            controller.error(
+              new Error(`OpenClaw: stream timed out after ${STREAM_TIMEOUT_MS}ms of inactivity`),
+            );
+            ws?.close();
+          }, STREAM_TIMEOUT_MS);
+        };
+        resetInactivityTimer();
+
         ws.on("message", (data: WebSocket.RawData) => {
           try {
             const frame = JSON.parse(data.toString()) as Frame;
@@ -201,6 +215,7 @@ export function sendToOpenClaw(message: string): ReadableStream<string> {
               frame.id === chatFrame.id &&
               !frame.ok
             ) {
+              if (inactivityTimer) clearTimeout(inactivityTimer);
               controller.error(
                 new Error(
                   `OpenClaw: chat.send failed — ${JSON.stringify(frame.error)}`,
@@ -226,6 +241,7 @@ export function sendToOpenClaw(message: string): ReadableStream<string> {
 
             switch (payload.state) {
               case "delta": {
+                resetInactivityTimer();
                 const text = payload.message?.content?.[0]?.text;
                 if (text) {
                   controller.enqueue(text);
@@ -234,12 +250,14 @@ export function sendToOpenClaw(message: string): ReadableStream<string> {
               }
 
               case "done": {
+                if (inactivityTimer) clearTimeout(inactivityTimer);
                 controller.close();
                 ws?.close();
                 break;
               }
 
               case "error": {
+                if (inactivityTimer) clearTimeout(inactivityTimer);
                 controller.error(
                   new Error("OpenClaw: assistant run errored"),
                 );
@@ -277,6 +295,7 @@ export function sendToOpenClaw(message: string): ReadableStream<string> {
 
     cancel() {
       // Consumer cancelled the stream — tear down the socket
+      if (inactivityTimer) clearTimeout(inactivityTimer);
       ws?.close();
     },
   });

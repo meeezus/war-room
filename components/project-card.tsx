@@ -38,9 +38,10 @@ const STATUS_OPTIONS = [
 interface ProjectCardProps {
   project: ProjectWithMetrics;
   onUpdate?: () => void;
+  discoveryCount?: number;
 }
 
-export function ProjectCard({ project, onUpdate }: ProjectCardProps) {
+export function ProjectCard({ project, onUpdate, discoveryCount = 0 }: ProjectCardProps) {
   const prefersReducedMotion = useReducedMotion();
   const accent = PROJECT_STATUS_COLORS[project.status] ?? "#6b7280";
   const progressPct = project.totalTasks > 0 ? (project.taskCounts.done / project.totalTasks) * 100 : 0;
@@ -130,7 +131,7 @@ export function ProjectCard({ project, onUpdate }: ProjectCardProps) {
         {renaming ? (
           <input
             ref={renameInputRef}
-            className="flex-1 rounded-sm border border-white/[0.15] bg-white/[0.06] px-1.5 py-0.5 font-[family-name:var(--font-space-grotesk)] text-sm font-semibold text-[#E5E5E5] outline-none focus:border-white/[0.3]"
+            className="flex-1 rounded-sm border border-border bg-muted px-1.5 py-0.5 font-[family-name:var(--font-space-grotesk)] text-sm font-semibold text-foreground outline-none focus:border-ring"
             value={renameValue}
             onChange={(e) => setRenameValue(e.target.value)}
             onKeyDown={(e) => {
@@ -142,7 +143,7 @@ export function ProjectCard({ project, onUpdate }: ProjectCardProps) {
             onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}
           />
         ) : (
-          <h3 className="font-[family-name:var(--font-space-grotesk)] text-sm font-semibold text-[#E5E5E5]">
+          <h3 className="font-[family-name:var(--font-space-grotesk)] text-sm font-semibold text-foreground">
             {project.title}
           </h3>
         )}
@@ -167,19 +168,19 @@ export function ProjectCard({ project, onUpdate }: ProjectCardProps) {
                 setMenuOpen(!menuOpen);
                 setStatusSubmenuOpen(false);
               }}
-              className="flex size-6 items-center justify-center rounded-sm text-[rgba(255,255,255,0.3)] transition-colors hover:bg-white/[0.08] hover:text-[rgba(255,255,255,0.6)]"
+              className="flex size-6 items-center justify-center rounded-sm text-muted-foreground/75 transition-colors hover:bg-accent hover:text-foreground/60"
             >
               <span className="text-sm leading-none">&#xB7;&#xB7;&#xB7;</span>
             </button>
 
             {menuOpen && (
               <div
-                className="absolute right-0 top-7 z-50 min-w-[140px] rounded-sm border border-white/[0.1] bg-[rgba(14,14,14,0.97)] py-1 shadow-xl backdrop-blur-xl"
+                className="absolute right-0 top-7 z-50 min-w-[140px] rounded-sm border border-border bg-[rgba(14,14,14,0.97)] py-1 shadow-xl backdrop-blur-xl"
                 onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}
               >
                 {/* Rename */}
                 <button
-                  className="flex w-full items-center px-3 py-1.5 text-left text-xs text-[rgba(255,255,255,0.6)] transition-colors hover:bg-white/[0.06] hover:text-[#E5E5E5]"
+                  className="flex w-full items-center px-3 py-1.5 text-left text-xs text-foreground/60 transition-colors hover:bg-muted hover:text-foreground"
                   onClick={(e) => {
                     e.stopPropagation();
                     e.preventDefault();
@@ -198,7 +199,7 @@ export function ProjectCard({ project, onUpdate }: ProjectCardProps) {
                   onMouseLeave={() => setStatusSubmenuOpen(false)}
                 >
                   <button
-                    className="flex w-full items-center justify-between px-3 py-1.5 text-left text-xs text-[rgba(255,255,255,0.6)] transition-colors hover:bg-white/[0.06] hover:text-[#E5E5E5]"
+                    className="flex w-full items-center justify-between px-3 py-1.5 text-left text-xs text-foreground/60 transition-colors hover:bg-muted hover:text-foreground"
                     onClick={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
@@ -206,17 +207,17 @@ export function ProjectCard({ project, onUpdate }: ProjectCardProps) {
                     }}
                   >
                     Status
-                    <span className="text-[10px] text-[rgba(255,255,255,0.3)]">&rsaquo;</span>
+                    <span className="text-[10px] text-muted-foreground/75">&rsaquo;</span>
                   </button>
                   {statusSubmenuOpen && (
-                    <div className="absolute left-full top-0 z-50 ml-1 min-w-[120px] rounded-sm border border-white/[0.1] bg-[rgba(14,14,14,0.97)] py-1 shadow-xl backdrop-blur-xl">
+                    <div className="absolute left-full top-0 z-50 ml-1 min-w-[120px] rounded-sm border border-border bg-[rgba(14,14,14,0.97)] py-1 shadow-xl backdrop-blur-xl">
                       {STATUS_OPTIONS.map((opt) => (
                         <button
                           key={opt.value}
-                          className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-white/[0.06] ${
+                          className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-muted ${
                             project.status === opt.value
-                              ? "text-[#E5E5E5] font-medium"
-                              : "text-[rgba(255,255,255,0.6)]"
+                              ? "text-foreground font-medium"
+                              : "text-foreground/60"
                           }`}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -236,7 +237,7 @@ export function ProjectCard({ project, onUpdate }: ProjectCardProps) {
                 </div>
 
                 {/* Divider */}
-                <div className="my-1 border-t border-white/[0.06]" />
+                <div className="my-1 border-t border-border" />
 
                 {/* Delete */}
                 <button
@@ -252,18 +253,18 @@ export function ProjectCard({ project, onUpdate }: ProjectCardProps) {
       </div>
 
       {project.goal && (
-        <p className="mt-2 line-clamp-2 text-xs text-[rgba(255,255,255,0.4)]">
+        <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">
           {project.goal}
         </p>
       )}
 
       {/* Task metrics + target date */}
       <div className="mt-2 flex items-center gap-2">
-        <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-[rgba(255,255,255,0.3)]">
+        <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/75">
           {project.activeTasks} active &middot; {project.totalTasks} total
         </span>
         {project.lastActivity && (
-          <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-[rgba(255,255,255,0.2)]">
+          <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/60">
             {relativeTime(project.lastActivity)}
           </span>
         )}
@@ -272,12 +273,17 @@ export function ProjectCard({ project, onUpdate }: ProjectCardProps) {
             {project.pendingProposals} pending
           </span>
         )}
+        {discoveryCount > 0 && (
+          <span className="rounded-full bg-blue-500/15 px-1.5 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-medium text-blue-400">
+            {discoveryCount} discover{discoveryCount === 1 ? "y" : "ies"}
+          </span>
+        )}
         {project.target_date && (
           <span
             className={`font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-medium ${
               isOverdue(project.target_date, project.status)
                 ? "text-red-400"
-                : "text-[rgba(255,255,255,0.3)]"
+                : "text-muted-foreground/75"
             }`}
           >
             {isOverdue(project.target_date, project.status)
@@ -289,7 +295,7 @@ export function ProjectCard({ project, onUpdate }: ProjectCardProps) {
 
       {/* Progress mini-bar */}
       {project.totalTasks > 0 && (
-        <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-white/[0.06]">
+        <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-muted">
           <div
             className="h-full rounded-full bg-emerald-500 transition-all"
             style={{ width: `${progressPct}%` }}
@@ -299,12 +305,12 @@ export function ProjectCard({ project, onUpdate }: ProjectCardProps) {
 
       <div className="mt-3 flex flex-wrap items-center gap-1.5">
         {project.type && (
-          <span className="rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[10px] text-white/40">
+          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
             {project.type}
           </span>
         )}
         {project.owner && (
-          <span className="rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[10px] text-white/40">
+          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
             {project.owner}
           </span>
         )}

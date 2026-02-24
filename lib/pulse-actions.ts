@@ -10,6 +10,8 @@ export type PulseAction =
   | { type: 'update_task'; task_id: number; status: string }
   | { type: 'update_project'; project_id: string; status?: string; priority?: number }
   | { type: 'flag_attention'; message: string }
+  | { type: 'approve_discovery'; discovery_id: string }
+  | { type: 'dismiss_discovery'; discovery_id: string; reason?: string }
 
 export type ActionResult = {
   action: PulseAction
@@ -24,18 +26,20 @@ const KNOWN_TYPES = new Set([
   'update_task',
   'update_project',
   'flag_attention',
+  'approve_discovery',
+  'dismiss_discovery',
 ])
 
 // ---------------------------------------------------------------------------
 // parseActions — extract [ACTION]...[/ACTION] blocks from response text
 // ---------------------------------------------------------------------------
 
-const ACTION_BLOCK_RE = /\[ACTION\]([\s\S]*?)\[\/ACTION\]/g
+const actionBlockRe = () => /\[ACTION\]([\s\S]*?)\[\/ACTION\]/g
 
 export function parseActions(response: string): PulseAction[] {
   const actions: PulseAction[] = []
 
-  for (const match of response.matchAll(ACTION_BLOCK_RE)) {
+  for (const match of response.matchAll(actionBlockRe())) {
     const raw = match[1].trim()
     try {
       const parsed = JSON.parse(raw)
@@ -58,7 +62,7 @@ export function parseActions(response: string): PulseAction[] {
 
 export function stripActionBlocks(response: string): string {
   return response
-    .replace(ACTION_BLOCK_RE, '')
+    .replace(actionBlockRe(), '')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
 }
@@ -189,6 +193,89 @@ export async function executeActions(actions: PulseAction[]): Promise<ActionResu
             success: true,
             message: `Attention flagged: "${action.message}"`,
             id: data.id,
+          })
+          break
+        }
+
+        case 'approve_discovery': {
+          const { data: discovery, error: fetchErr } = await sb
+            .from('discoveries')
+            .select('id, title, status')
+            .eq('id', action.discovery_id)
+            .single()
+
+          if (fetchErr) throw fetchErr
+
+          if (discovery.status === 'approved' || discovery.status === 'executed') {
+            results.push({ action, success: false, message: 'Discovery already processed' })
+            break
+          }
+
+          const { data: proposal, error: propErr } = await sb
+            .from('proposals')
+            .insert({
+              title: discovery.title,
+              description: `Patrol discovery: ${discovery.title}`,
+              source: 'patrol',
+              requested_by: 'makima',
+              status: 'pending',
+            })
+            .select('id')
+            .single()
+
+          if (propErr) throw propErr
+
+          const { error: updateErr } = await sb
+            .from('discoveries')
+            .update({ status: 'approved', proposal_id: proposal.id })
+            .eq('id', action.discovery_id)
+
+          if (updateErr) throw updateErr
+
+          await sb.from('events').insert({
+            type: 'discovery_approved',
+            agent: 'makima',
+            message: `Discovery approved: "${discovery.title}"`,
+            metadata: { discovery_id: action.discovery_id, title: discovery.title, proposal_id: proposal.id },
+          })
+
+          results.push({
+            action,
+            success: true,
+            message: `Discovery "${discovery.title}" approved, proposal created`,
+            id: proposal.id,
+          })
+          break
+        }
+
+        case 'dismiss_discovery': {
+          const { data: discovery, error: fetchErr } = await sb
+            .from('discoveries')
+            .select('id, title')
+            .eq('id', action.discovery_id)
+            .single()
+
+          if (fetchErr) throw fetchErr
+
+          const { error: updateErr } = await sb
+            .from('discoveries')
+            .update({ status: 'dismissed', feedback: action.reason ?? null })
+            .eq('id', action.discovery_id)
+
+          if (updateErr) throw updateErr
+
+          await sb.from('events').insert({
+            type: 'discovery_dismissed',
+            agent: 'makima',
+            message: `Discovery dismissed: "${discovery.title}"`,
+            metadata: { discovery_id: action.discovery_id, title: discovery.title, reason: action.reason },
+          })
+
+          results.push({
+            action,
+            success: true,
+            message: `Discovery "${discovery.title}" dismissed`,
+            id: action.discovery_id,
           })
           break
         }

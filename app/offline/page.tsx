@@ -4,7 +4,7 @@ export const metadata = {
 
 export default function OfflinePage() {
   return (
-    <div className="flex h-screen items-center justify-center bg-[#050505]">
+    <div className="flex h-screen items-center justify-center bg-background">
       <div className="text-center">
         <div className="mb-6 animate-pulse text-4xl text-[#10b981]">
           <svg
@@ -28,10 +28,10 @@ export default function OfflinePage() {
             <path d="m9 22 3-8 3 8" />
           </svg>
         </div>
-        <h1 className="mb-2 font-[family-name:var(--font-space-grotesk)] text-xl font-medium tracking-tight text-[#E5E5E5]">
+        <h1 className="mb-2 font-[family-name:var(--font-space-grotesk)] text-xl font-medium tracking-tight text-foreground">
           Reconnecting to Dynasty Tenshu...
         </h1>
-        <p className="text-sm text-[rgba(255,255,255,0.4)]">
+        <p className="text-sm text-muted-foreground">
           Waiting for network connection
         </p>
       </div>

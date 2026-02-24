@@ -18,8 +18,8 @@ When I chat with Makima, she knows what's happening. She references active missi
 - [x] P2-T3: Action instruction in system prompt
 
 ## Sprint 3: Proactive Alerts
-- [ ] P3-T1: Pulse alert generator (`lib/pulse-alerts.ts`)
-- [ ] P3-T2: Auto-inject alerts on thread open
+- [x] P3-T1: Pulse alert generator (`lib/pulse-alerts.ts`)
+- [x] P3-T2: Auto-inject alerts on thread open
 
 ## Rollback
 All changes additive (new files) or guarded by `isMakima` checks. Rollback = revert commit. No DB changes.

@@ -125,11 +125,18 @@ export async function POST(req: NextRequest) {
 
         const reader = sourceStream.getReader()
         let fullResponse = ''
+        const STREAM_READ_TIMEOUT = 30_000
+        const readWithTimeout = () => Promise.race([
+          reader.read(),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Stream read timed out after 30s')), STREAM_READ_TIMEOUT)
+          )
+        ])
 
         while (true) {
           let readResult
           try {
-            readResult = await reader.read()
+            readResult = await readWithTimeout()
           } catch (readErr) {
             // For Makima/OpenClaw: if stream errors before any content, fall back to spawnClaude
             if (isMakima && !fullResponse) {

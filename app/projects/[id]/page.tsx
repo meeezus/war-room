@@ -42,7 +42,7 @@ export default function ProjectPage() {
       <div className="flex h-screen flex-col bg-background p-4">
         <div className="flex h-full items-center justify-center">
           <StealthCard className="max-w-md p-8 text-center">
-            <h2 className="mb-3 font-[family-name:var(--font-space-grotesk)] text-lg font-semibold text-[#E5E5E5]">
+            <h2 className="mb-3 font-[family-name:var(--font-space-grotesk)] text-lg font-semibold text-foreground">
               Connect Supabase to see live data
             </h2>
           </StealthCard>
@@ -54,7 +54,7 @@ export default function ProjectPage() {
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
-        <p className="font-[family-name:var(--font-jetbrains-mono)] text-sm text-[rgba(255,255,255,0.4)]">
+        <p className="font-[family-name:var(--font-jetbrains-mono)] text-sm text-muted-foreground">
           Loading project...
         </p>
       </div>
@@ -65,10 +65,10 @@ export default function ProjectPage() {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <StealthCard className="max-w-sm p-8 text-center">
-          <h2 className="mb-2 font-[family-name:var(--font-space-grotesk)] text-lg font-semibold text-[#E5E5E5]">
+          <h2 className="mb-2 font-[family-name:var(--font-space-grotesk)] text-lg font-semibold text-foreground">
             Project not found
           </h2>
-          <p className="text-sm text-[rgba(255,255,255,0.4)]">
+          <p className="text-sm text-muted-foreground">
             The project you are looking for does not exist or has been removed.
           </p>
         </StealthCard>

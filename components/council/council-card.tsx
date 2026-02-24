@@ -35,7 +35,7 @@ export function CouncilCard({ review }: CouncilCardProps) {
 
   return (
     <div
-      className="relative rounded-sm border border-white/[0.08] bg-[rgba(10,10,10,0.8)] backdrop-blur-xl p-4 flex flex-col gap-3 transition-all duration-300 hover:-translate-y-px hover:border-white/[0.15]"
+      className="relative rounded-sm border border-border bg-card backdrop-blur-xl p-4 flex flex-col gap-3 transition-all duration-300 hover:-translate-y-px hover:border-border"
       style={{ boxShadow: `0 0 0 1px ${color}10, inset 0 1px 0 rgba(255,255,255,0.04)` }}
     >
       {/* Glow ring using daimyo color */}
@@ -77,7 +77,7 @@ export function CouncilCard({ review }: CouncilCardProps) {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-[family-name:var(--font-space-grotesk)] font-semibold text-sm text-[#E5E5E5]">
+            <span className="font-[family-name:var(--font-space-grotesk)] font-semibold text-sm text-foreground">
               {roleCard.name}
             </span>
             <span
@@ -86,7 +86,7 @@ export function CouncilCard({ review }: CouncilCardProps) {
               {verdict.label}
             </span>
           </div>
-          <div className="text-[11px] text-[rgba(255,255,255,0.35)] mt-0.5">
+          <div className="text-[11px] text-muted-foreground/75 mt-0.5">
             {roleCard.title}
           </div>
         </div>
@@ -95,7 +95,7 @@ export function CouncilCard({ review }: CouncilCardProps) {
       {/* Voice text */}
       <p
         ref={textRef}
-        className={`text-xs text-[rgba(255,255,255,0.6)] leading-relaxed ${expanded ? "" : "line-clamp-3"}`}
+        className={`text-xs text-foreground/60 leading-relaxed ${expanded ? "" : "line-clamp-3"}`}
       >
         {review.voice_text || review.text}
       </p>
@@ -104,7 +104,7 @@ export function CouncilCard({ review }: CouncilCardProps) {
       {(clamped || expanded) && (
         <button
           onClick={() => setExpanded(!expanded)}
-          className="text-[11px] text-[rgba(255,255,255,0.4)] hover:text-[rgba(255,255,255,0.7)] transition-colors self-start -mt-1"
+          className="text-[11px] text-muted-foreground hover:text-foreground/70 transition-colors self-start -mt-1"
         >
           {expanded ? "Show less" : "Show more"}
         </button>

@@ -30,15 +30,43 @@ async function checkClaudeCli(): Promise<boolean> {
   }
 }
 
-export async function GET() {
-  const [supabase, claude_cli] = await Promise.all([checkSupabase(), checkClaudeCli()])
+async function checkPoller(): Promise<{ alive: boolean; last_heartbeat: string | null }> {
+  try {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!url || !key) return { alive: false, last_heartbeat: null }
+    const sb = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString()
+    const { data } = await sb
+      .from('events')
+      .select('created_at')
+      .eq('type', 'heartbeat')
+      .gte('created_at', tenMinutesAgo)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+    return {
+      alive: !!data,
+      last_heartbeat: data?.created_at ?? null,
+    }
+  } catch {
+    return { alive: false, last_heartbeat: null }
+  }
+}
 
-  const status = supabase && claude_cli ? 'ok' : 'degraded'
+export async function GET() {
+  const [supabase, claude_cli, poller] = await Promise.all([
+    checkSupabase(),
+    checkClaudeCli(),
+    checkPoller(),
+  ])
+
+  const status = supabase && claude_cli && poller.alive ? 'ok' : 'degraded'
 
   return NextResponse.json(
     {
       status,
-      checks: { supabase, claude_cli },
+      checks: { supabase, claude_cli, poller },
       uptime_ms: Date.now() - startTime,
     },
     { status: status === 'ok' ? 200 : 503 }

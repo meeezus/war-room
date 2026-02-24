@@ -12,17 +12,17 @@ function ConnectPrompt() {
   return (
     <div className="flex h-screen items-center justify-center bg-background">
       <StealthCard className="max-w-md p-8 text-center">
-        <h2 className="mb-3 font-[family-name:var(--font-space-grotesk)] text-lg font-semibold text-[#E5E5E5]">
+        <h2 className="mb-3 font-[family-name:var(--font-space-grotesk)] text-lg font-semibold text-foreground">
           Connect Supabase to see live data
         </h2>
-        <p className="mb-4 text-sm text-[rgba(255,255,255,0.5)]">
+        <p className="mb-4 text-sm text-muted-foreground">
           Add these environment variables to your{" "}
-          <code className="rounded bg-white/[0.06] px-1.5 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-xs">
+          <code className="rounded bg-muted px-1.5 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-xs">
             .env.local
           </code>{" "}
           file:
         </p>
-        <div className="rounded-sm bg-white/[0.04] p-4 text-left font-[family-name:var(--font-jetbrains-mono)] text-xs text-[rgba(255,255,255,0.5)]">
+        <div className="rounded-sm bg-muted/50 p-4 text-left font-[family-name:var(--font-jetbrains-mono)] text-xs text-muted-foreground">
           <p>NEXT_PUBLIC_SUPABASE_URL=your-url</p>
           <p>NEXT_PUBLIC_SUPABASE_ANON_KEY=your-key</p>
         </div>
@@ -58,7 +58,7 @@ export default function AgentPage() {
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
-        <p className="font-[family-name:var(--font-jetbrains-mono)] text-sm text-[rgba(255,255,255,0.4)]">
+        <p className="font-[family-name:var(--font-jetbrains-mono)] text-sm text-muted-foreground">
           Loading...
         </p>
       </div>
@@ -69,12 +69,12 @@ export default function AgentPage() {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <StealthCard className="max-w-sm p-8 text-center">
-          <h2 className="mb-2 font-[family-name:var(--font-space-grotesk)] text-lg font-semibold text-[#E5E5E5]">
+          <h2 className="mb-2 font-[family-name:var(--font-space-grotesk)] text-lg font-semibold text-foreground">
             Agent not found
           </h2>
-          <p className="text-sm text-[rgba(255,255,255,0.4)]">
+          <p className="text-sm text-muted-foreground">
             No agent exists with ID{" "}
-            <code className="rounded bg-white/[0.06] px-1.5 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-xs">
+            <code className="rounded bg-muted px-1.5 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-xs">
               {id}
             </code>
           </p>

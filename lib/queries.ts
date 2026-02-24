@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import type { AgentStatus, Mission, Step, Event, DashboardStats, Project, ProjectWithMetrics, Board, Task, DynastyStats, Proposal, CouncilSession, ActiveAgent } from '@/lib/types'
+import type { AgentStatus, Mission, Step, Event, DashboardStats, Project, ProjectWithMetrics, Board, Task, DynastyStats, Proposal, CouncilSession, ActiveAgent, Discovery } from '@/lib/types'
 
 // Domain → Daimyo routing (matches engine/config.py DOMAIN_TO_DAIMYO)
 export const DOMAIN_TO_DAIMYO: Record<string, string> = {
@@ -535,6 +535,93 @@ export async function createProject(input: {
   return data as Project
 }
 
+// ---------------------------------------------------------------------------
+// Discovery queries
+// ---------------------------------------------------------------------------
+
+export async function getDiscoveriesByRepo(repo: string): Promise<Discovery[]> {
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from('discoveries')
+    .select('*')
+    .eq('repo', repo)
+    .order('created_at', { ascending: false })
+  if (error) { console.error('getDiscoveriesByRepo error:', error); return [] }
+  return (data as Discovery[]) ?? []
+}
+
+export async function getPendingDiscoveryCount(): Promise<number> {
+  if (!supabase) return 0
+  const { count, error } = await supabase
+    .from('discoveries')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'pending')
+  if (error) { console.error('getPendingDiscoveryCount error:', error); return 0 }
+  return count ?? 0
+}
+
+export async function getPendingDiscoveriesWithSeverity(): Promise<{ total: number; critical: number; warning: number; info: number }> {
+  if (!supabase) return { total: 0, critical: 0, warning: 0, info: 0 }
+  const { data, error } = await supabase
+    .from('discoveries')
+    .select('severity')
+    .eq('status', 'pending')
+  if (error) { console.error('getPendingDiscoveriesWithSeverity error:', error); return { total: 0, critical: 0, warning: 0, info: 0 } }
+  const rows = (data ?? []) as { severity: string }[]
+  return {
+    total: rows.length,
+    critical: rows.filter(r => r.severity === 'critical').length,
+    warning: rows.filter(r => r.severity === 'warning').length,
+    info: rows.filter(r => r.severity === 'info').length,
+  }
+}
+
+export async function getLastPatrolEvent(): Promise<Event | null> {
+  if (!supabase) return null
+  const { data, error } = await supabase
+    .from('events')
+    .select('*')
+    .eq('type', 'patrol_complete')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (error) { console.error('getLastPatrolEvent error:', error); return null }
+  return data as Event | null
+}
+
+export async function getDiscoveryCountByRepo(repo: string): Promise<number> {
+  if (!supabase) return 0
+  const { count, error } = await supabase
+    .from('discoveries')
+    .select('*', { count: 'exact', head: true })
+    .eq('repo', repo)
+    .eq('status', 'pending')
+  if (error) { console.error('getDiscoveryCountByRepo error:', error); return 0 }
+  return count ?? 0
+}
+
+export async function getDiscoveryFeedbackStats(): Promise<
+  { agent_id: string; category: string; approved_count: number; dismissed_count: number; total_count: number }[]
+> {
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from('discoveries')
+    .select('agent_id, category, status')
+    .in('status', ['approved', 'dismissed'])
+  if (error) { console.error('getDiscoveryFeedbackStats error:', error); return [] }
+  const rows = (data ?? []) as { agent_id: string; category: string; status: string }[]
+  const groups: Record<string, { agent_id: string; category: string; approved_count: number; dismissed_count: number }> = {}
+  for (const row of rows) {
+    const key = `${row.agent_id}:${row.category}`
+    if (!groups[key]) {
+      groups[key] = { agent_id: row.agent_id, category: row.category, approved_count: 0, dismissed_count: 0 }
+    }
+    if (row.status === 'approved') groups[key].approved_count++
+    else groups[key].dismissed_count++
+  }
+  return Object.values(groups).map(g => ({ ...g, total_count: g.approved_count + g.dismissed_count }))
+}
+
 export async function createMission(input: {
   title: string
   project_id: string
@@ -561,6 +648,35 @@ export async function createMission(input: {
     await archiveCouncilSession(input.councilSessionId)
   }
   return data as Mission
+}
+
+export async function createObjective(params: {
+  title: string;
+  description?: string;
+  success_criteria: string;
+  max_iterations?: number;
+  project_id?: string;
+}): Promise<{ id: string } | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from("objectives")
+    .insert({
+      title: params.title,
+      description: params.description || null,
+      success_criteria: params.success_criteria,
+      max_iterations: params.max_iterations ?? 5,
+      project_id: params.project_id || null,
+      status: "active",
+      created_by: "sensei",
+      iteration_count: 0,
+    })
+    .select("id")
+    .single();
+  if (error) {
+    console.error("createObjective error:", error);
+    return null;
+  }
+  return data;
 }
 
 // ---------------------------------------------------------------------------
@@ -601,4 +717,51 @@ export async function createMissionFromPlan(planData: {
     return null
   }
   return res.json() as Promise<{ missionId: string; taskIds: string[] }>
+}
+
+export async function getSkillPatchStats(): Promise<{ recentPatches: number; appliedPatches: number }> {
+  if (!supabase) return { recentPatches: 0, appliedPatches: 0 }
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+  const [recentRes, appliedRes] = await Promise.all([
+    supabase.from('skill_patches').select('id', { count: 'exact', head: true }).gte('created_at', thirtyDaysAgo),
+    supabase.from('skill_patches').select('id', { count: 'exact', head: true }).eq('status', 'applied'),
+  ])
+  return {
+    recentPatches: recentRes.count ?? 0,
+    appliedPatches: appliedRes.count ?? 0,
+  }
+}
+
+export async function getLastPatrolSummary(): Promise<{ timestamp: string | null; discoveryCount: number }> {
+  if (!supabase) return { timestamp: null, discoveryCount: 0 }
+  const { data } = await supabase
+    .from('events')
+    .select('created_at, metadata')
+    .eq('type', 'patrol_complete')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  return {
+    timestamp: data?.created_at ?? null,
+    discoveryCount: (data?.metadata as any)?.discovery_count ?? 0,
+  }
+}
+
+export async function getActiveObjectiveCount(): Promise<number> {
+  if (!supabase) return 0
+  const { count } = await supabase
+    .from('objectives')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'active')
+  return count ?? 0
+}
+
+export async function getActiveCouncilSessionCount(): Promise<number> {
+  if (!supabase) return 0
+  const { count, error } = await supabase
+    .from('council_sessions')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'active')
+  if (error) { console.error('getActiveCouncilSessionCount error:', error); return 0 }
+  return count ?? 0
 }

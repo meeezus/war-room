@@ -97,10 +97,10 @@ export function ProjectKanban({ missions: initialMissions, projectId }: ProjectK
                 className="inline-block size-2 rounded-full"
                 style={{ backgroundColor: col.accent }}
               />
-              <span className="font-[family-name:var(--font-space-grotesk)] text-xs font-semibold uppercase tracking-wider text-[rgba(255,255,255,0.5)]">
+              <span className="font-[family-name:var(--font-space-grotesk)] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 {col.label}
               </span>
-              <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] tabular-nums text-[rgba(255,255,255,0.3)]">
+              <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] tabular-nums text-muted-foreground/75">
                 {cards.length}
               </span>
             </div>
@@ -111,7 +111,7 @@ export function ProjectKanban({ missions: initialMissions, projectId }: ProjectK
               {col.status === "completed" && hiddenCompleted > 0 && (
                 <button
                   onClick={() => setShowAllCompleted(true)}
-                  className="mt-1 text-xs text-[rgba(255,255,255,0.4)] hover:text-[#E5E5E5]"
+                  className="mt-1 text-xs text-muted-foreground hover:text-foreground"
                 >
                   Show all (+{hiddenCompleted})
                 </button>
@@ -119,7 +119,7 @@ export function ProjectKanban({ missions: initialMissions, projectId }: ProjectK
               {col.status === "completed" && showAllCompleted && allCards.length > 0 && (
                 <button
                   onClick={() => setShowAllCompleted(false)}
-                  className="mt-1 text-xs text-[rgba(255,255,255,0.4)] hover:text-[#E5E5E5]"
+                  className="mt-1 text-xs text-muted-foreground hover:text-foreground"
                 >
                   Show recent only
                 </button>

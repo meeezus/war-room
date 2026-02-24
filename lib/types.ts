@@ -4,7 +4,7 @@ export interface Proposal {
   id: string
   title: string
   description: string | null
-  source: 'discord' | 'cron' | 'trigger' | 'manual'
+  source: 'discord' | 'cron' | 'trigger' | 'manual' | 'patrol'
   requested_by: string
   domain: 'engineering' | 'product' | 'commerce' | 'influence' | 'operations' | 'coordination' | null
   cost_estimate: number | null
@@ -61,6 +61,9 @@ export interface Event {
     | 'council_reviewed'
     | 'task_started' | 'task_completed' | 'task_failed'
     | 'heartbeat' | 'agent_action' | 'user_request'
+    | 'patrol_started' | 'patrol_complete'
+    | 'discovery_created' | 'discovery_approved' | 'discovery_dismissed'
+    | 'skill_patch_extracted' | 'skill_applied' | 'skill_sunset' | 'cross_pollination'
   source_id: string | null
   agent: string | null
   message: string
@@ -234,6 +237,24 @@ export interface DaimyoStats {
   rpg_class: string
 }
 
+export type Discovery = {
+  id: string
+  agent_id: string
+  category: 'code_health' | 'dependency' | 'performance' | 'cost' | 'opportunity'
+  severity: 'critical' | 'warning' | 'info'
+  title: string
+  description: string
+  repo?: string
+  file_path?: string
+  evidence?: string
+  suggested_action?: string
+  status: 'pending' | 'approved' | 'dismissed' | 'executed'
+  feedback?: string
+  proposal_id?: string
+  created_at: string
+  updated_at: string
+}
+
 export interface ActiveAgent {
   id: string
   agent_type: string
@@ -242,4 +263,35 @@ export interface ActiveAgent {
   mission_id: string | null
   started_at: string
   status: 'running' | 'idle' | 'completed' | 'failed'
+}
+
+export interface SkillPatchStats {
+  recentPatches: number   // last 30 days
+  appliedPatches: number  // total applied
+}
+
+export interface HealthCheck {
+  status: 'ok' | 'degraded'
+  checks: {
+    supabase: boolean
+    claude_cli: boolean
+    poller: { alive: boolean; last_heartbeat: string | null }
+  }
+  uptime_ms: number
+}
+
+export interface Objective {
+  id: string
+  title: string
+  description: string | null
+  success_criteria: string
+  project_id: string | null
+  max_iterations: number
+  max_cost_usd: number | null
+  iteration_count: number
+  status: 'active' | 'paused' | 'completed' | 'failed' | 'capped'
+  created_by: string
+  created_at: string
+  updated_at: string
+  completed_at: string | null
 }
