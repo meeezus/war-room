@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion } from "motion/react";
 import type { Mission, Step, Task } from "@/lib/types";
 import { StealthCard } from "./stealth-card";
+import { Breadcrumb } from "./breadcrumb";
 import { StepCard } from "./step-card";
 import { staggerContainer } from "@/lib/motion";
 import { useRealtimeSteps } from "@/lib/realtime";
@@ -108,18 +109,11 @@ export function MissionDetail({
   return (
     <div className="mx-auto max-w-3xl space-y-4 p-4">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-xs text-[rgba(255,255,255,0.4)]">
-        <Link
-          href="/dashboard"
-          className="hover:text-[#E5E5E5] transition-colors"
-        >
-          Dashboard
-        </Link>
-        <span>/</span>
-        <span className="text-[rgba(255,255,255,0.6)]">
-          Mission: {mission.title}
-        </span>
-      </nav>
+      <Breadcrumb segments={[
+        { label: "Dashboard", href: "/dashboard" },
+        { label: "Missions", href: "/missions" },
+        { label: mission.title },
+      ]} />
 
       {/* Mission header card */}
       <StealthCard className="p-4">

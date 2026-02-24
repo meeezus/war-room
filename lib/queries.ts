@@ -689,3 +689,40 @@ export async function createMissionFromPlan(planData: {
   }
   return res.json() as Promise<{ missionId: string; taskIds: string[] }>
 }
+
+export async function getSkillPatchStats(): Promise<{ recentPatches: number; appliedPatches: number }> {
+  if (!supabase) return { recentPatches: 0, appliedPatches: 0 }
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+  const [recentRes, appliedRes] = await Promise.all([
+    supabase.from('skill_patches').select('id', { count: 'exact', head: true }).gte('created_at', thirtyDaysAgo),
+    supabase.from('skill_patches').select('id', { count: 'exact', head: true }).eq('status', 'applied'),
+  ])
+  return {
+    recentPatches: recentRes.count ?? 0,
+    appliedPatches: appliedRes.count ?? 0,
+  }
+}
+
+export async function getLastPatrolSummary(): Promise<{ timestamp: string | null; discoveryCount: number }> {
+  if (!supabase) return { timestamp: null, discoveryCount: 0 }
+  const { data } = await supabase
+    .from('events')
+    .select('created_at, metadata')
+    .eq('type', 'patrol_complete')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  return {
+    timestamp: data?.created_at ?? null,
+    discoveryCount: (data?.metadata as any)?.discovery_count ?? 0,
+  }
+}
+
+export async function getActiveObjectiveCount(): Promise<number> {
+  if (!supabase) return 0
+  const { count } = await supabase
+    .from('objectives')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'active')
+  return count ?? 0
+}

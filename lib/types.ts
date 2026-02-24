@@ -264,3 +264,34 @@ export interface ActiveAgent {
   started_at: string
   status: 'running' | 'idle' | 'completed' | 'failed'
 }
+
+export interface SkillPatchStats {
+  recentPatches: number   // last 30 days
+  appliedPatches: number  // total applied
+}
+
+export interface HealthCheck {
+  status: 'ok' | 'degraded'
+  checks: {
+    supabase: boolean
+    claude_cli: boolean
+    poller: { alive: boolean; last_heartbeat: string | null }
+  }
+  uptime_ms: number
+}
+
+export interface Objective {
+  id: string
+  title: string
+  description: string | null
+  success_criteria: string
+  project_id: string | null
+  max_iterations: number
+  max_cost_usd: number | null
+  iteration_count: number
+  status: 'active' | 'paused' | 'completed' | 'failed' | 'capped'
+  created_by: string
+  created_at: string
+  updated_at: string
+  completed_at: string | null
+}

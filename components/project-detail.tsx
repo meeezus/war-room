@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
 import type { Project, Board, Task, Proposal } from "@/lib/types";
 import { PROJECT_STATUS_COLORS } from "@/lib/data";
 import { fadeInUp } from "@/lib/motion";
 import { StealthCard } from "./stealth-card";
+import { Breadcrumb } from "./breadcrumb";
 import { ProjectKanban } from "./project-kanban";
 import { MissionTableView } from "./mission-table-view";
 import { ProposalsSection } from "./proposals-section";
@@ -52,18 +52,11 @@ export function ProjectDetail({ project, boards, proposals, tasks, missions, onU
       {...(prefersReducedMotion ? {} : fadeInUp)}
     >
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-xs text-[rgba(255,255,255,0.4)]">
-        <Link
-          href="/dashboard"
-          className="transition-colors hover:text-[#E5E5E5]"
-        >
-          Dashboard
-        </Link>
-        <span>/</span>
-        <span className="text-[rgba(255,255,255,0.6)]">
-          {project.title}
-        </span>
-      </nav>
+      <Breadcrumb segments={[
+        { label: "Dashboard", href: "/dashboard" },
+        { label: "Projects", href: "/dashboard" },
+        { label: project.title },
+      ]} />
 
       {/* Project header card */}
       <StealthCard className="p-5">

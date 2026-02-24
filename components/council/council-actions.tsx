@@ -296,17 +296,19 @@ export function CouncilActions({ session }: CouncilActionsProps) {
           + Create Mission
         </button>
 
-        <div className="relative group">
-          <button
-            disabled
-            className="px-3 py-1.5 rounded-sm border border-white/[0.08] bg-white/[0.04] text-[rgba(255,255,255,0.3)] text-xs font-medium cursor-not-allowed"
-          >
-            Respond
-          </button>
-          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded-sm bg-[rgba(20,20,20,0.95)] border border-white/[0.08] text-[10px] text-[rgba(255,255,255,0.5)] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-            Full response via Shoin Chat — coming soon
-          </div>
-        </div>
+        <button
+          onClick={async () => {
+            const res = await fetch(`/api/council/${session.id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ status: "archived" }),
+            });
+            if (res.ok) router.push("/council");
+          }}
+          className="px-3 py-1.5 rounded-sm border border-red-500/30 bg-red-500/10 text-red-400 text-xs font-medium hover:bg-red-500/20 transition-colors"
+        >
+          Reject
+        </button>
       </div>
 
       <CreateProjectModal

@@ -3,12 +3,9 @@ import type { CouncilSession } from "@/lib/types";
 
 interface CouncilSynthesisProps {
   session: Pick<CouncilSession, "synthesis" | "recommendation" | "dissent">;
-  onAccept?: () => void;
-  onReject?: () => void;
-  onIterate?: () => void;
 }
 
-export function CouncilSynthesis({ session, onAccept, onReject, onIterate }: CouncilSynthesisProps) {
+export function CouncilSynthesis({ session }: CouncilSynthesisProps) {
   if (!session.synthesis && !session.recommendation) return null;
 
   return (
@@ -60,35 +57,6 @@ export function CouncilSynthesis({ session, onAccept, onReject, onIterate }: Cou
           )}
         </div>
 
-        {/* Action buttons — only when callbacks provided */}
-        {(onAccept || onReject || onIterate) && (
-          <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-white/[0.06]">
-            {onAccept && (
-              <button
-                onClick={onAccept}
-                className="px-3 py-1.5 rounded-sm text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 transition-colors"
-              >
-                Accept
-              </button>
-            )}
-            {onReject && (
-              <button
-                onClick={onReject}
-                className="px-3 py-1.5 rounded-sm text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-colors"
-              >
-                Reject
-              </button>
-            )}
-            {onIterate && (
-              <button
-                onClick={onIterate}
-                className="px-3 py-1.5 rounded-sm text-xs font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30 hover:bg-purple-500/30 transition-colors"
-              >
-                Iterate
-              </button>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );

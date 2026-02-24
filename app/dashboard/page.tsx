@@ -2,25 +2,17 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { getAgents, getMissions, getEvents, getStats, getProjectsWithMetrics, getDynastyStats, getMissionStats, getPendingDiscoveryCount } from "@/lib/queries";
-import type { AgentStatus, Mission, Event, DashboardStats, DynastyStats, ProjectWithMetrics } from "@/lib/types";
+import { getAgents, getMissions, getEvents, getProjectsWithMetrics, getDynastyStats, getMissionStats, getPendingDiscoveryCount, getSkillPatchStats, getLastPatrolSummary, getActiveObjectiveCount } from "@/lib/queries";
+import type { AgentStatus, Mission, Event, DynastyStats, ProjectWithMetrics } from "@/lib/types";
 import Link from "next/link";
-import { StatsBar } from "@/components/stats-bar";
+import { StatusRibbon } from "@/components/status-ribbon";
 import { AgentSidebar } from "@/components/agent-sidebar";
 import { EventFeed } from "@/components/event-feed";
 import { StealthCard } from "@/components/stealth-card";
 import { ProjectOverview } from "@/components/project-overview";
 import { CreateProjectModal } from "@/components/create-project-modal";
 import { TerminalPanel } from "@/components/terminal/terminal-panel";
-import { BriefCard } from "@/components/brief-card";
 
-
-const defaultStats: DashboardStats = {
-  activeAgents: 0,
-  inProgressTasks: 0,
-  pendingReviews: 0,
-  pendingProposals: 0,
-};
 
 const defaultDynastyStats: DynastyStats = {
   totalProjects: 0,
@@ -78,7 +70,9 @@ export default function DashboardPage() {
   const [agents, setAgents] = useState<AgentStatus[]>([]);
   const [missions, setMissions] = useState<Mission[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
-  const [stats, setStats] = useState<DashboardStats>(defaultStats);
+  const [skillStats, setSkillStats] = useState({ recentPatches: 0, appliedPatches: 0 });
+  const [lastPatrol, setLastPatrol] = useState<{ timestamp: string | null; discoveryCount: number }>({ timestamp: null, discoveryCount: 0 });
+  const [activeObjectives, setActiveObjectives] = useState(0);
   const [projects, setProjects] = useState<ProjectWithMetrics[]>([]);
   const [dynastyStats, setDynastyStats] = useState<DynastyStats>(defaultDynastyStats);
   const [missionStats, setMissionStats] = useState({ active: 0, total: 0 });
@@ -99,24 +93,28 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function fetchData() {
-      const [agentsData, missionsData, eventsData, statsData, projectsData, dynastyData, missionStatsData, discoveryCount] = await Promise.all([
+      const [agentsData, missionsData, eventsData, projectsData, dynastyData, missionStatsData, discoveryCount, skillStatsData, lastPatrolData, objectiveCount] = await Promise.all([
         getAgents(),
         getMissions(),
         getEvents(),
-        getStats(),
         getProjectsWithMetrics(),
         getDynastyStats(),
         getMissionStats(),
         getPendingDiscoveryCount(),
+        getSkillPatchStats(),
+        getLastPatrolSummary(),
+        getActiveObjectiveCount(),
       ]);
       setAgents(agentsData);
       setMissions(missionsData);
       setEvents(eventsData);
-      setStats(statsData);
       setProjects(applySmartPriority(projectsData));
       setDynastyStats(dynastyData);
       setMissionStats(missionStatsData);
       setPendingDiscoveries(discoveryCount);
+      setSkillStats(skillStatsData);
+      setLastPatrol(lastPatrolData);
+      setActiveObjectives(objectiveCount);
       setLoading(false);
     }
     fetchData();
@@ -185,7 +183,12 @@ export default function DashboardPage() {
             + Project
           </button>
         </div>
-        <StatsBar stats={stats} />
+        <StatusRibbon
+          pendingDiscoveries={pendingDiscoveries}
+          lastPatrol={lastPatrol}
+          skillStats={skillStats}
+          activeObjectives={activeObjectives}
+        />
       </div>
 
       {/* Main Content */}
@@ -204,9 +207,6 @@ export default function DashboardPage() {
                 >
                   &laquo;
                 </button>
-              </div>
-              <div className="mb-2 flex-shrink-0">
-                <BriefCard />
               </div>
               <div className="flex-1 overflow-y-auto">
                 <AgentSidebar agents={agents} />

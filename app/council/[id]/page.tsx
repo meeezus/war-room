@@ -1,8 +1,7 @@
 import { createServiceClient } from '@/lib/supabase-server'
 import { CouncilCard } from '@/components/council/council-card'
 import { CouncilSessionClient } from './council-session-client'
-import { CouncilTerminalPanel } from '@/components/council/council-terminal-panel'
-import Link from 'next/link'
+import { Breadcrumb } from '@/components/breadcrumb'
 import { notFound } from 'next/navigation'
 import type { CouncilSession } from '@/lib/types'
 
@@ -50,12 +49,11 @@ export default async function CouncilSessionPage({
       <div className="max-w-5xl mx-auto">
         {/* Nav */}
         <div className="mb-8">
-          <Link
-            href="/council"
-            className="text-xs text-[rgba(255,255,255,0.4)] hover:text-[rgba(255,255,255,0.7)] transition-colors"
-          >
-            ← Council Sessions
-          </Link>
+          <Breadcrumb segments={[
+            { label: "Dashboard", href: "/dashboard" },
+            { label: "Council", href: "/council" },
+            { label: session.topic }
+          ]} />
         </div>
 
         {/* Header */}
@@ -103,9 +101,6 @@ export default async function CouncilSessionPage({
 
         {/* Makima synthesis + action bar — client wrapper for interactivity */}
         <CouncilSessionClient session={session} />
-
-        {/* Terminal panel — live execution output */}
-        <CouncilTerminalPanel sessionId={session.id} />
       </div>
     </div>
   )

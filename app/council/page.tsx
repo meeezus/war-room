@@ -1,6 +1,6 @@
 import { createServiceClient } from '@/lib/supabase-server'
 import { CouncilSessionCard } from '@/components/council/council-session-card'
-import Link from 'next/link'
+import { Breadcrumb } from '@/components/breadcrumb'
 import type { CouncilSession } from '@/lib/types'
 
 async function getSessions(): Promise<CouncilSession[]> {
@@ -24,14 +24,10 @@ export default async function CouncilPage() {
         {/* Header */}
         <div className="mb-8 flex items-start justify-between gap-4">
           <div>
-            <div className="mb-2">
-              <Link
-                href="/dashboard"
-                className="text-xs text-[rgba(255,255,255,0.4)] hover:text-[rgba(255,255,255,0.7)] transition-colors"
-              >
-                ← Dashboard
-              </Link>
-            </div>
+            <Breadcrumb segments={[
+              { label: "Dashboard", href: "/dashboard" },
+              { label: "Council" }
+            ]} className="mb-4" />
             <h1 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold text-[#E5E5E5]">
               Shogunate Council
             </h1>
