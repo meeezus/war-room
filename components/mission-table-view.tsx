@@ -103,17 +103,17 @@ export function MissionTableView({ missions }: MissionTableViewProps) {
     <StealthCard hover={false} className="overflow-hidden">
       <table className="w-full border-collapse">
         <thead>
-          <tr className="border-b border-white/[0.06]">
+          <tr className="border-b border-border">
             {COLUMNS.map((col) => (
               <th
                 key={col.key}
                 onClick={() => handleSort(col.key)}
-                className={`cursor-pointer select-none px-3 py-2.5 text-left font-[family-name:var(--font-space-grotesk)] text-[11px] font-medium uppercase tracking-wider text-[rgba(255,255,255,0.4)] transition-colors hover:text-[rgba(255,255,255,0.6)] ${col.className ?? ""}`}
+                className={`cursor-pointer select-none px-3 py-2.5 text-left font-[family-name:var(--font-space-grotesk)] text-[11px] font-medium uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground/60 ${col.className ?? ""}`}
               >
                 <span className="inline-flex items-center gap-1">
                   {col.label}
                   {sortKey === col.key && (
-                    <span className="text-[10px] text-[rgba(255,255,255,0.3)]">
+                    <span className="text-[10px] text-muted-foreground/75">
                       {sortDir === "asc" ? "▲" : "▼"}
                     </span>
                   )}
@@ -132,7 +132,7 @@ export function MissionTableView({ missions }: MissionTableViewProps) {
             return (
               <tr
                 key={mission.id}
-                className="border-b border-white/[0.06] last:border-b-0 transition-colors hover:bg-white/[0.03]"
+                className="border-b border-border last:border-b-0 transition-colors hover:bg-muted/50"
               >
                 {/* Status */}
                 <td className="px-3 py-2.5">
@@ -141,7 +141,7 @@ export function MissionTableView({ missions }: MissionTableViewProps) {
                       className="inline-block h-2 w-2 rounded-full"
                       style={{ backgroundColor: accent }}
                     />
-                    <span className="font-[family-name:var(--font-jetbrains-mono)] text-[11px] capitalize text-[rgba(255,255,255,0.5)]">
+                    <span className="font-[family-name:var(--font-jetbrains-mono)] text-[11px] capitalize text-muted-foreground">
                       {mission.status}
                     </span>
                   </div>
@@ -151,7 +151,7 @@ export function MissionTableView({ missions }: MissionTableViewProps) {
                 <td className="px-3 py-2.5">
                   <Link
                     href={`/missions/${mission.id}`}
-                    className="font-[family-name:var(--font-space-grotesk)] text-sm text-[#E5E5E5] transition-colors hover:text-white"
+                    className="font-[family-name:var(--font-space-grotesk)] text-sm text-foreground transition-colors hover:text-foreground/70"
                   >
                     {mission.title}
                   </Link>
@@ -161,7 +161,7 @@ export function MissionTableView({ missions }: MissionTableViewProps) {
                 <td className="px-3 py-2.5">
                   <Link
                     href={`/agents/${mission.assigned_to}`}
-                    className="font-[family-name:var(--font-jetbrains-mono)] text-[11px] text-[rgba(255,255,255,0.5)] transition-colors hover:text-[rgba(255,255,255,0.7)]"
+                    className="font-[family-name:var(--font-jetbrains-mono)] text-[11px] text-muted-foreground transition-colors hover:text-foreground/70"
                   >
                     {mission.assigned_to}
                   </Link>
@@ -171,7 +171,7 @@ export function MissionTableView({ missions }: MissionTableViewProps) {
                 <td className="px-3 py-2.5">
                   {total > 0 ? (
                     <div className="flex items-center gap-2">
-                      <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
+                      <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
                         <div
                           className="h-full rounded-full transition-all duration-500"
                           style={{
@@ -180,12 +180,12 @@ export function MissionTableView({ missions }: MissionTableViewProps) {
                           }}
                         />
                       </div>
-                      <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] tabular-nums text-[rgba(255,255,255,0.4)]">
+                      <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] tabular-nums text-muted-foreground">
                         {completed}/{total}
                       </span>
                     </div>
                   ) : (
-                    <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-[rgba(255,255,255,0.25)]">
+                    <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/60">
                       —
                     </span>
                   )}
@@ -193,14 +193,14 @@ export function MissionTableView({ missions }: MissionTableViewProps) {
 
                 {/* Created */}
                 <td className="px-3 py-2.5">
-                  <span className="font-[family-name:var(--font-jetbrains-mono)] text-[11px] tabular-nums text-[rgba(255,255,255,0.5)]">
+                  <span className="font-[family-name:var(--font-jetbrains-mono)] text-[11px] tabular-nums text-muted-foreground">
                     {new Date(mission.created_at).toLocaleDateString()}
                   </span>
                 </td>
 
                 {/* Duration */}
                 <td className="px-3 py-2.5">
-                  <span className="font-[family-name:var(--font-jetbrains-mono)] text-[11px] tabular-nums text-[rgba(255,255,255,0.5)]">
+                  <span className="font-[family-name:var(--font-jetbrains-mono)] text-[11px] tabular-nums text-muted-foreground">
                     {formatDuration(durationMs)}
                   </span>
                 </td>
@@ -212,7 +212,7 @@ export function MissionTableView({ missions }: MissionTableViewProps) {
             <tr>
               <td
                 colSpan={COLUMNS.length}
-                className="px-3 py-8 text-center font-[family-name:var(--font-jetbrains-mono)] text-xs text-[rgba(255,255,255,0.25)]"
+                className="px-3 py-8 text-center font-[family-name:var(--font-jetbrains-mono)] text-xs text-muted-foreground/60"
               >
                 No missions
               </td>

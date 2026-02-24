@@ -58,22 +58,22 @@ function CollapsibleToolResult({ content }: { content: string }) {
       {expanded ? (
         hasDiff ? (
           <div>
-            <span className="text-white/20 mr-1 group-hover:text-white/40">▾</span>
+            <span className="text-muted-foreground/50 mr-1 group-hover:text-muted-foreground">▾</span>
             <DiffViewer content={content} />
           </div>
         ) : (
-          <span className="text-white/40 whitespace-pre-wrap">
-            <span className="text-white/20 mr-1 group-hover:text-white/40">▾</span>
+          <span className="text-muted-foreground whitespace-pre-wrap">
+            <span className="text-muted-foreground/50 mr-1 group-hover:text-muted-foreground">▾</span>
             {content}
           </span>
         )
       ) : (
-        <span className="text-white/40 whitespace-nowrap overflow-hidden block">
-          <span className="text-white/20 mr-1 group-hover:text-white/40">▸</span>
+        <span className="text-muted-foreground whitespace-nowrap overflow-hidden block">
+          <span className="text-muted-foreground/50 mr-1 group-hover:text-muted-foreground">▸</span>
           <span className="truncate inline-block max-w-[90%] align-bottom">
             {hasDiff ? 'diff' : firstLine}
           </span>
-          {(hasMore || hasDiff) && <span className="text-white/20 ml-1">…</span>}
+          {(hasMore || hasDiff) && <span className="text-muted-foreground/50 ml-1">…</span>}
         </span>
       )}
     </button>
@@ -91,7 +91,7 @@ function EventLine({ event }: { event: LocalEvent }) {
       )
 
     case 'text':
-      return <span className="text-white/90 whitespace-pre-wrap">{event.content}</span>
+      return <span className="text-foreground whitespace-pre-wrap">{event.content}</span>
 
     case 'tool_use':
       return <ToolLine event={event} />
@@ -111,7 +111,7 @@ function EventLine({ event }: { event: LocalEvent }) {
       )
 
     case 'status':
-      return <span className="text-white/30 italic">{event.message}</span>
+      return <span className="text-muted-foreground/75 italic">{event.message}</span>
 
     case 'agent_spawn':
       return <AgentSpawnCard event={event} status="spawning" />
@@ -243,15 +243,15 @@ export function InlineTerminal({ streamUrl, inputUrl: inputUrlProp, onComplete }
 
   return (
     <div
-      className="relative flex flex-col rounded-lg border border-white/[0.08] bg-[#0a0a0a] overflow-hidden"
+      className="relative flex flex-col rounded-lg border border-border bg-card overflow-hidden"
       style={{ fontFamily: 'var(--font-jetbrains-mono, monospace)' }}
     >
       {/* Header bar */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-white/[0.06] bg-white/[0.02]">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted/50">
         <span className="h-2.5 w-2.5 rounded-full bg-red-500/70" />
         <span className="h-2.5 w-2.5 rounded-full bg-amber-500/70" />
         <span className="h-2.5 w-2.5 rounded-full bg-green-500/70" />
-        <span className="ml-2 text-xs text-white/30">stream</span>
+        <span className="ml-2 text-xs text-muted-foreground/75">stream</span>
         {active && (
           <span className="ml-auto flex items-center gap-1 text-xs text-green-400/70">
             <span className="animate-pulse">&#9679;</span>
@@ -277,7 +277,7 @@ export function InlineTerminal({ streamUrl, inputUrl: inputUrlProp, onComplete }
         {/* Blinking cursor while active */}
         {active && (
           <div className="flex items-center">
-            <span className="inline-block w-2 h-3.5 bg-white/60 animate-[blink_1s_step-end_infinite]" />
+            <span className="inline-block w-2 h-3.5 bg-foreground/60 animate-[blink_1s_step-end_infinite]" />
           </div>
         )}
 
@@ -286,8 +286,8 @@ export function InlineTerminal({ streamUrl, inputUrl: inputUrlProp, onComplete }
 
       {/* Input bar — shown when we can derive a mission ID */}
       {inputUrl && (
-        <div className="flex items-center gap-2 px-3 py-2 border-t border-white/[0.06] bg-white/[0.02]">
-          <span className="text-xs text-white/30 select-none">{'>'}</span>
+        <div className="flex items-center gap-2 px-3 py-2 border-t border-border bg-muted/50">
+          <span className="text-xs text-muted-foreground/75 select-none">{'>'}</span>
           <input
             ref={inputRef}
             type="text"
@@ -296,13 +296,13 @@ export function InlineTerminal({ streamUrl, inputUrl: inputUrlProp, onComplete }
             onKeyDown={handleKeyDown}
             disabled={inputState !== 'idle'}
             placeholder={active ? 'Send message to agent…' : 'Follow-up message…'}
-            className="flex-1 bg-transparent text-xs text-white/80 placeholder:text-white/20 outline-none disabled:opacity-40"
+            className="flex-1 bg-transparent text-xs text-foreground/70 placeholder:text-muted-foreground/50 outline-none disabled:opacity-40"
           />
           <button
             type="button"
             onClick={() => void sendInput()}
             disabled={inputState !== 'idle' || !inputValue.trim()}
-            className="text-xs text-white/30 hover:text-white/60 disabled:opacity-30 transition-colors px-1"
+            className="text-xs text-muted-foreground/75 hover:text-foreground/60 disabled:opacity-30 transition-colors px-1"
             aria-label="Send"
           >
             &#9166;

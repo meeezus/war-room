@@ -41,10 +41,10 @@ export function ProjectOverview({ projects, onUpdate }: ProjectOverviewProps) {
                 className="inline-block size-2 rounded-full"
                 style={{ backgroundColor: col.accent }}
               />
-              <span className="font-[family-name:var(--font-space-grotesk)] text-xs font-semibold uppercase tracking-wider text-[rgba(255,255,255,0.5)]">
+              <span className="font-[family-name:var(--font-space-grotesk)] text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 {col.label}
               </span>
-              <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] tabular-nums text-[rgba(255,255,255,0.3)]">
+              <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] tabular-nums text-muted-foreground/75">
                 {cards.length}
               </span>
             </div>
@@ -55,7 +55,7 @@ export function ProjectOverview({ projects, onUpdate }: ProjectOverviewProps) {
               {col.key === "done" && showAllDone && cards.length > 0 && (
                 <button
                   onClick={() => setShowAllDone(false)}
-                  className="mt-1 text-xs text-[rgba(255,255,255,0.4)] hover:text-[#E5E5E5]"
+                  className="mt-1 text-xs text-muted-foreground hover:text-foreground"
                 >
                   Hide done
                 </button>
@@ -68,7 +68,7 @@ export function ProjectOverview({ projects, onUpdate }: ProjectOverviewProps) {
       {!showAllDone && projects.some((p) => p.status === "done") && (
         <button
           onClick={() => setShowAllDone(true)}
-          className="self-start whitespace-nowrap px-2 text-xs text-[rgba(255,255,255,0.4)] hover:text-[#E5E5E5]"
+          className="self-start whitespace-nowrap px-2 text-xs text-muted-foreground hover:text-foreground"
         >
           Show done ({projects.filter((p) => p.status === "done").length})
         </button>

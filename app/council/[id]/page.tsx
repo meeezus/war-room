@@ -45,7 +45,7 @@ export default async function CouncilSessionPage({
   const typeLabel = COUNCIL_TYPE_LABELS[session.council_type] ?? session.council_type
 
   return (
-    <div className="min-h-screen bg-[#050505] text-[#E5E5E5] p-6 md:p-10">
+    <div className="min-h-screen bg-background text-foreground p-6 md:p-10">
       <div className="max-w-5xl mx-auto">
         {/* Nav */}
         <div className="mb-8">
@@ -59,17 +59,17 @@ export default async function CouncilSessionPage({
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-[10px] font-medium px-2 py-0.5 rounded border border-white/[0.08] text-[rgba(255,255,255,0.5)]">
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded border border-border text-muted-foreground">
               {typeLabel}
             </span>
-            <span className="text-[10px] text-[rgba(255,255,255,0.3)]">
+            <span className="text-[10px] text-muted-foreground/75">
               {formatDate(session.created_at)}
             </span>
           </div>
-          <h1 className="font-[family-name:var(--font-space-grotesk)] text-2xl md:text-3xl font-bold text-[#E5E5E5] leading-tight">
+          <h1 className="font-[family-name:var(--font-space-grotesk)] text-2xl md:text-3xl font-bold text-foreground leading-tight">
             {session.topic}
           </h1>
-          <p className="mt-2 text-sm text-[rgba(255,255,255,0.4)]">
+          <p className="mt-2 text-sm text-muted-foreground">
             {session.reviews.length} council members · {session.source}
           </p>
         </div>
@@ -79,7 +79,7 @@ export default async function CouncilSessionPage({
           <iframe
             srcDoc={session.plan_html}
             sandbox="allow-scripts"
-            className="w-full rounded-lg border border-white/10 mb-8"
+            className="w-full rounded-lg border border-border mb-8"
             style={{ minHeight: '600px' }}
           />
         )}

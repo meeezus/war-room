@@ -70,25 +70,25 @@ export function StepCard({ step }: { step: Task }) {
             />
             {step.status}
           </span>
-          <span className="ml-auto rounded bg-white/[0.06] px-1.5 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-[rgba(255,255,255,0.4)]">
+          <span className="ml-auto rounded bg-muted px-1.5 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground">
             {step.model}
           </span>
         </div>
 
         {/* Title */}
-        <h4 className="mt-2 font-[family-name:var(--font-space-grotesk)] text-sm font-medium text-[#E5E5E5]">
+        <h4 className="mt-2 font-[family-name:var(--font-space-grotesk)] text-sm font-medium text-foreground">
           {step.title}
         </h4>
 
         {/* Description preview */}
         {step.description && (
-          <p className="mt-1 text-xs text-[rgba(255,255,255,0.4)] line-clamp-2">
+          <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
             {step.description}
           </p>
         )}
 
         {/* Timing */}
-        <div className="mt-2 font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-[rgba(255,255,255,0.35)]">
+        <div className="mt-2 font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/75">
           {formatDuration(step.started_at, step.completed_at)}
         </div>
 
@@ -122,14 +122,14 @@ export function StepCard({ step }: { step: Task }) {
               </svg>
             </button>
             {expanded && (
-              <div className="mt-1.5 rounded-sm bg-white/[0.04] p-2">
-                <pre className="whitespace-pre-wrap font-[family-name:var(--font-jetbrains-mono)] text-[11px] text-[rgba(255,255,255,0.5)]">
+              <div className="mt-1.5 rounded-sm bg-muted/50 p-2">
+                <pre className="whitespace-pre-wrap font-[family-name:var(--font-jetbrains-mono)] text-[11px] text-muted-foreground">
                   {step.output}
                 </pre>
               </div>
             )}
             {!expanded && (
-              <p className="mt-1 font-[family-name:var(--font-jetbrains-mono)] text-[11px] text-[rgba(255,255,255,0.3)] line-clamp-2">
+              <p className="mt-1 font-[family-name:var(--font-jetbrains-mono)] text-[11px] text-muted-foreground/75 line-clamp-2">
                 {step.output.slice(0, 200)}
                 {step.output.length > 200 && "..."}
               </p>

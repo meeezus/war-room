@@ -650,6 +650,35 @@ export async function createMission(input: {
   return data as Mission
 }
 
+export async function createObjective(params: {
+  title: string;
+  description?: string;
+  success_criteria: string;
+  max_iterations?: number;
+  project_id?: string;
+}): Promise<{ id: string } | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from("objectives")
+    .insert({
+      title: params.title,
+      description: params.description || null,
+      success_criteria: params.success_criteria,
+      max_iterations: params.max_iterations ?? 5,
+      project_id: params.project_id || null,
+      status: "active",
+      created_by: "sensei",
+      iteration_count: 0,
+    })
+    .select("id")
+    .single();
+  if (error) {
+    console.error("createObjective error:", error);
+    return null;
+  }
+  return data;
+}
+
 // ---------------------------------------------------------------------------
 // Active agents queries
 // ---------------------------------------------------------------------------
@@ -724,5 +753,15 @@ export async function getActiveObjectiveCount(): Promise<number> {
     .from('objectives')
     .select('id', { count: 'exact', head: true })
     .eq('status', 'active')
+  return count ?? 0
+}
+
+export async function getActiveCouncilSessionCount(): Promise<number> {
+  if (!supabase) return 0
+  const { count, error } = await supabase
+    .from('council_sessions')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'active')
+  if (error) { console.error('getActiveCouncilSessionCount error:', error); return 0 }
   return count ?? 0
 }

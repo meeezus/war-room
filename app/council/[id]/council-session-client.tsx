@@ -13,6 +13,7 @@ interface CouncilSessionClientProps {
 export function CouncilSessionClient({ session }: CouncilSessionClientProps) {
   const hasSynthesis = !!(session.synthesis || session.recommendation)
   const [chatOpen, setChatOpen] = useState(false)
+  const [makimaThreadId, setMakimaThreadId] = useState<string | null>(null)
 
   return (
     <>
@@ -40,6 +41,8 @@ export function CouncilSessionClient({ session }: CouncilSessionClientProps) {
         onClose={() => setChatOpen(false)}
         sessionId={session.id}
         sessionTopic={session.topic}
+        threadId={makimaThreadId}
+        onThreadCreated={setMakimaThreadId}
       />
     </>
   )

@@ -13,6 +13,7 @@ interface StatusRibbonProps {
   lastPatrol: { timestamp: string | null; discoveryCount: number };
   skillStats: { recentPatches: number; appliedPatches: number };
   activeObjectives: number;
+  councilSessions: number;
 }
 
 function timeAgo(dateStr: string): string {
@@ -30,17 +31,22 @@ function isRecentPatrol(timestamp: string | null): boolean {
   return Date.now() - new Date(timestamp).getTime() < 10 * 60 * 1000;
 }
 
-function CardLabel({ children }: { children: React.ReactNode }) {
+function CardLabel({ romaji, english }: { romaji: string; english: string }) {
   return (
-    <p className="font-[family-name:var(--font-space-grotesk)] text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.4)]">
-      {children}
-    </p>
+    <div>
+      <p className="font-[family-name:var(--font-space-grotesk)] text-[10px] uppercase tracking-wider text-muted-foreground">
+        {romaji}
+      </p>
+      <p className="font-[family-name:var(--font-space-grotesk)] text-[9px] tracking-wide text-muted-foreground/60">
+        {english}
+      </p>
+    </div>
   );
 }
 
 function CardValue({ children }: { children: React.ReactNode }) {
   return (
-    <p className="font-[family-name:var(--font-jetbrains-mono)] text-lg font-medium text-[#E5E5E5]">
+    <p className="font-[family-name:var(--font-jetbrains-mono)] text-lg font-medium text-foreground">
       {children}
     </p>
   );
@@ -54,7 +60,7 @@ function SituationCard({
 }: Pick<StatusRibbonProps, "pendingDiscoveries" | "criticalCount" | "warningCount" | "infoCount">) {
   return (
     <StealthCard hover={false} className="px-4 py-3 min-w-[200px] flex-shrink-0">
-      <CardLabel>動静報告</CardLabel>
+      <CardLabel romaji="Dōjō Hōkoku" english="SitRep" />
       <CardValue>{pendingDiscoveries}</CardValue>
       <div className="flex gap-1.5 mt-1 flex-wrap">
         {criticalCount > 0 && (
@@ -74,7 +80,7 @@ function SituationCard({
         )}
       </div>
       <Link
-        href="/api/brief/latest"
+        href="/brief"
         className="text-xs text-blue-400 mt-1 block hover:text-blue-300"
       >
         View Brief →
@@ -88,7 +94,7 @@ function PatrolCard({ lastPatrol }: { lastPatrol: StatusRibbonProps["lastPatrol"
   return (
     <StealthCard hover={false} className="px-4 py-3 min-w-[200px] flex-shrink-0">
       <div className="flex items-center gap-2">
-        <CardLabel>Patrol</CardLabel>
+        <CardLabel romaji="Junkai" english="Patrol" />
         {recent && (
           <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
         )}
@@ -97,7 +103,7 @@ function PatrolCard({ lastPatrol }: { lastPatrol: StatusRibbonProps["lastPatrol"
         {lastPatrol.timestamp ? timeAgo(lastPatrol.timestamp) : "No patrols yet"}
       </CardValue>
       {lastPatrol.timestamp && (
-        <p className="text-xs text-[rgba(255,255,255,0.4)] font-[family-name:var(--font-jetbrains-mono)]">
+        <p className="text-xs text-muted-foreground font-[family-name:var(--font-jetbrains-mono)]">
           {lastPatrol.discoveryCount} discoveries
         </p>
       )}
@@ -108,12 +114,12 @@ function PatrolCard({ lastPatrol }: { lastPatrol: StatusRibbonProps["lastPatrol"
 function SkillsCard({ skillStats }: { skillStats: StatusRibbonProps["skillStats"] }) {
   return (
     <StealthCard hover={false} className="px-4 py-3 min-w-[200px] flex-shrink-0">
-      <CardLabel>Skills</CardLabel>
+      <CardLabel romaji="Ginō" english="Skills" />
       <CardValue>{skillStats.recentPatches}</CardValue>
-      <p className="text-xs text-[rgba(255,255,255,0.4)] font-[family-name:var(--font-jetbrains-mono)]">
+      <p className="text-xs text-muted-foreground font-[family-name:var(--font-jetbrains-mono)]">
         patches (30d)
       </p>
-      <p className="text-xs text-[rgba(255,255,255,0.4)] font-[family-name:var(--font-jetbrains-mono)]">
+      <p className="text-xs text-muted-foreground font-[family-name:var(--font-jetbrains-mono)]">
         {skillStats.appliedPatches} applied total
       </p>
     </StealthCard>
@@ -123,7 +129,7 @@ function SkillsCard({ skillStats }: { skillStats: StatusRibbonProps["skillStats"
 function ObjectivesCard({ activeObjectives }: { activeObjectives: number }) {
   return (
     <StealthCard hover={false} className="px-4 py-3 min-w-[200px] flex-shrink-0">
-      <CardLabel>Objectives</CardLabel>
+      <CardLabel romaji="Mokuhyō" english="Objectives" />
       <CardValue>{activeObjectives}</CardValue>
       <Link
         href="/objectives"
@@ -158,35 +164,65 @@ function HealthCard() {
   }, []);
 
   return (
-    <StealthCard hover={false} className="px-4 py-3 min-w-[200px] flex-shrink-0">
-      <CardLabel>Health</CardLabel>
-      {health ? (
-        <div className="flex flex-col gap-1 mt-1">
-          <div className="flex items-center gap-2">
-            <StatusDot ok={health.checks.supabase} />
-            <span className="text-xs text-[rgba(255,255,255,0.6)] font-[family-name:var(--font-jetbrains-mono)]">
-              Supabase
-            </span>
+    <Link href="/health" className="block">
+      <StealthCard hover={false} className="px-4 py-3 min-w-[200px] flex-shrink-0">
+        <CardLabel romaji="Kenzen" english="Health" />
+        {health ? (
+          <div className="flex flex-col gap-1 mt-1">
+            <div className="flex items-center gap-2">
+              <StatusDot ok={health.checks.supabase} />
+              <span className="text-xs text-foreground/60 font-[family-name:var(--font-jetbrains-mono)]">
+                Supabase
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <StatusDot ok={health.checks.claude_cli} />
+              <span className="text-xs text-foreground/60 font-[family-name:var(--font-jetbrains-mono)]">
+                Claude
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <StatusDot ok={health.checks.poller.alive} />
+              <span className="text-xs text-foreground/60 font-[family-name:var(--font-jetbrains-mono)]">
+                Poller
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <StatusDot ok={health.checks.claude_cli} />
-            <span className="text-xs text-[rgba(255,255,255,0.6)] font-[family-name:var(--font-jetbrains-mono)]">
-              Claude
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <StatusDot ok={health.checks.poller.alive} />
-            <span className="text-xs text-[rgba(255,255,255,0.6)] font-[family-name:var(--font-jetbrains-mono)]">
-              Poller
-            </span>
-          </div>
-        </div>
-      ) : (
-        <p className="text-xs text-[rgba(255,255,255,0.4)] font-[family-name:var(--font-jetbrains-mono)] mt-1">
-          Loading…
+        ) : (
+          <p className="text-xs text-muted-foreground font-[family-name:var(--font-jetbrains-mono)] mt-1">
+            Loading…
+          </p>
+        )}
+      </StealthCard>
+    </Link>
+  );
+}
+
+function CouncilCard({ activeSessions }: { activeSessions: number }) {
+  return (
+    <Link href="/council" className="block">
+      <StealthCard hover={false} className="px-4 py-3 min-w-[200px] flex-shrink-0">
+        <CardLabel romaji="Hyōjō" english="Council" />
+        <CardValue>{activeSessions}</CardValue>
+        <p className="text-xs text-muted-foreground font-[family-name:var(--font-jetbrains-mono)]">
+          active sessions
         </p>
-      )}
-    </StealthCard>
+      </StealthCard>
+    </Link>
+  );
+}
+
+function ChatCard() {
+  return (
+    <Link href="/chat" className="block">
+      <StealthCard hover={false} className="px-4 py-3 min-w-[200px] flex-shrink-0">
+        <CardLabel romaji="Taiwa" english="Chat" />
+        <CardValue>⚡</CardValue>
+        <p className="text-xs text-muted-foreground font-[family-name:var(--font-jetbrains-mono)]">
+          Talk to Makima
+        </p>
+      </StealthCard>
+    </Link>
   );
 }
 
@@ -198,6 +234,7 @@ export function StatusRibbon({
   lastPatrol,
   skillStats,
   activeObjectives,
+  councilSessions,
 }: StatusRibbonProps) {
   return (
     <div className="flex gap-3 overflow-x-auto pb-2">
@@ -211,6 +248,8 @@ export function StatusRibbon({
       <SkillsCard skillStats={skillStats} />
       <ObjectivesCard activeObjectives={activeObjectives} />
       <HealthCard />
+      <CouncilCard activeSessions={councilSessions} />
+      <ChatCard />
     </div>
   );
 }

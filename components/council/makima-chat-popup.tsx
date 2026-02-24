@@ -8,6 +8,8 @@ interface MakimaChatPopupProps {
   onClose: () => void
   sessionId: string
   sessionTopic: string
+  threadId: string | null
+  onThreadCreated?: (threadId: string) => void
 }
 
 interface Message {
@@ -15,17 +17,39 @@ interface Message {
   content: string
 }
 
-export function MakimaChatPopup({ open, onClose, sessionId, sessionTopic }: MakimaChatPopupProps) {
+export function MakimaChatPopup({ open, onClose, sessionId, sessionTopic, threadId, onThreadCreated }: MakimaChatPopupProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const activeThreadRef = useRef<string | null>(threadId)
+
+  useEffect(() => {
+    activeThreadRef.current = threadId
+  }, [threadId])
 
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" })
     }
   }, [messages])
+
+  async function getOrCreateThread(): Promise<string> {
+    if (activeThreadRef.current) return activeThreadRef.current
+    const res = await fetch("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        agent_id: "makima",
+        title: `Council: ${sessionTopic}`,
+      }),
+    })
+    if (!res.ok) throw new Error("Failed to create thread")
+    const data = await res.json()
+    activeThreadRef.current = data.id
+    onThreadCreated?.(data.id)
+    return data.id
+  }
 
   async function sendMessage() {
     const text = input.trim()
@@ -39,12 +63,13 @@ export function MakimaChatPopup({ open, onClose, sessionId, sessionTopic }: Maki
     setMessages((prev) => [...prev, { role: "assistant", content: "" }])
 
     try {
-      const res = await fetch("/api/chat/makima-popup", {
+      const activeThreadId = await getOrCreateThread()
+      const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: text,
-          context: `Council session: ${sessionTopic}`,
+          threadId: activeThreadId,
+          content: text,
         }),
       })
 
@@ -110,12 +135,12 @@ export function MakimaChatPopup({ open, onClose, sessionId, sessionTopic }: Maki
   return (
     <div
       className={`fixed bottom-4 right-4 z-50 w-[400px] h-[500px] flex flex-col
-        bg-[rgba(10,10,10,0.95)] border border-white/[0.08] rounded-lg backdrop-blur-xl shadow-2xl
+        bg-popover border border-border rounded-lg backdrop-blur-xl shadow-2xl
         transition-all duration-200
         ${open ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 translate-y-4 pointer-events-none"}`}
     >
       {/* Header */}
-      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-white/[0.06]">
+      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-border">
         <div className="relative w-8 h-8 flex-shrink-0">
           <Image
             src="/avatars/makima.webp"
@@ -125,12 +150,12 @@ export function MakimaChatPopup({ open, onClose, sessionId, sessionTopic }: Maki
             className="rounded-full ring-1 ring-red-500/30 object-cover"
           />
         </div>
-        <span className="font-[family-name:var(--font-space-grotesk)] text-sm font-semibold text-[#E5E5E5] flex-1">
+        <span className="font-[family-name:var(--font-space-grotesk)] text-sm font-semibold text-foreground flex-1">
           Makima
         </span>
         <button
           onClick={onClose}
-          className="text-[rgba(255,255,255,0.4)] hover:text-[rgba(255,255,255,0.7)] transition-colors text-lg leading-none"
+          className="text-muted-foreground hover:text-foreground/70 transition-colors text-lg leading-none"
           aria-label="Close"
         >
           ×
@@ -140,7 +165,7 @@ export function MakimaChatPopup({ open, onClose, sessionId, sessionTopic }: Maki
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
         {messages.length === 0 && (
-          <p className="text-xs text-[rgba(255,255,255,0.3)] text-center mt-8">
+          <p className="text-xs text-muted-foreground/75 text-center mt-8">
             Ask Makima about this session
           </p>
         )}
@@ -150,9 +175,9 @@ export function MakimaChatPopup({ open, onClose, sessionId, sessionTopic }: Maki
             className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
           >
             <div
-              className={`max-w-[85%] px-3 py-2 rounded text-sm text-[rgba(255,255,255,0.8)] whitespace-pre-wrap break-words
+              className={`max-w-[85%] px-3 py-2 rounded text-sm text-foreground/70 whitespace-pre-wrap break-words
                 ${msg.role === "user"
-                  ? "bg-white/[0.08]"
+                  ? "bg-accent"
                   : "bg-red-500/[0.06] border-l-2 border-red-500/30"
                 }`}
             >
@@ -166,7 +191,7 @@ export function MakimaChatPopup({ open, onClose, sessionId, sessionTopic }: Maki
       </div>
 
       {/* Input */}
-      <div className="px-4 py-3 border-t border-white/[0.06]">
+      <div className="px-4 py-3 border-t border-border">
         <input
           type="text"
           value={input}
@@ -174,8 +199,8 @@ export function MakimaChatPopup({ open, onClose, sessionId, sessionTopic }: Maki
           onKeyDown={handleKeyDown}
           placeholder="Ask Makima..."
           disabled={loading}
-          className="w-full bg-white/[0.04] border border-white/[0.08] rounded-sm px-3 py-2 text-sm text-[#E5E5E5]
-            placeholder:text-[rgba(255,255,255,0.25)] outline-none focus:border-red-500/30
+          className="w-full bg-muted border border-border rounded-sm px-3 py-2 text-sm text-foreground
+            placeholder:text-muted-foreground/60 outline-none focus:border-red-500/30
             disabled:opacity-50 transition-colors"
         />
       </div>

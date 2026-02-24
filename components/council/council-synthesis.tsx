@@ -20,13 +20,13 @@ export function CouncilSynthesis({ session }: CouncilSynthesisProps) {
             height={48}
             className="rounded-full object-cover ring-1 ring-red-500/30"
           />
-          <h3 className="font-[family-name:var(--font-space-grotesk)] font-semibold text-base text-[#E5E5E5]">
+          <h3 className="font-[family-name:var(--font-space-grotesk)] font-semibold text-base text-foreground">
             Makima &mdash; Final Assessment
           </h3>
         </div>
 
         {session.synthesis && (
-          <p className="text-sm text-[rgba(255,255,255,0.7)] leading-relaxed mb-4">
+          <p className="text-sm text-foreground/70 leading-relaxed mb-4">
             {session.synthesis}
           </p>
         )}
@@ -38,7 +38,7 @@ export function CouncilSynthesis({ session }: CouncilSynthesisProps) {
               <div className="text-[10px] font-medium text-emerald-400 uppercase tracking-wider mb-1">
                 Recommendation
               </div>
-              <p className="text-xs text-[rgba(255,255,255,0.65)] leading-relaxed">
+              <p className="text-xs text-foreground/60 leading-relaxed">
                 {session.recommendation}
               </p>
             </div>
@@ -50,7 +50,7 @@ export function CouncilSynthesis({ session }: CouncilSynthesisProps) {
               <div className="text-[10px] font-medium text-amber-400 uppercase tracking-wider mb-1">
                 Strongest Dissent
               </div>
-              <p className="text-xs text-[rgba(255,255,255,0.65)] leading-relaxed">
+              <p className="text-xs text-foreground/60 leading-relaxed">
                 {session.dissent}
               </p>
             </div>

@@ -32,10 +32,10 @@ function MissionCard({ mission }: { mission: Mission }) {
         whileTap={prefersReducedMotion ? undefined : tapScale}
         whileHover={prefersReducedMotion ? undefined : hoverLift}
         transition={SPRING_CONFIG}
-        className="cursor-pointer rounded-sm border border-white/[0.06] bg-[#0F0F0F] p-3"
+        className="cursor-pointer rounded-sm border border-border bg-card p-3"
       >
         <div className="flex items-start justify-between gap-2">
-          <span className="text-sm font-medium text-white/90">{mission.title}</span>
+          <span className="text-sm font-medium text-foreground">{mission.title}</span>
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           <span
@@ -51,7 +51,7 @@ function MissionCard({ mission }: { mission: Mission }) {
             />
             {mission.status}
           </span>
-          <span className="rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[10px] text-white/40">
+          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
             {mission.assigned_to}
           </span>
         </div>
@@ -72,8 +72,8 @@ export function KanbanBoard({ missions }: { missions: Mission[] }) {
       <div className="grid grid-cols-4 gap-4">
         {columns.map((col) => (
           <StealthCard key={col.id} hover={false} className="overflow-hidden">
-            <div className="flex items-center justify-between border-b border-white/[0.06] px-3 py-2.5">
-              <h3 className="font-display text-xs font-semibold tracking-wide text-white/60 uppercase">
+            <div className="flex items-center justify-between border-b border-border px-3 py-2.5">
+              <h3 className="font-display text-xs font-semibold tracking-wide text-foreground/60 uppercase">
                 {col.label}
               </h3>
               <span className="inline-flex size-5 items-center justify-center rounded bg-emerald-500/15 font-mono text-[10px] font-medium text-emerald-400">

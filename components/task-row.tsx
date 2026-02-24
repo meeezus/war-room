@@ -12,7 +12,7 @@ export function TaskRow({ task }: { task: Task }) {
     <div>
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors duration-150 hover:bg-white/[0.02]"
+        className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors duration-150 hover:bg-muted/50"
       >
         {/* Status dot */}
         <span
@@ -21,20 +21,20 @@ export function TaskRow({ task }: { task: Task }) {
         />
 
         {/* Title */}
-        <span className="min-w-0 flex-1 truncate text-sm text-[rgba(255,255,255,0.7)]">
+        <span className="min-w-0 flex-1 truncate text-sm text-foreground/70">
           {task.title}
         </span>
 
         {/* Priority */}
         {task.priority !== null && task.priority !== undefined && (
-          <span className="shrink-0 rounded-full bg-white/[0.06] px-1.5 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-[rgba(255,255,255,0.3)]">
+          <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/75">
             P{task.priority}
           </span>
         )}
 
         {/* Owner */}
         {task.owner && (
-          <span className="shrink-0 rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[10px] text-white/40">
+          <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
             {task.owner}
           </span>
         )}
@@ -49,7 +49,7 @@ export function TaskRow({ task }: { task: Task }) {
 
         {/* Expand/collapse chevron */}
         <span
-          className="shrink-0 text-xs text-[rgba(255,255,255,0.3)] transition-transform duration-150"
+          className="shrink-0 text-xs text-muted-foreground/75 transition-transform duration-150"
           style={{ transform: expanded ? "rotate(0)" : "rotate(-90deg)" }}
         >
           ▾
@@ -58,20 +58,20 @@ export function TaskRow({ task }: { task: Task }) {
 
       {/* Expanded notes */}
       {expanded && (task.notes || task.goal) && (
-        <div className="border-t border-white/[0.04] bg-white/[0.01] px-4 py-3 pl-9">
+        <div className="border-t border-border bg-muted/50 px-4 py-3 pl-9">
           {task.goal && (
-            <p className="text-xs text-[rgba(255,255,255,0.5)]">
-              <span className="font-medium text-[rgba(255,255,255,0.6)]">Goal: </span>
+            <p className="text-xs text-muted-foreground">
+              <span className="font-medium text-foreground/60">Goal: </span>
               {task.goal}
             </p>
           )}
           {task.notes && (
-            <p className="mt-1 text-xs text-[rgba(255,255,255,0.35)]">
+            <p className="mt-1 text-xs text-muted-foreground/75">
               {task.notes}
             </p>
           )}
           {task.completed_at && (
-            <p className="mt-1 font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-[rgba(255,255,255,0.25)]">
+            <p className="mt-1 font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/60">
               Completed: {new Date(task.completed_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
             </p>
           )}

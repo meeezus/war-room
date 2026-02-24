@@ -17,19 +17,19 @@ export function BoardSection({ board, tasks }: BoardSectionProps) {
     <StealthCard hover={false} className="overflow-hidden">
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="flex w-full items-center justify-between border-b border-white/[0.06] px-4 py-3 text-left"
+        className="flex w-full items-center justify-between border-b border-border px-4 py-3 text-left"
       >
         <div className="flex items-center gap-2">
           <span
-            className="text-xs text-[rgba(255,255,255,0.3)] transition-transform duration-150"
+            className="text-xs text-muted-foreground/75 transition-transform duration-150"
             style={{ transform: collapsed ? "rotate(-90deg)" : "rotate(0)" }}
           >
             ▾
           </span>
-          <h3 className="font-[family-name:var(--font-space-grotesk)] text-sm font-semibold text-[#E5E5E5]">
+          <h3 className="font-[family-name:var(--font-space-grotesk)] text-sm font-semibold text-foreground">
             {board.title}
           </h3>
-          <span className="rounded-sm bg-white/[0.06] px-1.5 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-[rgba(255,255,255,0.3)]">
+          <span className="rounded-sm bg-muted px-1.5 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/75">
             {board.board_type}
           </span>
         </div>
@@ -39,11 +39,11 @@ export function BoardSection({ board, tasks }: BoardSectionProps) {
       </button>
 
       {!collapsed && (
-        <div className="divide-y divide-white/[0.04]">
+        <div className="divide-y divide-border">
           {tasks.length > 0 ? (
             tasks.map((task) => <TaskRow key={task.id} task={task} />)
           ) : (
-            <p className="px-4 py-3 text-xs text-[rgba(255,255,255,0.3)]">
+            <p className="px-4 py-3 text-xs text-muted-foreground/75">
               No active tasks.
             </p>
           )}

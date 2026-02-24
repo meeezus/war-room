@@ -114,10 +114,10 @@ function PatrolCompleteRow({ event, color }: { event: Event; color: string }) {
 
   return (
     <div
-      className="flex gap-3 px-3 py-2 transition-colors duration-150 hover:bg-white/[0.02] cursor-pointer select-none"
+      className="flex gap-3 px-3 py-2 transition-colors duration-150 hover:bg-muted/50 cursor-pointer select-none"
       onClick={() => setExpanded(v => !v)}
     >
-      <span className="flex-shrink-0 font-[family-name:var(--font-jetbrains-mono)] text-xs text-[rgba(255,255,255,0.3)]">
+      <span className="flex-shrink-0 font-[family-name:var(--font-jetbrains-mono)] text-xs text-muted-foreground/75">
         {formatRelativeTime(event.created_at)}
       </span>
       <div className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: color, boxShadow: `0 0 4px ${color}` }} />
@@ -125,12 +125,12 @@ function PatrolCompleteRow({ event, color }: { event: Event; color: string }) {
         <span className="mr-1.5 rounded-sm px-1 py-0.5 text-[10px] font-medium uppercase" style={{ backgroundColor: `${color}20`, color }}>
           patrol complete
         </span>
-        <span className="text-xs text-[rgba(255,255,255,0.5)]">
+        <span className="text-xs text-muted-foreground">
           {count} discover{count === 1 ? "y" : "ies"}
           {agents.length > 0 && ` · ${agents.join(", ")}`}
         </span>
         {count > 0 && (
-          <span className="ml-1.5 text-[10px] text-[rgba(255,255,255,0.2)]">
+          <span className="ml-1.5 text-[10px] text-muted-foreground/60">
             {expanded ? "▼" : "▶"}
           </span>
         )}
@@ -140,12 +140,12 @@ function PatrolCompleteRow({ event, color }: { event: Event; color: string }) {
             {warning > 0 && <span className="text-[10px] text-amber-400">{warning} warning</span>}
             {info > 0 && <span className="text-[10px] text-blue-400">{info} info</span>}
             {discoveries.slice(0, 5).map((d, i) => (
-              <span key={i} className="text-[10px] text-[rgba(255,255,255,0.3)] truncate">
+              <span key={i} className="text-[10px] text-muted-foreground/75 truncate">
                 · {d.title}
               </span>
             ))}
             {discoveries.length > 5 && (
-              <span className="text-[10px] text-[rgba(255,255,255,0.2)]">
+              <span className="text-[10px] text-muted-foreground/60">
                 +{discoveries.length - 5} more
               </span>
             )}
@@ -190,10 +190,10 @@ function EventRow({ event }: { event: Event }) {
 
   return (
     <div
-      className="flex gap-3 px-3 py-2 transition-colors duration-150 hover:bg-white/[0.02] cursor-pointer select-none"
+      className="flex gap-3 px-3 py-2 transition-colors duration-150 hover:bg-muted/50 cursor-pointer select-none"
       onClick={() => setExpanded((v) => !v)}
     >
-      <span className="flex-shrink-0 font-[family-name:var(--font-jetbrains-mono)] text-xs text-[rgba(255,255,255,0.3)]">
+      <span className="flex-shrink-0 font-[family-name:var(--font-jetbrains-mono)] text-xs text-muted-foreground/75">
         {formatRelativeTime(event.created_at)}
       </span>
       <div
@@ -210,14 +210,14 @@ function EventRow({ event }: { event: Event }) {
         {expanded ? (
           <>
             {event.agent && (
-              <span className="mr-1.5 text-xs font-medium text-[#E5E5E5]">
+              <span className="mr-1.5 text-xs font-medium text-foreground">
                 {event.agent}
               </span>
             )}
-            <span className="text-xs text-[rgba(255,255,255,0.5)]">{event.message}</span>
+            <span className="text-xs text-muted-foreground">{event.message}</span>
           </>
         ) : (
-          <span className="text-xs text-[rgba(255,255,255,0.3)] truncate">
+          <span className="text-xs text-muted-foreground/75 truncate">
             {event.agent ? `${event.agent} — ` : ""}{richMessage}
           </span>
         )}
@@ -240,7 +240,7 @@ function ZoneHeader({
   return (
     <button
       onClick={onToggle}
-      className="flex w-full items-center gap-2 px-3 py-1.5 text-left transition-colors duration-150 hover:bg-white/[0.03]"
+      className="flex w-full items-center gap-2 px-3 py-1.5 text-left transition-colors duration-150 hover:bg-muted/50"
     >
       <span
         className="text-[10px]"
@@ -248,13 +248,13 @@ function ZoneHeader({
       >
         {zone.indicator}
       </span>
-      <span className="font-[family-name:var(--font-space-grotesk)] text-xs font-medium text-[rgba(255,255,255,0.6)]">
+      <span className="font-[family-name:var(--font-space-grotesk)] text-xs font-medium text-foreground/60">
         {zone.label}
       </span>
-      <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-[rgba(255,255,255,0.3)]">
+      <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/75">
         {count}
       </span>
-      <span className="ml-auto text-[10px] text-[rgba(255,255,255,0.2)]">
+      <span className="ml-auto text-[10px] text-muted-foreground/60">
         {collapsed ? "\u25B6" : "\u25BC"}
       </span>
     </button>
@@ -321,11 +321,11 @@ export function EventFeed({ events }: { events: Event[] }) {
     <div className="flex h-full flex-col">
       <StealthCard hover={false} className="flex-1 overflow-hidden">
         {/* Header row */}
-        <div className="flex items-center justify-between border-b border-white/[0.08] px-3 py-2">
+        <div className="flex items-center justify-between border-b border-border px-3 py-2">
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value as FilterCategory)}
-            className="appearance-none rounded bg-white/[0.04] px-2 py-1 font-[family-name:var(--font-space-grotesk)] text-xs text-[rgba(255,255,255,0.6)] outline-none ring-1 ring-white/[0.08] transition-colors hover:bg-white/[0.06] focus:ring-white/[0.15]"
+            className="appearance-none rounded bg-muted px-2 py-1 font-[family-name:var(--font-space-grotesk)] text-xs text-foreground/60 outline-none ring-1 ring-border transition-colors hover:bg-muted focus:ring-border"
           >
             <option value="all">All</option>
             <option value="proposals">Proposals</option>
@@ -334,12 +334,12 @@ export function EventFeed({ events }: { events: Event[] }) {
             <option value="system">System</option>
           </select>
           <div className="flex items-center gap-3">
-            <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-[rgba(255,255,255,0.25)]">
+            <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/60">
               {totalVisible} events
             </span>
             <button
               onClick={() => setClearedAt(Date.now())}
-              className="rounded px-2 py-0.5 font-[family-name:var(--font-space-grotesk)] text-[10px] text-[rgba(255,255,255,0.3)] transition-colors hover:bg-white/[0.06] hover:text-[rgba(255,255,255,0.5)]"
+              className="rounded px-2 py-0.5 font-[family-name:var(--font-space-grotesk)] text-[10px] text-muted-foreground/75 transition-colors hover:bg-muted hover:text-muted-foreground"
             >
               Clear
             </button>
@@ -391,7 +391,7 @@ export function EventFeed({ events }: { events: Event[] }) {
           })}
 
           {totalVisible === 0 && (
-            <div className="px-3 py-8 text-center font-[family-name:var(--font-space-grotesk)] text-xs text-[rgba(255,255,255,0.2)]">
+            <div className="px-3 py-8 text-center font-[family-name:var(--font-space-grotesk)] text-xs text-muted-foreground/60">
               No events
             </div>
           )}

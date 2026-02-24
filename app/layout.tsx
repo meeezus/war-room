@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import { ToastProvider } from "@/components/toast-provider";
+import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
 const inter = Inter({
@@ -38,13 +39,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} antialiased`}
       >
-        <div className="noise-overlay" />
-        {children}
-        <ToastProvider />
+        <ThemeProvider>
+          <div className="noise-overlay" />
+          {children}
+          <ToastProvider />
+        </ThemeProvider>
       </body>
     </html>
   );

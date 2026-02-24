@@ -1,5 +1,10 @@
 import { NextRequest } from 'next/server'
-import { createProject } from '@/lib/queries'
+import { createProject, getProjects } from '@/lib/queries'
+
+export async function GET() {
+  const projects = await getProjects()
+  return Response.json({ projects })
+}
 
 export async function POST(req: NextRequest) {
   let body: unknown

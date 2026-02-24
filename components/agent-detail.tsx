@@ -90,8 +90,8 @@ function EventRow({ event }: { event: Event }) {
   const label = event.type.replace(/_/g, " ");
 
   return (
-    <div className="flex gap-3 px-3 py-2 transition-colors duration-150 hover:bg-white/[0.02]">
-      <span className="flex-shrink-0 font-[family-name:var(--font-jetbrains-mono)] text-xs text-[rgba(255,255,255,0.3)]">
+    <div className="flex gap-3 px-3 py-2 transition-colors duration-150 hover:bg-muted/50">
+      <span className="flex-shrink-0 font-[family-name:var(--font-jetbrains-mono)] text-xs text-muted-foreground/75">
         {formatRelativeTime(event.created_at)}
       </span>
       <div
@@ -105,7 +105,7 @@ function EventRow({ event }: { event: Event }) {
         >
           {label}
         </span>
-        <span className="text-xs text-[rgba(255,255,255,0.5)]">
+        <span className="text-xs text-muted-foreground">
           {event.message}
         </span>
       </div>
@@ -140,15 +140,15 @@ export function AgentDetail({ agent, missions, events }: AgentDetailProps) {
     >
       {/* Breadcrumb */}
       <div className="mb-4 flex-shrink-0">
-        <nav className="mb-3 flex items-center gap-2 text-xs text-[rgba(255,255,255,0.4)]">
+        <nav className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
           <Link
             href="/dashboard"
-            className="transition-colors hover:text-[#E5E5E5]"
+            className="transition-colors hover:text-foreground"
           >
             Dashboard
           </Link>
           <span>/</span>
-          <span className="text-[#E5E5E5]">
+          <span className="text-foreground">
             Agent: {agent.display_name}
           </span>
         </nav>
@@ -162,10 +162,10 @@ export function AgentDetail({ agent, missions, events }: AgentDetailProps) {
           <StealthCard className="p-5">
             <div className="flex items-start justify-between">
               <div>
-                <h1 className="font-[family-name:var(--font-space-grotesk)] text-xl font-bold text-[#E5E5E5]">
+                <h1 className="font-[family-name:var(--font-space-grotesk)] text-xl font-bold text-foreground">
                   {agent.display_name}
                 </h1>
-                <p className="mt-1 text-xs text-[rgba(255,255,255,0.4)]">
+                <p className="mt-1 text-xs text-muted-foreground">
                   {agent.domain}
                 </p>
               </div>
@@ -180,25 +180,25 @@ export function AgentDetail({ agent, missions, events }: AgentDetailProps) {
                         : undefined,
                   }}
                 />
-                <span className="text-sm font-medium text-[#E5E5E5]">
+                <span className="text-sm font-medium text-foreground">
                   {statusLabels[agent.status]}
                 </span>
               </div>
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-3">
-              <span className="rounded-sm bg-white/[0.06] px-2 py-1 font-[family-name:var(--font-jetbrains-mono)] text-xs text-[rgba(255,255,255,0.5)]">
+              <span className="rounded-sm bg-muted px-2 py-1 font-[family-name:var(--font-jetbrains-mono)] text-xs text-muted-foreground">
                 {agent.model}
               </span>
-              <span className="rounded-sm bg-white/[0.06] px-2 py-1 font-[family-name:var(--font-jetbrains-mono)] text-xs text-[rgba(255,255,255,0.5)]">
+              <span className="rounded-sm bg-muted px-2 py-1 font-[family-name:var(--font-jetbrains-mono)] text-xs text-muted-foreground">
                 Lv.{agent.level}
               </span>
-              <span className="text-xs text-[rgba(255,255,255,0.3)]">
+              <span className="text-xs text-muted-foreground/75">
                 Last heartbeat: {formatRelativeTime(agent.last_heartbeat)}
               </span>
-              <span className="text-xs text-[rgba(255,255,255,0.3)]">
+              <span className="text-xs text-muted-foreground/75">
                 Missions completed:{" "}
-                <span className="font-[family-name:var(--font-jetbrains-mono)] text-[#E5E5E5]">
+                <span className="font-[family-name:var(--font-jetbrains-mono)] text-foreground">
                   {agent.missions_completed}
                 </span>
               </span>
@@ -208,13 +208,13 @@ export function AgentDetail({ agent, missions, events }: AgentDetailProps) {
           {/* Current Mission */}
           {currentMission && (
             <div>
-              <h2 className="mb-2 font-[family-name:var(--font-space-grotesk)] text-sm font-medium uppercase tracking-wider text-[rgba(255,255,255,0.4)]">
+              <h2 className="mb-2 font-[family-name:var(--font-space-grotesk)] text-sm font-medium uppercase tracking-wider text-muted-foreground">
                 Current Mission
               </h2>
               <Link href={`/missions/${currentMission.id}`}>
                 <StealthCard className="p-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-[family-name:var(--font-space-grotesk)] text-sm font-medium text-[#E5E5E5]">
+                    <h3 className="font-[family-name:var(--font-space-grotesk)] text-sm font-medium text-foreground">
                       {currentMission.title}
                     </h3>
                     <StatusBadge
@@ -223,7 +223,7 @@ export function AgentDetail({ agent, missions, events }: AgentDetailProps) {
                     />
                   </div>
                   {currentMission.started_at && (
-                    <p className="mt-1 text-xs text-[rgba(255,255,255,0.3)]">
+                    <p className="mt-1 text-xs text-muted-foreground/75">
                       Started {formatRelativeTime(currentMission.started_at)}
                     </p>
                   )}
@@ -234,11 +234,11 @@ export function AgentDetail({ agent, missions, events }: AgentDetailProps) {
 
           {/* Mission History */}
           <div className="flex-1">
-            <h2 className="mb-2 font-[family-name:var(--font-space-grotesk)] text-sm font-medium uppercase tracking-wider text-[rgba(255,255,255,0.4)]">
+            <h2 className="mb-2 font-[family-name:var(--font-space-grotesk)] text-sm font-medium uppercase tracking-wider text-muted-foreground">
               Mission History
             </h2>
             {pastMissions.length === 0 ? (
-              <p className="text-xs text-[rgba(255,255,255,0.3)]">
+              <p className="text-xs text-muted-foreground/75">
                 No past missions.
               </p>
             ) : (
@@ -256,7 +256,7 @@ export function AgentDetail({ agent, missions, events }: AgentDetailProps) {
                     <Link href={`/missions/${mission.id}`}>
                       <StealthCard className="p-3">
                         <div className="flex items-center justify-between">
-                          <h3 className="font-[family-name:var(--font-space-grotesk)] text-sm font-medium text-[#E5E5E5]">
+                          <h3 className="font-[family-name:var(--font-space-grotesk)] text-sm font-medium text-foreground">
                             {mission.title}
                           </h3>
                           <StatusBadge
@@ -264,7 +264,7 @@ export function AgentDetail({ agent, missions, events }: AgentDetailProps) {
                             colors={STATUS_ACCENT}
                           />
                         </div>
-                        <p className="mt-1 font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-[rgba(255,255,255,0.3)]">
+                        <p className="mt-1 font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/75">
                           {formatDate(mission.completed_at)}
                         </p>
                       </StealthCard>
@@ -278,13 +278,13 @@ export function AgentDetail({ agent, missions, events }: AgentDetailProps) {
 
         {/* Right Column - Recent Activity */}
         <div className="hidden flex-1 flex-col lg:flex">
-          <h2 className="mb-2 font-[family-name:var(--font-space-grotesk)] text-sm font-medium uppercase tracking-wider text-[rgba(255,255,255,0.4)]">
+          <h2 className="mb-2 font-[family-name:var(--font-space-grotesk)] text-sm font-medium uppercase tracking-wider text-muted-foreground">
             Recent Activity
           </h2>
           <StealthCard hover={false} className="flex-1 overflow-hidden">
             <div className="h-full overflow-y-auto py-2">
               {recentEvents.length === 0 ? (
-                <p className="px-3 py-4 text-xs text-[rgba(255,255,255,0.3)]">
+                <p className="px-3 py-4 text-xs text-muted-foreground/75">
                   No recent activity.
                 </p>
               ) : (

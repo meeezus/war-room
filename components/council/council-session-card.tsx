@@ -31,13 +31,13 @@ export function CouncilSessionCard({ session }: CouncilSessionCardProps) {
 
   return (
     <Link href={`/council/${session.id}`}>
-      <div className="relative rounded-sm border border-white/[0.08] bg-[rgba(10,10,10,0.8)] backdrop-blur-xl p-4 transition-all duration-300 hover:-translate-y-px hover:border-white/[0.15] hover:bg-[rgba(15,15,15,0.85)] cursor-pointer">
+      <div className="relative rounded-sm border border-border bg-card backdrop-blur-xl p-4 transition-all duration-300 hover:-translate-y-px hover:border-border hover:bg-card cursor-pointer">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <h3 className="font-[family-name:var(--font-space-grotesk)] font-semibold text-sm text-[#E5E5E5] line-clamp-2 mb-1">
+            <h3 className="font-[family-name:var(--font-space-grotesk)] font-semibold text-sm text-foreground line-clamp-2 mb-1">
               {session.topic}
             </h3>
-            <div className="flex items-center gap-3 text-[11px] text-[rgba(255,255,255,0.35)]">
+            <div className="flex items-center gap-3 text-[11px] text-muted-foreground/75">
               <span>{formatDate(session.created_at)}</span>
               <span>·</span>
               <span>{session.reviews.length} voices</span>
@@ -50,7 +50,7 @@ export function CouncilSessionCard({ session }: CouncilSessionCardProps) {
             </div>
           </div>
 
-          <span className="text-[10px] font-medium px-2 py-0.5 rounded border border-white/[0.08] text-[rgba(255,255,255,0.5)] flex-shrink-0">
+          <span className="text-[10px] font-medium px-2 py-0.5 rounded border border-border text-muted-foreground flex-shrink-0">
             {typeLabel}
           </span>
         </div>

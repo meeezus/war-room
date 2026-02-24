@@ -18,14 +18,14 @@ export function Breadcrumb({ segments, className }: BreadcrumbProps) {
         return (
           <span key={index} className="flex items-center gap-1">
             {index > 0 && (
-              <span className="text-[rgba(255,255,255,0.4)]">/</span>
+              <span className="text-muted-foreground">/</span>
             )}
             {isLast ? (
-              <span className="text-[rgba(255,255,255,0.7)]">{segment.label}</span>
+              <span className="text-foreground/70">{segment.label}</span>
             ) : (
               <Link
                 href={segment.href ?? "#"}
-                className="text-[rgba(255,255,255,0.4)] hover:text-[rgba(255,255,255,0.7)] transition-colors"
+                className="text-muted-foreground hover:text-foreground/70 transition-colors"
               >
                 {segment.label}
               </Link>

@@ -23,7 +23,7 @@ const lineStyles: Record<LineType, string> = {
   addition: 'bg-green-500/15 text-green-400',
   deletion: 'bg-red-500/15 text-red-400',
   header: 'text-cyan-400/70 font-semibold',
-  context: 'text-white/40',
+  context: 'text-muted-foreground',
 }
 
 export function DiffViewer({ content }: DiffViewerProps) {

@@ -30,10 +30,10 @@ export interface MissionWithSteps extends Mission {
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex gap-2">
-      <span className="shrink-0 text-[10px] font-medium uppercase tracking-wider text-white/25">
+      <span className="shrink-0 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
         {label}
       </span>
-      <span className="text-xs text-[rgba(255,255,255,0.5)]">{value}</span>
+      <span className="text-xs text-muted-foreground">{value}</span>
     </div>
   );
 }
@@ -83,7 +83,7 @@ export function MissionKanbanCard({ mission }: { mission: MissionWithSteps }) {
           <Link
             href={`/missions/${mission.id}`}
             onClick={(e) => e.stopPropagation()}
-            className="line-clamp-2 font-[family-name:var(--font-space-grotesk)] text-sm font-semibold text-[#E5E5E5] transition-colors hover:text-white"
+            className="line-clamp-2 font-[family-name:var(--font-space-grotesk)] text-sm font-semibold text-foreground transition-colors hover:text-foreground/70"
           >
             {mission.title}
           </Link>
@@ -91,7 +91,7 @@ export function MissionKanbanCard({ mission }: { mission: MissionWithSteps }) {
             <button
               onClick={handleExecute}
               disabled={executing}
-              className="flex-shrink-0 rounded border border-white/[0.12] px-2 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-[rgba(255,255,255,0.5)] transition-colors hover:border-emerald-500/50 hover:text-emerald-400 disabled:opacity-40"
+              className="flex-shrink-0 rounded border border-border px-2 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground transition-colors hover:border-emerald-500/50 hover:text-emerald-400 disabled:opacity-40"
             >
               {executing ? "..." : "Execute"}
             </button>
@@ -114,13 +114,13 @@ export function MissionKanbanCard({ mission }: { mission: MissionWithSteps }) {
           <Link
             href={`/agents/${mission.assigned_to}`}
             onClick={(e) => e.stopPropagation()}
-            className="rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[10px] text-white/40 transition-colors hover:text-white/60"
+            className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:text-foreground/60"
           >
             {mission.assigned_to}
           </Link>
           {total > 0 && (
             <div className="flex flex-1 items-center gap-1.5">
-              <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
+              <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
                 <div
                   className="h-full rounded-full transition-all duration-500"
                   style={{
@@ -129,7 +129,7 @@ export function MissionKanbanCard({ mission }: { mission: MissionWithSteps }) {
                   }}
                 />
               </div>
-              <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] tabular-nums text-white/30">
+              <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] tabular-nums text-muted-foreground/75">
                 {completed}/{total}
               </span>
             </div>
@@ -138,7 +138,7 @@ export function MissionKanbanCard({ mission }: { mission: MissionWithSteps }) {
 
         {/* Duration for running/completed */}
         {mission.started_at && (
-          <p className="mt-1.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-white/25">
+          <p className="mt-1.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/60">
             {mission.status === "running" ? "Running " : ""}
             {formatDuration(mission.started_at, mission.completed_at)}
           </p>
@@ -154,10 +154,10 @@ export function MissionKanbanCard({ mission }: { mission: MissionWithSteps }) {
               transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
               className="overflow-hidden"
             >
-              <div className="mt-2 border-t border-white/[0.06] pt-2 space-y-2">
+              <div className="mt-2 border-t border-border pt-2 space-y-2">
                 {/* Description */}
                 {mission.description && (
-                  <p className="line-clamp-3 text-xs text-[rgba(255,255,255,0.5)]">
+                  <p className="line-clamp-3 text-xs text-muted-foreground">
                     {mission.description}
                   </p>
                 )}
@@ -173,11 +173,11 @@ export function MissionKanbanCard({ mission }: { mission: MissionWithSteps }) {
                 {/* Result summary */}
                 {mission.result && Object.keys(mission.result).length > 0 && (
                   <div className="flex gap-2">
-                    <span className="shrink-0 text-[10px] font-medium uppercase tracking-wider text-white/25">
+                    <span className="shrink-0 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
                       Result
                     </span>
                     {typeof mission.result.summary === "string" ? (
-                      <span className="line-clamp-2 text-xs text-[rgba(255,255,255,0.5)]">
+                      <span className="line-clamp-2 text-xs text-muted-foreground">
                         {mission.result.summary}
                       </span>
                     ) : (

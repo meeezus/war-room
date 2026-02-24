@@ -22,10 +22,10 @@ const PRIORITY_COLORS: Record<number, { bg: string; text: string }> = {
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex gap-2">
-      <span className="shrink-0 text-[10px] font-medium uppercase tracking-wider text-white/25">
+      <span className="shrink-0 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
         {label}
       </span>
-      <span className="text-xs text-[rgba(255,255,255,0.5)]">{value}</span>
+      <span className="text-xs text-muted-foreground">{value}</span>
     </div>
   );
 }
@@ -56,19 +56,19 @@ export function TaskKanbanCard({ task }: { task: TaskWithProject }) {
       transition={SPRING_CONFIG}
     >
       <StealthCard className="p-3">
-        <h3 className="line-clamp-2 font-[family-name:var(--font-space-grotesk)] text-sm font-semibold text-[#E5E5E5]">
+        <h3 className="line-clamp-2 font-[family-name:var(--font-space-grotesk)] text-sm font-semibold text-foreground">
           {task.title}
         </h3>
 
         {task.projects?.title && (
-          <p className="mt-1 truncate font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-[rgba(255,255,255,0.3)]">
+          <p className="mt-1 truncate font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/75">
             {task.projects.title}
           </p>
         )}
 
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           {task.owner && (
-            <span className="rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[10px] text-white/40">
+            <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
               {task.owner}
             </span>
           )}
@@ -95,7 +95,7 @@ export function TaskKanbanCard({ task }: { task: TaskWithProject }) {
               transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
               className="overflow-hidden"
             >
-              <div className="mt-2 border-t border-white/[0.06] pt-2 space-y-1.5">
+              <div className="mt-2 border-t border-border pt-2 space-y-1.5">
                 {task.goal && <DetailRow label="Goal" value={task.goal} />}
                 {task.notes && <DetailRow label="Notes" value={task.notes} />}
                 {task.owner && <DetailRow label="Owner" value={task.owner} />}
@@ -109,7 +109,7 @@ export function TaskKanbanCard({ task }: { task: TaskWithProject }) {
                 />
                 {missionId && (
                   <div className="flex gap-2">
-                    <span className="shrink-0 text-[10px] font-medium uppercase tracking-wider text-white/25">
+                    <span className="shrink-0 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
                       Mission
                     </span>
                     <Link

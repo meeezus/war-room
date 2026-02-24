@@ -60,17 +60,17 @@ export default function MissionsPage() {
       <div className="flex h-screen flex-col bg-background p-4">
         <div className="flex h-full items-center justify-center">
           <StealthCard className="max-w-md p-8 text-center">
-            <h2 className="mb-3 font-[family-name:var(--font-space-grotesk)] text-lg font-semibold text-[#E5E5E5]">
+            <h2 className="mb-3 font-[family-name:var(--font-space-grotesk)] text-lg font-semibold text-foreground">
               Connect Supabase to see live data
             </h2>
-            <p className="mb-4 text-sm text-[rgba(255,255,255,0.5)]">
+            <p className="mb-4 text-sm text-muted-foreground">
               Add these environment variables to your{" "}
-              <code className="rounded bg-white/[0.06] px-1.5 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-xs">
+              <code className="rounded bg-muted px-1.5 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-xs">
                 .env.local
               </code>{" "}
               file:
             </p>
-            <div className="rounded-sm bg-white/[0.04] p-4 text-left font-[family-name:var(--font-jetbrains-mono)] text-xs text-[rgba(255,255,255,0.5)]">
+            <div className="rounded-sm bg-muted/50 p-4 text-left font-[family-name:var(--font-jetbrains-mono)] text-xs text-muted-foreground">
               <p>NEXT_PUBLIC_SUPABASE_URL=your-url</p>
               <p>NEXT_PUBLIC_SUPABASE_ANON_KEY=your-key</p>
             </div>
@@ -83,7 +83,7 @@ export default function MissionsPage() {
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
-        <p className="font-[family-name:var(--font-jetbrains-mono)] text-sm text-[rgba(255,255,255,0.4)]">
+        <p className="font-[family-name:var(--font-jetbrains-mono)] text-sm text-muted-foreground">
           Loading missions...
         </p>
       </div>
@@ -105,20 +105,20 @@ export default function MissionsPage() {
     <div className="min-h-screen bg-background p-4">
       <div className="mx-auto max-w-4xl space-y-4">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-xs text-[rgba(255,255,255,0.4)]">
-          <Link href="/dashboard" className="transition-colors hover:text-[#E5E5E5]">
+        <nav className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Link href="/dashboard" className="transition-colors hover:text-foreground">
             Dashboard
           </Link>
           <span>/</span>
-          <span className="text-[rgba(255,255,255,0.6)]">Missions</span>
+          <span className="text-foreground/60">Missions</span>
         </nav>
 
         {/* Header */}
         <div className="flex items-baseline justify-between">
-          <h1 className="font-[family-name:var(--font-space-grotesk)] text-xl font-bold text-[#E5E5E5]">
+          <h1 className="font-[family-name:var(--font-space-grotesk)] text-xl font-bold text-foreground">
             Missions
           </h1>
-          <span className="font-[family-name:var(--font-jetbrains-mono)] text-xs tabular-nums text-[rgba(255,255,255,0.3)]">
+          <span className="font-[family-name:var(--font-jetbrains-mono)] text-xs tabular-nums text-muted-foreground/75">
             {filtered.length} mission{filtered.length !== 1 ? "s" : ""}
           </span>
         </div>
@@ -166,7 +166,7 @@ export default function MissionsPage() {
         {/* Mission list */}
         {filtered.length === 0 ? (
           <StealthCard className="p-8 text-center">
-            <p className="text-sm text-[rgba(255,255,255,0.4)]">
+            <p className="text-sm text-muted-foreground">
               No {filter === "all" ? "" : filter + " "}missions found.
             </p>
           </StealthCard>
@@ -194,10 +194,10 @@ export default function MissionsPage() {
 
                       {/* Title + agent */}
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-[family-name:var(--font-space-grotesk)] text-sm font-medium text-[#E5E5E5]">
+                        <p className="truncate font-[family-name:var(--font-space-grotesk)] text-sm font-medium text-foreground">
                           {mission.title}
                         </p>
-                        <p className="mt-0.5 text-xs text-[rgba(255,255,255,0.4)]">
+                        <p className="mt-0.5 text-xs text-muted-foreground">
                           Agent:{" "}
                           <Link
                             href={`/agents/${mission.assigned_to}`}
@@ -212,11 +212,11 @@ export default function MissionsPage() {
                       {/* Meta: duration + date */}
                       <div className="flex flex-shrink-0 flex-col items-end gap-0.5">
                         {duration && (
-                          <span className="font-[family-name:var(--font-jetbrains-mono)] text-[11px] text-[rgba(255,255,255,0.35)]">
+                          <span className="font-[family-name:var(--font-jetbrains-mono)] text-[11px] text-muted-foreground/75">
                             {duration}
                           </span>
                         )}
-                        <span className="font-[family-name:var(--font-jetbrains-mono)] text-[11px] text-[rgba(255,255,255,0.25)]">
+                        <span className="font-[family-name:var(--font-jetbrains-mono)] text-[11px] text-muted-foreground/60">
                           {formatTimestamp(mission.created_at)}
                         </span>
                       </div>
