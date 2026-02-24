@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import type { RealtimeChannel } from "@supabase/supabase-js"
-import type { Event, AgentStatus, Mission, Step, Project, Task, ActiveAgent } from "@/lib/types"
+import type { Event, AgentStatus, Mission, Step, Project, Task, ActiveAgent, Discovery } from "@/lib/types"
 import { triggerEventToast, triggerAgentOfflineToast } from "@/lib/toast-events"
 
 const REALTIME_ENABLED = process.env.NEXT_PUBLIC_ENABLE_REALTIME !== "false"
@@ -391,4 +391,48 @@ export function useRealtimeTasks(
   }, [projectId])
 
   return tasks
+}
+
+// ---------------------------------------------------------------------------
+// useRealtimeDiscoveries
+// ---------------------------------------------------------------------------
+
+export function useRealtimeDiscoveries(
+  initialDiscoveries: Discovery[],
+): Discovery[] {
+  const [discoveries, setDiscoveries] = useState(initialDiscoveries)
+
+  useEffect(() => {
+    setDiscoveries(initialDiscoveries)
+  }, [initialDiscoveries])
+
+  useEffect(() => {
+    if (!REALTIME_ENABLED || !supabase) return
+
+    const client = supabase
+
+    const channel: RealtimeChannel = client
+      .channel("discoveries-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "discoveries" },
+        (payload) => {
+          if (payload.eventType === "INSERT") {
+            setDiscoveries((prev) => [...prev, payload.new as Discovery])
+          } else if (payload.eventType === "UPDATE") {
+            const updated = payload.new as Discovery
+            setDiscoveries((prev) =>
+              prev.map((d) => (d.id === updated.id ? updated : d)),
+            )
+          }
+        },
+      )
+      .subscribe()
+
+    return () => {
+      client.removeChannel(channel)
+    }
+  }, [])
+
+  return discoveries
 }

@@ -234,6 +234,24 @@ export interface DaimyoStats {
   rpg_class: string
 }
 
+export type Discovery = {
+  id: string
+  agent_id: string
+  category: 'code_health' | 'dependency' | 'performance' | 'cost' | 'opportunity'
+  severity: 'critical' | 'warning' | 'info'
+  title: string
+  description: string
+  repo?: string
+  file_path?: string
+  evidence?: string
+  suggested_action?: string
+  status: 'pending' | 'approved' | 'dismissed' | 'executed'
+  feedback?: string
+  proposal_id?: string
+  created_at: string
+  updated_at: string
+}
+
 export interface ActiveAgent {
   id: string
   agent_type: string
