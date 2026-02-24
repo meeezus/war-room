@@ -12,6 +12,7 @@ import { StealthCard } from "@/components/stealth-card";
 import { ProjectOverview } from "@/components/project-overview";
 import { CreateProjectModal } from "@/components/create-project-modal";
 import { TerminalPanel } from "@/components/terminal/terminal-panel";
+import { BriefCard } from "@/components/brief-card";
 
 
 const defaultStats: DashboardStats = {
@@ -200,6 +201,9 @@ export default function DashboardPage() {
                 >
                   &laquo;
                 </button>
+              </div>
+              <div className="mb-2 flex-shrink-0">
+                <BriefCard />
               </div>
               <div className="flex-1 overflow-y-auto">
                 <AgentSidebar agents={agents} />

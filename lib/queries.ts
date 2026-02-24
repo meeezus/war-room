@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import type { AgentStatus, Mission, Step, Event, DashboardStats, Project, ProjectWithMetrics, Board, Task, DynastyStats, Proposal, CouncilSession, ActiveAgent } from '@/lib/types'
+import type { AgentStatus, Mission, Step, Event, DashboardStats, Project, ProjectWithMetrics, Board, Task, DynastyStats, Proposal, CouncilSession, ActiveAgent, Discovery } from '@/lib/types'
 
 // Domain → Daimyo routing (matches engine/config.py DOMAIN_TO_DAIMYO)
 export const DOMAIN_TO_DAIMYO: Record<string, string> = {
@@ -533,6 +533,85 @@ export async function createProject(input: {
     await archiveCouncilSession(input.councilSessionId)
   }
   return data as Project
+}
+
+// ---------------------------------------------------------------------------
+// Discovery queries
+// ---------------------------------------------------------------------------
+
+export async function getDiscoveriesByRepo(repo: string): Promise<Discovery[]> {
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from('discoveries')
+    .select('*')
+    .eq('repo', repo)
+    .order('created_at', { ascending: false })
+  if (error) { console.error('getDiscoveriesByRepo error:', error); return [] }
+  return (data as Discovery[]) ?? []
+}
+
+export async function getDiscoveriesByProject(projectId: string): Promise<Discovery[]> {
+  if (!supabase) return []
+  // Join via project repo name — projects don't have a direct repo field,
+  // so we fetch all pending discoveries and let caller filter by matching repo to project title
+  const { data, error } = await supabase
+    .from('discoveries')
+    .select('*')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+  if (error) { console.error('getDiscoveriesByProject error:', error); return [] }
+  // Filter by project_id if discovery has it linked (via proposal → project)
+  return ((data as Discovery[]) ?? []).filter(d => d.proposal_id != null || d.repo != null)
+}
+
+export async function getPendingDiscoveryCount(): Promise<number> {
+  if (!supabase) return 0
+  const { count, error } = await supabase
+    .from('discoveries')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'pending')
+  if (error) { console.error('getPendingDiscoveryCount error:', error); return 0 }
+  return count ?? 0
+}
+
+export async function getPendingDiscoveriesWithSeverity(): Promise<{ total: number; critical: number; warning: number; info: number }> {
+  if (!supabase) return { total: 0, critical: 0, warning: 0, info: 0 }
+  const { data, error } = await supabase
+    .from('discoveries')
+    .select('severity')
+    .eq('status', 'pending')
+  if (error) { console.error('getPendingDiscoveriesWithSeverity error:', error); return { total: 0, critical: 0, warning: 0, info: 0 } }
+  const rows = (data ?? []) as { severity: string }[]
+  return {
+    total: rows.length,
+    critical: rows.filter(r => r.severity === 'critical').length,
+    warning: rows.filter(r => r.severity === 'warning').length,
+    info: rows.filter(r => r.severity === 'info').length,
+  }
+}
+
+export async function getLastPatrolEvent(): Promise<Event | null> {
+  if (!supabase) return null
+  const { data, error } = await supabase
+    .from('events')
+    .select('*')
+    .eq('type', 'patrol_complete')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (error) { console.error('getLastPatrolEvent error:', error); return null }
+  return data as Event | null
+}
+
+export async function getDiscoveryCountByRepo(repo: string): Promise<number> {
+  if (!supabase) return 0
+  const { count, error } = await supabase
+    .from('discoveries')
+    .select('*', { count: 'exact', head: true })
+    .eq('repo', repo)
+    .eq('status', 'pending')
+  if (error) { console.error('getDiscoveryCountByRepo error:', error); return 0 }
+  return count ?? 0
 }
 
 export async function createMission(input: {

@@ -3,12 +3,12 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
-import type { AgentStatus, ActiveAgent } from "@/lib/types";
+import type { AgentStatus, ActiveAgent, Event } from "@/lib/types";
 import { STATUS_COLORS } from "@/lib/data";
 import { staggerContainer, staggerItem, hoverLift, tapScale, timing } from "@/lib/motion";
 import { StealthCard } from "./stealth-card";
 import { useRealtimeAgents, useRealtimeActiveAgents } from "@/lib/realtime";
-import { getActiveAgents } from "@/lib/queries";
+import { getActiveAgents, getEvents } from "@/lib/queries";
 
 const statusLabels: Record<string, string> = {
   online: "Online",
@@ -65,6 +65,45 @@ function ActiveAgentRow({ agent }: { agent: ActiveAgent }) {
   );
 }
 
+function PatrolStatus() {
+  const [scanning, setScanning] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function checkPatrol() {
+      const events = await getEvents(20);
+      // Find the latest patrol event
+      const lastStarted = events.find(e => e.type === "patrol_started");
+      const lastComplete = events.find(e => e.type === "patrol_complete");
+
+      if (lastStarted && (!lastComplete || new Date(lastStarted.created_at) > new Date(lastComplete.created_at))) {
+        const agents = (lastStarted.metadata?.agents as string[]) ?? [];
+        setScanning(agents.length > 0 ? agents.join(", ") : "agents");
+      } else {
+        setScanning(null);
+      }
+    }
+    checkPatrol();
+  }, []);
+
+  if (!scanning) return null;
+
+  return (
+    <div className="mb-2">
+      <StealthCard className="p-2.5">
+        <div className="flex items-center gap-2">
+          <div
+            className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-amber-400"
+            style={{ boxShadow: "0 0 5px #f59e0b" }}
+          />
+          <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-amber-400">
+            scanning: {scanning}
+          </span>
+        </div>
+      </StealthCard>
+    </div>
+  );
+}
+
 export function AgentSidebar({ agents }: { agents: AgentStatus[] }) {
   const liveAgents = useRealtimeAgents(agents);
   const prefersReducedMotion = useReducedMotion();
@@ -81,6 +120,7 @@ export function AgentSidebar({ agents }: { agents: AgentStatus[] }) {
 
   return (
     <div className="flex h-full flex-col gap-2 overflow-y-auto pr-2">
+      <PatrolStatus />
       {liveActiveAgents.length > 0 && (
         <div className="mb-1">
           <p className="mb-1.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] uppercase tracking-wider text-[rgba(255,255,255,0.3)]">

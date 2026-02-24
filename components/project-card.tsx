@@ -38,9 +38,10 @@ const STATUS_OPTIONS = [
 interface ProjectCardProps {
   project: ProjectWithMetrics;
   onUpdate?: () => void;
+  discoveryCount?: number;
 }
 
-export function ProjectCard({ project, onUpdate }: ProjectCardProps) {
+export function ProjectCard({ project, onUpdate, discoveryCount = 0 }: ProjectCardProps) {
   const prefersReducedMotion = useReducedMotion();
   const accent = PROJECT_STATUS_COLORS[project.status] ?? "#6b7280";
   const progressPct = project.totalTasks > 0 ? (project.taskCounts.done / project.totalTasks) * 100 : 0;
@@ -270,6 +271,11 @@ export function ProjectCard({ project, onUpdate }: ProjectCardProps) {
         {project.pendingProposals > 0 && (
           <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-medium text-amber-400">
             {project.pendingProposals} pending
+          </span>
+        )}
+        {discoveryCount > 0 && (
+          <span className="rounded-full bg-blue-500/15 px-1.5 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-medium text-blue-400">
+            {discoveryCount} discover{discoveryCount === 1 ? "y" : "ies"}
           </span>
         )}
         {project.target_date && (
