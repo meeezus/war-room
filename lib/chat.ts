@@ -202,3 +202,19 @@ export async function setThreadSessionId(threadId: string, sessionId: string): P
     .update({ metadata })
     .eq('id', threadId)
 }
+
+export async function clearThreadSessionId(threadId: string): Promise<void> {
+  const sb = getServiceClient()
+  const { data } = await sb
+    .from('chat_threads')
+    .select('metadata')
+    .eq('id', threadId)
+    .single()
+
+  const metadata = { ...(data?.metadata as Record<string, unknown> ?? {}) }
+  delete metadata.sessionId
+  await sb
+    .from('chat_threads')
+    .update({ metadata })
+    .eq('id', threadId)
+}

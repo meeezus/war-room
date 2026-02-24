@@ -52,9 +52,18 @@ export default function ChatPage() {
         },
         (payload) => {
           const newMsg = payload.new as ChatMessage
-          // Dedup: only add if we don't already have this message
           setMessages((prev) => {
+            // Exact ID match — already have this message
             if (prev.some((m) => m.id === newMsg.id)) return prev
+            // Optimistic dedup: replace temp message with real DB message
+            const tempIdx = prev.findIndex(
+              (m) => m.id.startsWith('temp-') && m.role === newMsg.role && m.content === newMsg.content
+            )
+            if (tempIdx !== -1) {
+              const updated = [...prev]
+              updated[tempIdx] = newMsg
+              return updated
+            }
             return [...prev, newMsg]
           })
         }
@@ -367,6 +376,21 @@ export default function ChatPage() {
               <ChatActions
                 messageContent={messages[messages.length - 1].content}
                 threadId={activeThreadId}
+                onCouncilCreated={(sessionId) => {
+                  const systemMsg: ChatMessage = {
+                    id: `council-${sessionId}`,
+                    thread_id: activeThreadId,
+                    role: 'system',
+                    content: `Council review ready → /council/${sessionId}`,
+                    agent_id: null,
+                    user_id: null,
+                    streaming: false,
+                    streaming_complete: true,
+                    metadata: {},
+                    created_at: new Date().toISOString(),
+                  }
+                  setMessages((prev) => [...prev, systemMsg])
+                }}
               />
             )}
             {error && (

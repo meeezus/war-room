@@ -117,9 +117,20 @@ export function MessageBubble({ role, content, agentId, timestamp, isStreaming }
   const isSystem = role === 'system'
 
   if (isSystem) {
+    // Detect council links: "Council review ready → /council/uuid"
+    const councilMatch = content.match(/→ (\/council\/[\w-]+)/)
     return (
       <div className="flex justify-center py-2">
-        <span className="text-xs text-zinc-500 italic">{content}</span>
+        {councilMatch ? (
+          <a
+            href={councilMatch[1]}
+            className="text-xs text-purple-400 hover:text-purple-300 italic transition-colors"
+          >
+            {content}
+          </a>
+        ) : (
+          <span className="text-xs text-zinc-500 italic">{content}</span>
+        )}
       </div>
     )
   }

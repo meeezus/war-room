@@ -27,7 +27,7 @@ export function CouncilCard({ review }: CouncilCardProps) {
       // Check if text overflows 3 lines (line-clamp-3)
       setClamped(el.scrollHeight > el.clientHeight);
     }
-  }, [review.voice_text]);
+  }, [review.voice_text, review.text]);
 
   const roleCard = getRoleCard(review.name.toLowerCase());
   const verdict = VERDICT_STYLES[review.verdict] ?? VERDICT_STYLES.abstain;
@@ -97,7 +97,7 @@ export function CouncilCard({ review }: CouncilCardProps) {
         ref={textRef}
         className={`text-xs text-[rgba(255,255,255,0.6)] leading-relaxed ${expanded ? "" : "line-clamp-3"}`}
       >
-        {review.voice_text}
+        {review.voice_text || review.text}
       </p>
 
       {/* Show more / Show less */}

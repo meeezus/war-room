@@ -176,7 +176,9 @@ export interface DynastyStats {
 export interface CouncilReview {
   name: string
   verdict: 'approve' | 'concern' | 'reject' | 'abstain'
-  voice_text: string
+  voice_text?: string
+  text?: string
+  role?: string
 }
 
 export interface CouncilSession {

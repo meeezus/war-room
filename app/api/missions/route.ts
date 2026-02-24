@@ -1,33 +1,68 @@
-import { NextRequest } from 'next/server'
-import { createMission } from '@/lib/queries'
+import { NextRequest, NextResponse } from 'next/server'
+import { createServiceClient } from '@/lib/supabase-server'
 
 export async function POST(req: NextRequest) {
-  let body: unknown
-  try {
-    body = await req.json()
-  } catch {
-    return Response.json({ error: 'Invalid JSON' }, { status: 400 })
+  const sb = createServiceClient()
+  if (!sb) {
+    return NextResponse.json({ error: 'Service unavailable' }, { status: 500 })
   }
 
-  const { title, project_id, assigned_to, status, councilSessionId } = body as Record<string, unknown>
+  const body = await req.json()
+  const { title, project_id, assigned_to, proposal_id } = body
 
-  if (!title || typeof title !== 'string') {
-    return Response.json({ error: 'title is required' }, { status: 400 })
-  }
-  if (!project_id || typeof project_id !== 'string') {
-    return Response.json({ error: 'project_id is required' }, { status: 400 })
+  if (!title) {
+    return NextResponse.json({ error: 'title is required' }, { status: 400 })
   }
 
-  const mission = await createMission({
-    title,
-    project_id,
-    assigned_to: typeof assigned_to === 'string' ? assigned_to : undefined,
-    status: typeof status === 'string' ? status : undefined,
-    councilSessionId: typeof councilSessionId === 'string' ? councilSessionId : undefined,
-  })
+  const { data, error } = await sb
+    .from('missions')
+    .insert({
+      title,
+      project_id: project_id ?? null,
+      proposal_id: proposal_id ?? null,
+      assigned_to: assigned_to ?? 'cc',
+      status: 'queued',
+    })
+    .select()
+    .single()
 
-  if (!mission) {
-    return Response.json({ error: 'Failed to create mission' }, { status: 500 })
+  if (error) {
+    console.error('[missions/route] POST error:', error)
+    return NextResponse.json({ error: 'Failed to create mission' }, { status: 500 })
   }
-  return Response.json({ mission }, { status: 201 })
+
+  return NextResponse.json({ mission: data }, { status: 201 })
+}
+
+export async function GET(req: NextRequest) {
+  const sb = createServiceClient()
+  if (!sb) {
+    return NextResponse.json({ error: 'Service unavailable' }, { status: 500 })
+  }
+
+  const { searchParams } = new URL(req.url)
+  const status = searchParams.get('status')
+  const project_id = searchParams.get('project_id')
+
+  let query = sb
+    .from('missions')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(50)
+
+  if (status) {
+    query = query.eq('status', status)
+  }
+  if (project_id) {
+    query = query.eq('project_id', project_id)
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    console.error('[missions/route] GET error:', error)
+    return NextResponse.json({ error: 'Failed to fetch missions' }, { status: 500 })
+  }
+
+  return NextResponse.json({ missions: data })
 }
