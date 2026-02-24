@@ -45,6 +45,13 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    if (discovery.status === 'approved' || discovery.status === 'executed') {
+      return NextResponse.json(
+        { success: false, error: 'Discovery already processed' },
+        { status: 409 }
+      )
+    }
+
     if (action === 'approve') {
       // Create a proposal linked to this discovery
       const { data: proposal, error: proposalError } = await sb

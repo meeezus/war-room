@@ -82,20 +82,16 @@ export async function POST(_req: NextRequest) {
     })
   }
 
-  // Emit cross_pollination event to war_room_events
+  // Emit cross_pollination event
   if (fleetPatterns.length > 0) {
-    await sb.from('war_room_events').insert({
-      event_type: 'cross_pollination',
-      agent_id: 'makima',
-      title: 'Cross-Pollination',
-      description: `Makima identified ${fleetPatterns.length} fleet-wide pattern(s) across agents`,
+    await sb.from('events').insert({
+      type: 'cross_pollination',
+      agent: 'makima',
+      message: `Makima identified ${fleetPatterns.length} fleet-wide pattern(s) across agents`,
       metadata: {
-        agent: 'makima',
         pattern_count: fleetPatterns.length,
         patterns: fleetPatterns,
-        message: `Fleet patterns found: ${fleetPatterns.map(p => p.pattern.slice(0, 60)).join('; ')}`,
       },
-      created_at: new Date().toISOString(),
     })
   }
 

@@ -18,7 +18,7 @@ When I wake up, a visual morning brief is waiting — showing what the Daimyo fo
 
 ## Sprint 0: Chat Fix (Unblock Shoin Chat)
 
-### S0-T1: Fix OpenClaw token + add stream timeout
+### S0-T1: Fix OpenClaw token + add stream timeout [DONE]
 
 **Model:** sonnet | **Parallel:** Group 0
 
@@ -40,7 +40,7 @@ When I wake up, a visual morning brief is waiting — showing what the Daimyo fo
 
 ## Sprint 1: Nightly Patrol (Discovery Engine)
 
-### S1-T1: Create discoveries table + migration
+### S1-T1: Create discoveries table + migration [DONE]
 
 **Model:** sonnet | **Parallel:** Group 1
 
@@ -77,7 +77,7 @@ CREATE INDEX idx_discoveries_agent ON discoveries(agent_id);
 - `lib/types.ts` (modify — add Discovery type for frontend)
 - `lib/realtime.ts` (modify — subscribe to `discoveries` table for live UI updates)
 
-### S1-T2: Patrol trigger + engine module
+### S1-T2: Patrol trigger + engine module [DONE]
 
 **Model:** sonnet | **Parallel:** Group 1
 
@@ -121,7 +121,7 @@ launchctl unload ~/Library/LaunchAgents/com.warroom.poller.plist && launchctl lo
 - `~/Code/shogunate/engine/poller.py` (modify — add `run_patrol()` call after triggers, gated by schedule)
 - `~/Code/shogunate/engine/config.py` (modify — add PATROL_MODEL, PATROL_REPOS, PATROL_SCHEDULE constants)
 
-### S1-T3: Pulse action type for discovery approval
+### S1-T3: Pulse action type for discovery approval [DONE]
 
 **Model:** sonnet | **Parallel:** Group 1
 
@@ -155,7 +155,7 @@ launchctl unload ~/Library/LaunchAgents/com.warroom.poller.plist && launchctl lo
 
 ## Sprint 2: Morning Brief (Visual Synthesis + War Room Integration)
 
-### S2-T1: Morning brief API + HTML generator
+### S2-T1: Morning brief API + HTML generator [DONE]
 
 **Model:** sonnet | **Parallel:** Group 2
 
@@ -179,7 +179,7 @@ POST /api/brief/action → { discovery_id: string, action: 'approve' | 'dismiss'
 - `app/api/brief/action/route.ts` (create — handle approve/dismiss from brief)
 - `lib/brief-generator.ts` (create — HTML generation with house palette)
 
-### S2-T2: War Room dashboard integration
+### S2-T2: War Room dashboard integration [DONE]
 
 **Model:** sonnet | **Parallel:** Group 2
 
@@ -210,7 +210,7 @@ POST /api/brief/action → { discovery_id: string, action: 'approve' | 'dismiss'
 - `lib/pulse-alerts.ts` (modify — add pending discovery count to alerts)
 - `lib/queries.ts` (modify — add `getDiscoveriesByProject()`, `getPendingDiscoveryCount()`)
 
-### S2-T3: Feedback loop — discovery quality scoring
+### S2-T3: Feedback loop — discovery quality scoring [DONE]
 
 **Model:** sonnet | **Parallel:** Group 2
 
@@ -226,7 +226,7 @@ POST /api/brief/action → { discovery_id: string, action: 'approve' | 'dismiss'
 
 ## Sprint 3: Agent Skill Evolution
 
-### S3-T1: Post-mission skill extractor
+### S3-T1: Post-mission skill extractor [DONE]
 
 **Model:** sonnet | **Parallel:** Group 3
 
@@ -276,7 +276,7 @@ async def apply_pending_patches(agent_id: str) -> int:
 - `~/Code/shogunate/engine/executor.py` (modify — call extract_skill_patches after mission completion, alongside existing evaluate_mission)
 - `components/event-feed.tsx` (modify — render skill_patch events with agent avatar + pattern preview)
 
-### S3-T2: Skill file updater + confidence gating
+### S3-T2: Skill file updater + confidence gating [DONE]
 
 **Model:** sonnet | **Parallel:** Group 3
 
@@ -300,7 +300,7 @@ async def apply_pending_patches(agent_id: str) -> int:
 - `~/Code/shogunate/engine/skill_evolution.py` (modify — add apply_pending_patches, confidence boosting, sunset check)
 - `~/Code/shogunate/skills/*.md` (modify — add `## Learned Patterns` section to each SKILL file)
 
-### S3-T3: Cross-pollination via Makima
+### S3-T3: Cross-pollination via Makima [DONE]
 
 **Model:** sonnet | **Parallel:** Group 3
 

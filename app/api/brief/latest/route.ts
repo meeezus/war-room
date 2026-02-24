@@ -16,7 +16,7 @@ export async function GET() {
 
     // Fetch in parallel
     const [discoveriesRes, missionsRes, eventsRes] = await Promise.all([
-      sb.from('discoveries').select('*').order('severity', { ascending: true }).order('created_at', { ascending: false }),
+      sb.from('discoveries').select('*').in('status', ['pending', 'dismissed']).order('created_at', { ascending: false }).limit(500),
       sb.from('missions').select('*').gte('created_at', cutoff),
       sb.from('events').select('*').gte('created_at', cutoff).order('created_at', { ascending: false }).limit(200),
     ])

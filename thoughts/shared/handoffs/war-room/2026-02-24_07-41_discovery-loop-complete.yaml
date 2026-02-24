@@ -1,0 +1,108 @@
+---
+session: war-room
+date: 2026-02-24
+status: partial
+outcome: PARTIAL_PLUS
+---
+
+goal: Discovery Loop + Skill Evolution — 4 sprints, 10 tasks built overnight via Ralph
+now: Two background agents finishing items 4-8 (brief query fix, patrol parallelization, validation, batch updates, discovery badges). Check their results, then verify build.
+
+test: npm run build && python3 -m py_compile ~/Code/shogunate/engine/patrol.py && python3 -m py_compile ~/Code/shogunate/engine/skill_evolution.py
+
+done_this_session:
+  - task: Verified Ralph completed all 10/10 tasks (S0-S3, 11 iterations, ~45 min)
+    files: [see full file list below]
+  - task: Ran code review (critic agent) — found 4 critical issues
+    files: []
+  - task: "Critical fix 1: skills/evolve route wrote to war_room_events instead of events table"
+    files: [app/api/skills/evolve/route.ts:85-100]
+  - task: "Critical fix 2: Proposal.source type union missing 'patrol' — removed 'patrol' as 'manual' cast"
+    files: [lib/types.ts:7, lib/pulse-actions.ts:214]
+  - task: "Critical fix 3: Removed dead getDiscoveriesByProject (ignored its parameter, never called)"
+    files: [lib/queries.ts:553-565]
+  - task: "Critical fix 4: Added idempotency guard on approve_discovery (prevents double-approve orphan proposals)"
+    files: [lib/pulse-actions.ts:200-210, app/api/brief/action/route.ts:48-55]
+  - task: Fixed FK type mismatch in project_dates_sow migration (uuid→text for projects.id)
+    files: [supabase/migrations/20260224000000_project_dates_sow.sql:3]
+  - task: Applied 3 Supabase migrations (project_dates_sow, discoveries, skill_patches)
+    files: []
+  - task: Created PostToolUse hook for auto-pushing Supabase migrations on Write
+    files: [engine/hooks/migration-push.sh, .claude/settings.json]
+  - task: Updated spec with [DONE] markers on all 10 tasks
+    files: [.specs/2026-02-24-discovery-loop-skill-evolution.md]
+  - task: Updated memory, wrote Makima handoff, wrote CC handoff
+    files: [~/.claude/projects/.../memory/MEMORY.md, ~/clawd/memory/from-cc/2026-02-24T060000-discovery-loop-complete.md]
+
+blockers: []
+
+questions:
+  - "Two background agents still running: (1) brief query + discovery badges, (2) patrol parallel + validation + batch updates. Check results before committing."
+
+decisions:
+  - ralph_over_swarm: Used Ralph (sequential fresh-context loop) for all 10 tasks — more reliable than swarm for cross-repo work
+  - env_unset_for_nested_claude: "env -u CLAUDECODE" required before nested claude CLI calls in Ralph runner
+  - patrol_source_in_type_union: Added 'patrol' to Proposal.source union rather than mapping to 'manual'
+  - dead_code_removed: Removed broken getDiscoveriesByProject rather than fixing it (no callers)
+  - migration_auto_push_hook: PostToolUse on Write checks for supabase/migrations/*.sql and runs supabase db push
+
+findings:
+  - ralph_env_var_gotcha: CLAUDECODE env var blocks nested claude sessions — must unset
+  - agent_type_casts: Ralph agents use unsafe 'as' casts to silence type errors
+  - agent_wrong_tables: Ralph agents confuse war_room_events (engine) and events (frontend) tables
+  - agent_dead_code: Ralph agents create functions that are never called
+  - code_review_essential: 4 critical runtime bugs slipped past build — always code-review agent output
+  - fk_type_mismatch: projects.id is TEXT not UUID — migration FK refs must match
+
+worked:
+  - Ralph autonomous execution (10/10 tasks passed on first attempt after env fix)
+  - Post-build critic agent review catching 4 runtime bugs
+  - Parallel background agents for independent fix groups
+
+failed:
+  - First Ralph launch (all tasks auto-blocked due to CLAUDECODE env var — had to reset all .flow/ state)
+  - supabase db push blocked by older migration with FK type mismatch (had to fix inline)
+
+next:
+  - Check results of two background agents (items 4-8 fixes)
+  - Run final npm run build + python compile checks
+  - Restart poller plist (launchctl unload/load ~/Library/LaunchAgents/com.warroom.poller.plist)
+  - Test Shoin Chat with corrected OpenClaw token
+  - Manually trigger patrol to verify discoveries pipeline end-to-end
+  - "Address remaining suggestions: updated_at trigger, DAIMYO_REGISTRY 'power' vs 'makima' key"
+  - Consider PR to main when tested
+
+files:
+  created:
+    - supabase/migrations/20260225000001_discoveries.sql
+    - supabase/migrations/20260225000002_skill_patches.sql
+    - app/api/brief/latest/route.ts
+    - app/api/brief/action/route.ts
+    - app/api/skills/evolve/route.ts
+    - lib/brief-generator.ts
+    - components/brief-card.tsx
+    - engine/hooks/migration-push.sh
+    - ~/Code/shogunate/engine/patrol.py
+    - ~/Code/shogunate/engine/skill_evolution.py
+    - thoughts/shared/handoffs/war-room/2026-02-24_06-15_discovery-loop-complete.yaml
+    - ~/clawd/memory/from-cc/2026-02-24T060000-discovery-loop-complete.md
+  modified:
+    - .env.local
+    - lib/openclaw-client.ts
+    - app/api/chat/route.ts
+    - lib/types.ts
+    - lib/realtime.ts
+    - lib/pulse-actions.ts
+    - lib/pulse-alerts.ts
+    - lib/queries.ts
+    - app/dashboard/page.tsx
+    - components/agent-sidebar.tsx
+    - components/event-feed.tsx
+    - components/project-card.tsx
+    - .claude/settings.json
+    - .specs/2026-02-24-discovery-loop-skill-evolution.md
+    - supabase/migrations/20260224000000_project_dates_sow.sql
+    - ~/Code/shogunate/engine/config.py
+    - ~/Code/shogunate/engine/poller.py
+    - ~/Code/shogunate/engine/executor.py
+    - "~/Code/shogunate/skills/*.md (9 SKILL files — Learned Patterns section)"

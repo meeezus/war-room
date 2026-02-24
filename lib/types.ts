@@ -4,7 +4,7 @@ export interface Proposal {
   id: string
   title: string
   description: string | null
-  source: 'discord' | 'cron' | 'trigger' | 'manual'
+  source: 'discord' | 'cron' | 'trigger' | 'manual' | 'patrol'
   requested_by: string
   domain: 'engineering' | 'product' | 'commerce' | 'influence' | 'operations' | 'coordination' | null
   cost_estimate: number | null

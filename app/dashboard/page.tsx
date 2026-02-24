@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { getAgents, getMissions, getEvents, getStats, getProjectsWithMetrics, getDynastyStats, getMissionStats } from "@/lib/queries";
+import { getAgents, getMissions, getEvents, getStats, getProjectsWithMetrics, getDynastyStats, getMissionStats, getPendingDiscoveryCount } from "@/lib/queries";
 import type { AgentStatus, Mission, Event, DashboardStats, DynastyStats, ProjectWithMetrics } from "@/lib/types";
 import Link from "next/link";
 import { StatsBar } from "@/components/stats-bar";
@@ -82,6 +82,7 @@ export default function DashboardPage() {
   const [projects, setProjects] = useState<ProjectWithMetrics[]>([]);
   const [dynastyStats, setDynastyStats] = useState<DynastyStats>(defaultDynastyStats);
   const [missionStats, setMissionStats] = useState({ active: 0, total: 0 });
+  const [pendingDiscoveries, setPendingDiscoveries] = useState(0);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [feedOpen, setFeedOpen] = useState(true);
@@ -98,7 +99,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function fetchData() {
-      const [agentsData, missionsData, eventsData, statsData, projectsData, dynastyData, missionStatsData] = await Promise.all([
+      const [agentsData, missionsData, eventsData, statsData, projectsData, dynastyData, missionStatsData, discoveryCount] = await Promise.all([
         getAgents(),
         getMissions(),
         getEvents(),
@@ -106,6 +107,7 @@ export default function DashboardPage() {
         getProjectsWithMetrics(),
         getDynastyStats(),
         getMissionStats(),
+        getPendingDiscoveryCount(),
       ]);
       setAgents(agentsData);
       setMissions(missionsData);
@@ -114,6 +116,7 @@ export default function DashboardPage() {
       setProjects(applySmartPriority(projectsData));
       setDynastyStats(dynastyData);
       setMissionStats(missionStatsData);
+      setPendingDiscoveries(discoveryCount);
       setLoading(false);
     }
     fetchData();
@@ -222,10 +225,15 @@ export default function DashboardPage() {
 
         {/* Center - Project Overview */}
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          <div className="mb-2 flex h-6 items-center">
+          <div className="mb-2 flex h-6 items-center gap-2">
             <span className="font-[family-name:var(--font-space-grotesk)] text-xs font-medium uppercase tracking-wider text-[rgba(255,255,255,0.4)]">
               Projects
             </span>
+            {pendingDiscoveries > 0 && (
+              <span className="rounded-full bg-blue-500/15 px-1.5 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-medium text-blue-400">
+                {pendingDiscoveries} discover{pendingDiscoveries === 1 ? "y" : "ies"}
+              </span>
+            )}
           </div>
           <div className="flex-1 overflow-hidden">
             <ProjectOverview projects={projects} onUpdate={refreshProjects} />

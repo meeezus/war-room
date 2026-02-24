@@ -550,20 +550,6 @@ export async function getDiscoveriesByRepo(repo: string): Promise<Discovery[]> {
   return (data as Discovery[]) ?? []
 }
 
-export async function getDiscoveriesByProject(projectId: string): Promise<Discovery[]> {
-  if (!supabase) return []
-  // Join via project repo name — projects don't have a direct repo field,
-  // so we fetch all pending discoveries and let caller filter by matching repo to project title
-  const { data, error } = await supabase
-    .from('discoveries')
-    .select('*')
-    .eq('status', 'pending')
-    .order('created_at', { ascending: false })
-  if (error) { console.error('getDiscoveriesByProject error:', error); return [] }
-  // Filter by project_id if discovery has it linked (via proposal → project)
-  return ((data as Discovery[]) ?? []).filter(d => d.proposal_id != null || d.repo != null)
-}
-
 export async function getPendingDiscoveryCount(): Promise<number> {
   if (!supabase) return 0
   const { count, error } = await supabase

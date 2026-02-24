@@ -200,18 +200,23 @@ export async function executeActions(actions: PulseAction[]): Promise<ActionResu
         case 'approve_discovery': {
           const { data: discovery, error: fetchErr } = await sb
             .from('discoveries')
-            .select('id, title')
+            .select('id, title, status')
             .eq('id', action.discovery_id)
             .single()
 
           if (fetchErr) throw fetchErr
+
+          if (discovery.status === 'approved' || discovery.status === 'executed') {
+            results.push({ action, success: false, message: 'Discovery already processed' })
+            break
+          }
 
           const { data: proposal, error: propErr } = await sb
             .from('proposals')
             .insert({
               title: discovery.title,
               description: `Patrol discovery: ${discovery.title}`,
-              source: 'patrol' as 'manual',
+              source: 'patrol',
               requested_by: 'makima',
               status: 'pending',
             })

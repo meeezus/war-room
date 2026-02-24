@@ -1,0 +1,100 @@
+---
+session: war-room
+date: 2026-02-24
+status: complete
+outcome: SUCCESS
+---
+
+goal: Autonomous Discovery Loop + Agent Skill Evolution (4 sprints, 10 tasks)
+now: All tasks done. Code reviewed. 4 critical fixes applied. Build passes.
+
+test: npm run build
+
+done_this_session:
+  - task: S0-T1 — Fix OpenClaw token + add 30s stream timeout
+    files: [.env.local, lib/openclaw-client.ts, app/api/chat/route.ts]
+  - task: S1-T1 — discoveries table migration + Discovery type + realtime hook
+    files: [supabase/migrations/20260225000001_discoveries.sql, lib/types.ts, lib/realtime.ts]
+  - task: S1-T2 — Patrol engine module + poller integration
+    files: [~/Code/shogunate/engine/patrol.py, ~/Code/shogunate/engine/poller.py, ~/Code/shogunate/engine/config.py]
+  - task: S1-T3 — approve_discovery + dismiss_discovery pulse actions
+    files: [lib/pulse-actions.ts, lib/types.ts]
+  - task: S2-T1 — Morning brief API + HTML generator
+    files: [app/api/brief/latest/route.ts, app/api/brief/action/route.ts, lib/brief-generator.ts]
+  - task: S2-T2 — Dashboard integration (brief card, event feed, agent sidebar, project card)
+    files: [app/dashboard/page.tsx, components/brief-card.tsx, components/agent-sidebar.tsx, components/event-feed.tsx, components/project-card.tsx, lib/pulse-alerts.ts, lib/queries.ts]
+  - task: S2-T3 — Feedback loop (EMA-weighted scan priorities)
+    files: [~/Code/shogunate/engine/patrol.py, lib/queries.ts]
+  - task: S3-T1 — skill_patches table + skill_evolution module + executor hook
+    files: [supabase/migrations/20260225000002_skill_patches.sql, ~/Code/shogunate/engine/skill_evolution.py, ~/Code/shogunate/engine/executor.py, components/event-feed.tsx]
+  - task: S3-T2 — Skill file updater + confidence gating + 90-day sunset
+    files: [~/Code/shogunate/engine/skill_evolution.py, ~/Code/shogunate/skills/*.md]
+  - task: S3-T3 — Cross-pollination via Makima + manual trigger API
+    files: [~/Code/shogunate/engine/skill_evolution.py, app/api/skills/evolve/route.ts]
+  - task: Code review fixes — 4 critical issues resolved
+    files: [lib/types.ts, lib/pulse-actions.ts, app/api/skills/evolve/route.ts, app/api/brief/action/route.ts, lib/queries.ts]
+
+blockers: []
+
+questions: []
+
+decisions:
+  - ralph_over_swarm: Used Ralph (sequential fresh-context loop) instead of team swarm for implementation — more reliable for cross-repo work
+  - env_unset_pattern: "env -u CLAUDECODE" required before nested claude CLI calls
+  - patrol_source_type: Added 'patrol' to Proposal.source union rather than mapping to 'manual'
+  - dead_code_removed: getDiscoveriesByProject was broken and uncalled — removed rather than fixed
+
+findings:
+  - ralph_env_var_gotcha: CLAUDECODE env var blocks nested claude sessions. Must unset with env -u CLAUDECODE
+  - agent_type_casts: Ralph agents use unsafe TypeScript casts (as) to silence type errors rather than fixing types
+  - agent_wrong_tables: Ralph agents confuse war_room_events (engine) and events (frontend) tables
+  - agent_dead_code: Ralph agents create functions that are never called from anywhere
+  - code_review_catches_runtime_bugs: 4 critical issues found by code review that build didn't catch (wrong table, type lie, dead code, missing idempotency)
+
+worked:
+  - Ralph autonomous execution (10/10 tasks passed on first attempt after env fix)
+  - Ralph cross-repo awareness (war-room + shogunate from single config)
+  - Post-build code review catching runtime bugs build can't
+  - Fresh-context re-anchoring preventing drift across 11 iterations
+
+failed:
+  - First Ralph launch (all tasks auto-blocked due to CLAUDECODE env var)
+  - Ralph agents need stronger post-hoc review (4 critical bugs slipped through)
+
+next:
+  - Apply Supabase migrations (supabase db push or manual SQL for discoveries + skill_patches tables)
+  - Restart poller plist after poller.py changes
+  - Test Shoin Chat with corrected OpenClaw token
+  - Manually trigger patrol to verify discoveries pipeline end-to-end
+  - Wire discoveryCount prop into project cards (currently defaults to 0)
+  - Address non-critical review suggestions (brief query limit, parallel patrol, severity validation, batch DB updates)
+  - Consider PR to main when tested
+
+files:
+  created:
+    - supabase/migrations/20260225000001_discoveries.sql
+    - supabase/migrations/20260225000002_skill_patches.sql
+    - app/api/brief/latest/route.ts
+    - app/api/brief/action/route.ts
+    - app/api/skills/evolve/route.ts
+    - lib/brief-generator.ts
+    - components/brief-card.tsx
+    - ~/Code/shogunate/engine/patrol.py
+    - ~/Code/shogunate/engine/skill_evolution.py
+  modified:
+    - .env.local
+    - lib/openclaw-client.ts
+    - app/api/chat/route.ts
+    - lib/types.ts
+    - lib/realtime.ts
+    - lib/pulse-actions.ts
+    - lib/pulse-alerts.ts
+    - lib/queries.ts
+    - app/dashboard/page.tsx
+    - components/agent-sidebar.tsx
+    - components/event-feed.tsx
+    - components/project-card.tsx
+    - ~/Code/shogunate/engine/config.py
+    - ~/Code/shogunate/engine/poller.py
+    - ~/Code/shogunate/engine/executor.py
+    - ~/Code/shogunate/skills/*.md (9 files — Learned Patterns section)
