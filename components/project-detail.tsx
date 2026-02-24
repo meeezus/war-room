@@ -10,7 +10,9 @@ import { StealthCard } from "./stealth-card";
 import { ProjectKanban } from "./project-kanban";
 import { MissionTableView } from "./mission-table-view";
 import { ProposalsSection } from "./proposals-section";
+import { CreateMissionModal } from "./create-mission-modal";
 import type { MissionWithSteps } from "./mission-kanban-card";
+import { TerminalPanel } from "./terminal/terminal-panel";
 
 interface ProjectDetailProps {
   project: Project;
@@ -26,6 +28,7 @@ export function ProjectDetail({ project, boards, proposals, tasks, missions, onU
   const accent = PROJECT_STATUS_COLORS[project.status] ?? "#6b7280";
 
   const [viewMode, setViewMode] = useState<"kanban" | "table">("kanban");
+  const [createMissionOpen, setCreateMissionOpen] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem("war-room-view-mode");
@@ -43,8 +46,9 @@ export function ProjectDetail({ project, boards, proposals, tasks, missions, onU
   const progressPct = totalMissions > 0 ? (completedMissions / totalMissions) * 100 : 0;
 
   return (
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
     <motion.div
-      className="mx-auto max-w-[1600px] space-y-4 p-4"
+      className="mx-auto w-full max-w-[1600px] flex-1 overflow-y-auto space-y-4 p-4"
       {...(prefersReducedMotion ? {} : fadeInUp)}
     >
       {/* Breadcrumb */}
@@ -100,6 +104,12 @@ export function ProjectDetail({ project, boards, proposals, tasks, missions, onU
           <span className="rounded-sm bg-emerald-500/15 px-2 py-1 font-[family-name:var(--font-jetbrains-mono)] text-xs text-emerald-400">
             P{project.priority}
           </span>
+          <button
+            onClick={() => setCreateMissionOpen(true)}
+            className="ml-auto px-2.5 py-1 rounded-sm border border-blue-500/30 bg-blue-500/10 text-blue-400 text-xs font-medium hover:bg-blue-500/20 transition-colors"
+          >
+            + Mission
+          </button>
         </div>
 
         {project.next_action && (
@@ -167,6 +177,15 @@ export function ProjectDetail({ project, boards, proposals, tasks, missions, onU
           <MissionTableView missions={missions} />
         )}
       </div>
+
+      <CreateMissionModal
+        open={createMissionOpen}
+        onOpenChange={setCreateMissionOpen}
+        projectId={project.id}
+        onCreated={() => onUpdate?.()}
+      />
     </motion.div>
+    <TerminalPanel missions={missions} />
+    </div>
   );
 }

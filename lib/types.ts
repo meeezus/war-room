@@ -27,7 +27,8 @@ export interface Mission {
   project_id: string | null
   title: string
   assigned_to: string
-  status: 'queued' | 'running' | 'completed' | 'failed' | 'stale'
+  status: 'queued' | 'running' | 'review' | 'completed' | 'deployed' | 'failed' | 'stale'
+  priority: number
   started_at: string | null
   completed_at: string | null
   result: Record<string, unknown> | null
@@ -110,13 +111,15 @@ export interface RpgStats {
 export interface Project {
   id: string
   title: string
-  status: 'inprogress' | 'todo' | 'done' | 'someday' | 'onhold'
+  status: 'inprogress' | 'queue' | 'done' | 'onhold'
   priority: number
   goal: string | null
   type: string | null
   owner: string | null
   notes: string | null
   next_action: string | null
+  target_date?: string | null
+  council_session_id?: string | null
   created_at: string
   updated_at: string
 }
@@ -172,6 +175,30 @@ export interface DynastyStats {
   activeTasks: number
 }
 
+export interface CouncilReview {
+  name: string
+  verdict: 'approve' | 'concern' | 'reject' | 'abstain'
+  voice_text?: string
+  text?: string
+  role?: string
+}
+
+export interface CouncilSession {
+  id: string
+  topic: string
+  council_type: string
+  reviews: CouncilReview[]
+  synthesis: string | null
+  recommendation: string | null
+  dissent: string | null
+  plan_html: string | null
+  source: string
+  metadata: Record<string, unknown>
+  status: 'active' | 'archived'
+  project_id?: string | null
+  created_at: string
+}
+
 // Agent role cards (Vox-style 6-layer structure)
 
 export interface RoleCard {
@@ -182,6 +209,7 @@ export interface RoleCard {
   domain: string
   emoji: string
   color: string
+  avatarPath?: string
   description: string
   abilities: string[]
   inputs?: string[]           // what info the agent needs to start
@@ -190,4 +218,28 @@ export interface RoleCard {
   hardBans?: string[]         // things agent must NEVER do
   escalation?: string         // when to escalate to Sensei
   metrics?: string[]          // how performance is measured
+}
+
+export interface DaimyoStats {
+  agent_id: string
+  level: number
+  spd: number
+  tru: number
+  wis: number
+  cre: number
+  domain_stat_1: number
+  domain_stat_2: number
+  domain_stat_1_name: string
+  domain_stat_2_name: string
+  rpg_class: string
+}
+
+export interface ActiveAgent {
+  id: string
+  agent_type: string
+  task_summary: string | null
+  progress: number
+  mission_id: string | null
+  started_at: string
+  status: 'running' | 'idle' | 'completed' | 'failed'
 }

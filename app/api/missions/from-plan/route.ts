@@ -1,0 +1,99 @@
+import { NextRequest } from 'next/server'
+import { createServiceClient } from '@/lib/supabase-server'
+
+/**
+ * POST /api/missions/from-plan
+ * Creates a mission and tasks from a Claude Code plan.
+ *
+ * Body: {
+ *   title: string,
+ *   description: string,
+ *   projectId?: string,  // defaults to "dynasty"
+ *   tasks: Array<{ subject: string, description: string }>,
+ *   source: "claude-code"
+ * }
+ */
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json()
+    const { title, description, projectId = 'dynasty', tasks = [], source } = body as {
+      title: string
+      description: string
+      projectId?: string
+      tasks?: Array<{ subject: string; description: string }>
+      source?: string
+    }
+
+    if (!title) {
+      return Response.json({ error: 'title is required' }, { status: 400 })
+    }
+
+    const sb = createServiceClient()
+    if (!sb) {
+      return Response.json({ error: 'Service unavailable' }, { status: 503 })
+    }
+
+    // Create the mission
+    const { data: mission, error: missionError } = await sb
+      .from('missions')
+      .insert({
+        title,
+        project_id: projectId,
+        assigned_to: 'cc', // Claude Code
+        status: 'queued',
+        priority: 2,
+        result: { description, source: source ?? 'claude-code' },
+      })
+      .select()
+      .single()
+
+    if (missionError) {
+      console.error('[from-plan] Mission insert error:', missionError)
+      return Response.json({ error: missionError.message }, { status: 500 })
+    }
+
+    // Create tasks for the mission
+    const taskIds: number[] = []
+    if (tasks.length > 0) {
+      const taskInserts = tasks.map((t, idx) => ({
+        mission_id: mission.id,
+        project_id: projectId,
+        title: t.subject,
+        description: t.description,
+        status: 'todo',
+        priority: idx + 1,
+        kind: 'code' as const,
+        owner: 'cc',
+      }))
+
+      const { data: insertedTasks, error: tasksError } = await sb
+        .from('tasks')
+        .insert(taskInserts)
+        .select('id')
+
+      if (tasksError) {
+        console.error('[from-plan] Tasks insert error:', tasksError)
+        // Mission was created, tasks failed - partial success
+      } else if (insertedTasks) {
+        taskIds.push(...insertedTasks.map(t => t.id))
+      }
+    }
+
+    // Create event for the mission creation
+    await sb.from('events').insert({
+      type: 'mission_started',
+      source_id: mission.id,
+      agent: 'cc',
+      message: `Mission created from plan: ${title}`,
+      metadata: { source: source ?? 'claude-code', taskCount: tasks.length },
+    })
+
+    return Response.json({
+      missionId: mission.id,
+      taskIds,
+    })
+  } catch (err) {
+    console.error('[from-plan] Error:', err)
+    return Response.json({ error: 'Failed to create mission from plan' }, { status: 500 })
+  }
+}

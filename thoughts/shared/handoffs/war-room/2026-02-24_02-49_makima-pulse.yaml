@@ -1,0 +1,63 @@
+---
+session: war-room
+date: 2026-02-24
+status: partial
+outcome: PARTIAL_PLUS
+---
+
+goal: Makima Pulse — engine awareness for Shoin Chat (3 sprints, 8 tasks)
+now: Write remaining Sprint 2 files (agents designed but couldn't write due to perms), then Sprint 3
+
+test: npm run build
+
+done_this_session:
+  - task: P1-T1 — Built pulse context assembler (188 lines, 8 parallel Supabase queries, timeAgo helper, ~800 token output)
+    files: [lib/pulse-context.ts]
+  - task: P1-T2 — Injected pulse context into chat route for Makima threads (import, buildPulseContext before stream, prepend [PULSE CONTEXT] tags to OpenClaw + both fallbacks)
+    files: [app/api/chat/route.ts]
+  - task: P1-T3 — Added green pulse indicator dot + "Pulse active" text in chat header for Makima threads
+    files: [app/chat/page.tsx]
+  - task: Build verified — npm run build passes clean after Sprint 1
+    files: []
+
+blockers:
+  - Session not in bypass permissions — Sprint 2 agents could design code but couldn't write files. New session needs bypassPermissions.
+
+questions: []
+
+decisions:
+  - pulse_prepend_format: "[PULSE CONTEXT]\n...\n[/PULSE CONTEXT]\n\nUser: {content}" wraps context before message to both OpenClaw and claude --print fallback
+  - pulse_fail_graceful: buildPulseContext errors are caught and logged, message sent without context
+  - pulse_timing_logged: Console log shows how long pulse assembly takes (target <500ms)
+
+findings:
+  - sprint1_clean_build: All Sprint 1 code compiles and builds clean
+  - agents_need_bypass: kraken agents with bypassPermissions mode still got permission denied on Write/Edit in this session — likely session-level permission override needed
+  - p2t1_full_code_ready: Agent designed complete lib/pulse-actions.ts (parseActions, stripActionBlocks, executeActions) — full code in agent transcript at /private/tmp/claude-501/-Users-michaelenriquez-Code-war-room/tasks/a3edc424c286d97dd.output
+  - p2t3_edits_designed: Agent designed edits for pulse-context.ts (Available Actions section) and agent-identity.ts (Makima Pulse Integration append) — details in agent transcript at /private/tmp/claude-501/-Users-michaelenriquez-Code-war-room/tasks/a504dead89233f536.output
+
+worked:
+  - Parallel agent spawning for independent tasks (T1+T3 in parallel, T2 after T1)
+  - Sprint 1 build-first verification before moving to Sprint 2
+
+failed:
+  - Sprint 2 agents hit permission denied on file writes despite bypassPermissions mode — session needs restart with proper perms
+
+next:
+  - "WRITE lib/pulse-actions.ts — full code designed by P2-T1 agent (parseActions, stripActionBlocks, executeActions with 5 action types against Supabase)"
+  - "EDIT lib/pulse-context.ts — add Available Actions section (lines.push calls documenting [ACTION] block format, valid types, when to use)"
+  - "EDIT lib/agent-identity.ts — append Pulse Integration paragraph for agentId==='makima' in getAgentSystemPrompt()"
+  - "P2-T2: Wire action execution into chat route — after collecting full response, call parseActions(), executeActions(), emit action_result SSE events, strip ACTION blocks from displayed response"
+  - "Sprint 3 P3-T1: Create lib/pulse-alerts.ts — generateAlerts() checking failed missions 24h, approaching target_date 3d, stale tasks 7d, P0 projects with no active tasks, 24h+ inactivity"
+  - "Sprint 3 P3-T2: Auto-inject alerts on thread open — first message or 4h+ gap triggers alert generation, prepend to pulse context"
+  - "Final build verification and commit"
+
+files:
+  created:
+    - lib/pulse-context.ts
+    - .specs/2026-02-23-makima-pulse.md
+    - tests/unit/makima-pulse-indicator.test.ts
+    - tests/unit/chat-route-pulse.test.ts
+  modified:
+    - app/api/chat/route.ts
+    - app/chat/page.tsx

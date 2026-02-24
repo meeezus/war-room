@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import type { RealtimeChannel } from "@supabase/supabase-js"
-import type { Event, AgentStatus, Mission, Step, Project, Task } from "@/lib/types"
+import type { Event, AgentStatus, Mission, Step, Project, Task, ActiveAgent } from "@/lib/types"
 import { triggerEventToast, triggerAgentOfflineToast } from "@/lib/toast-events"
 
 const REALTIME_ENABLED = process.env.NEXT_PUBLIC_ENABLE_REALTIME !== "false"
@@ -289,6 +289,65 @@ export function useRealtimeProjects(initialProjects: Project[]): Project[] {
 // ---------------------------------------------------------------------------
 // useRealtimeTasks
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// useRealtimeActiveAgents
+// ---------------------------------------------------------------------------
+
+export function useRealtimeActiveAgents(initialAgents: ActiveAgent[]): ActiveAgent[] {
+  const [agents, setAgents] = useState(initialAgents)
+
+  useEffect(() => {
+    setAgents(initialAgents)
+  }, [initialAgents])
+
+  useEffect(() => {
+    if (!REALTIME_ENABLED || !supabase) return
+
+    const client = supabase
+    const channel: RealtimeChannel = client
+      .channel("active-agents-realtime")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "active_agents" },
+        (payload) => {
+          const newAgent = payload.new as ActiveAgent
+          if (newAgent.status === "running" || newAgent.status === "idle") {
+            setAgents((prev) => [newAgent, ...prev])
+          }
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "active_agents" },
+        (payload) => {
+          const updated = payload.new as ActiveAgent
+          if (updated.status === "completed" || updated.status === "failed") {
+            setAgents((prev) => prev.filter((a) => a.id !== updated.id))
+          } else {
+            setAgents((prev) =>
+              prev.map((a) => (a.id === updated.id ? updated : a)),
+            )
+          }
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "active_agents" },
+        (payload) => {
+          const deleted = payload.old as { id: string }
+          setAgents((prev) => prev.filter((a) => a.id !== deleted.id))
+        },
+      )
+      .subscribe()
+
+    return () => {
+      client.removeChannel(channel)
+    }
+  }, [])
+
+  return agents
+}
 
 export function useRealtimeTasks(
   initialTasks: Task[],

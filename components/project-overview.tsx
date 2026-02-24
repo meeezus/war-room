@@ -6,8 +6,7 @@ import { ProjectCard } from "./project-card";
 import { PROJECT_STATUS_COLORS } from "@/lib/data";
 
 const KANBAN_COLUMNS = [
-  { key: "someday", label: "Queue", accent: PROJECT_STATUS_COLORS.someday },
-  { key: "todo", label: "Todo", accent: PROJECT_STATUS_COLORS.todo },
+  { key: "queue", label: "Queue", accent: PROJECT_STATUS_COLORS.queue },
   { key: "inprogress", label: "In Progress", accent: PROJECT_STATUS_COLORS.inprogress },
   { key: "onhold", label: "On Hold", accent: PROJECT_STATUS_COLORS.onhold },
   { key: "done", label: "Done", accent: PROJECT_STATUS_COLORS.done },
@@ -15,9 +14,10 @@ const KANBAN_COLUMNS = [
 
 interface ProjectOverviewProps {
   projects: ProjectWithMetrics[];
+  onUpdate?: () => void;
 }
 
-export function ProjectOverview({ projects }: ProjectOverviewProps) {
+export function ProjectOverview({ projects, onUpdate }: ProjectOverviewProps) {
   const [showAllDone, setShowAllDone] = useState(false);
 
   return (
@@ -50,7 +50,7 @@ export function ProjectOverview({ projects }: ProjectOverviewProps) {
             </div>
             <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
               {cards.map((project) => (
-                <ProjectCard key={project.id} project={project} />
+                <ProjectCard key={project.id} project={project} onUpdate={onUpdate} />
               ))}
               {col.key === "done" && showAllDone && cards.length > 0 && (
                 <button

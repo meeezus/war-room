@@ -15,6 +15,13 @@ const STATUS_COLORS: Record<string, string> = {
   stale: "#eab308",
 };
 
+const PRIORITY_COLORS: Record<number, { bg: string; text: string }> = {
+  1: { bg: "bg-red-500/15", text: "text-red-400" },
+  2: { bg: "bg-orange-500/15", text: "text-orange-400" },
+  3: { bg: "bg-yellow-500/15", text: "text-yellow-400" },
+  4: { bg: "bg-emerald-500/15", text: "text-emerald-400" },
+};
+
 export interface MissionWithSteps extends Mission {
   stepCounts: { total: number; completed: number };
   description: string | null;
@@ -91,8 +98,19 @@ export function MissionKanbanCard({ mission }: { mission: MissionWithSteps }) {
           )}
         </div>
 
-        {/* Agent + step progress */}
+        {/* Priority + Agent + step progress */}
         <div className="mt-2 flex items-center gap-2">
+          {(() => {
+            const p = mission.priority ?? 3;
+            const style = PRIORITY_COLORS[p];
+            return style ? (
+              <span
+                className={`rounded-full px-1.5 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-medium ${style.bg} ${style.text}`}
+              >
+                P{p}
+              </span>
+            ) : null;
+          })()}
           <Link
             href={`/agents/${mission.assigned_to}`}
             onClick={(e) => e.stopPropagation()}

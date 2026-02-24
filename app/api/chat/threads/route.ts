@@ -1,0 +1,26 @@
+import { NextRequest } from 'next/server'
+import { getThreads, createThread, cleanupArchivedThreads } from '@/lib/chat'
+
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url)
+    const status = (searchParams.get('status') as 'active' | 'archived') ?? 'active'
+    await cleanupArchivedThreads()
+    const threads = await getThreads({ status })
+    return Response.json({ threads })
+  } catch (err) {
+    console.error('[threads/route] Error:', err)
+    return Response.json({ error: 'Failed to fetch threads' }, { status: 500 })
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const { title, agentId } = await req.json()
+    const thread = await createThread(title || 'New Thread', agentId)
+    return Response.json({ thread })
+  } catch (err) {
+    console.error('[threads/route] Error:', err)
+    return Response.json({ error: 'Failed to create thread' }, { status: 500 })
+  }
+}

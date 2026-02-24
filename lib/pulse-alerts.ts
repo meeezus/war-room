@@ -1,0 +1,137 @@
+import { createServiceClient } from '@/lib/supabase-server'
+import type { Mission, Task, Project } from '@/lib/types'
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+export type PulseAlert = {
+  severity: 'critical' | 'warning' | 'info'
+  message: string
+}
+
+// ---------------------------------------------------------------------------
+// generateAlerts — check engine state for things that need attention
+// ---------------------------------------------------------------------------
+
+export async function generateAlerts(): Promise<PulseAlert[]> {
+  const sb = createServiceClient()
+  if (!sb) return []
+
+  try {
+    const now = new Date()
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString()
+    const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString()
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
+
+    const [failedMissionsRes, failedTasksRes, staleTasksRes, projectsRes, recentActivityRes] = await Promise.all([
+      // Failed missions in last 24h
+      sb.from('missions')
+        .select('id, title, assigned_to')
+        .eq('status', 'failed')
+        .gte('created_at', oneDayAgo)
+        .limit(5),
+      // Failed tasks in last 24h
+      sb.from('tasks')
+        .select('id, title, project_id')
+        .eq('status', 'failed')
+        .gte('updated_at', oneDayAgo)
+        .limit(5),
+      // Stale tasks (7+ days no activity, not done/someday)
+      sb.from('tasks')
+        .select('id, title, project_id')
+        .in('status', ['in_progress', 'assigned', 'todo'])
+        .lte('updated_at', sevenDaysAgo)
+        .limit(10),
+      // All active projects (check for approaching deadlines, P0 stalls)
+      sb.from('projects')
+        .select('*')
+        .in('status', ['inprogress', 'queue']),
+      // Any activity in last 24h (to detect silence)
+      sb.from('events')
+        .select('id', { count: 'exact', head: true })
+        .neq('type', 'heartbeat')
+        .gte('created_at', oneDayAgo),
+    ])
+
+    const failedMissions = (failedMissionsRes.data ?? []) as Pick<Mission, 'id' | 'title' | 'assigned_to'>[]
+    const failedTasks = (failedTasksRes.data ?? []) as Pick<Task, 'id' | 'title' | 'project_id'>[]
+    const staleTasks = (staleTasksRes.data ?? []) as Pick<Task, 'id' | 'title' | 'project_id'>[]
+    const projects = (projectsRes.data ?? []) as Project[]
+    const recentActivityCount = recentActivityRes.count ?? 0
+
+    const alerts: PulseAlert[] = []
+
+    // Failed missions — critical
+    if (failedMissions.length > 0) {
+      const names = failedMissions.map(m => `"${m.title}"`).join(', ')
+      alerts.push({
+        severity: 'critical',
+        message: `${failedMissions.length} mission${failedMissions.length > 1 ? 's' : ''} failed in the last 24h: ${names}`,
+      })
+    }
+
+    // Failed tasks — critical
+    if (failedTasks.length > 0) {
+      alerts.push({
+        severity: 'critical',
+        message: `${failedTasks.length} task${failedTasks.length > 1 ? 's' : ''} failed in the last 24h`,
+      })
+    }
+
+    // Approaching deadlines — warning
+    for (const project of projects) {
+      if (project.target_date && project.target_date <= threeDaysFromNow && project.target_date >= now.toISOString()) {
+        const daysLeft = Math.ceil((new Date(project.target_date).getTime() - now.getTime()) / (24 * 60 * 60 * 1000))
+        alerts.push({
+          severity: 'warning',
+          message: `"${project.title}" deadline in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}`,
+        })
+      }
+    }
+
+    // P0 projects with no active tasks — warning
+    if (projects.length > 0) {
+      // Fetch active task counts per project
+      const p0Projects = projects.filter(p => p.priority === 0 && p.status === 'inprogress')
+      if (p0Projects.length > 0) {
+        const activeTasksRes = await sb
+          .from('tasks')
+          .select('project_id')
+          .in('project_id', p0Projects.map(p => p.id))
+          .in('status', ['in_progress', 'assigned', 'todo', 'review'])
+
+        const activeByProject = new Set((activeTasksRes.data ?? []).map((t: { project_id: string }) => t.project_id))
+        for (const p of p0Projects) {
+          if (!activeByProject.has(p.id)) {
+            alerts.push({
+              severity: 'warning',
+              message: `P0 project "${p.title}" has no active tasks — stalled?`,
+            })
+          }
+        }
+      }
+    }
+
+    // Stale tasks — warning
+    if (staleTasks.length > 0) {
+      alerts.push({
+        severity: 'warning',
+        message: `${staleTasks.length} task${staleTasks.length > 1 ? 's' : ''} with no activity for 7+ days`,
+      })
+    }
+
+    // Complete silence — info
+    if (recentActivityCount === 0) {
+      alerts.push({
+        severity: 'info',
+        message: 'No engine activity in the last 24 hours — everything quiet',
+      })
+    }
+
+    return alerts
+  } catch (err) {
+    console.error('[pulse-alerts] generateAlerts error:', err)
+    return []
+  }
+}

@@ -1,0 +1,81 @@
+---
+session: war-room
+date: 2026-02-23
+status: complete
+outcome: PARTIAL_MINUS
+---
+
+goal: Wire real Makima (OpenClaw WS) into Shoin Chat + bridge chat to council to mission
+now: Test full flow — Makima thread → Send to Council → Council page → Create Mission
+
+test: npm run build
+
+done_this_session:
+  - task: Created OpenClaw WebSocket client (JSON-RPC, token auth, ReadableStream)
+    files: [lib/openclaw-client.ts]
+  - task: Wired Makima threads to OpenClaw in chat route, all others still use claude --print
+    files: [app/api/chat/route.ts]
+  - task: Fixed session ID collision bug — Makima threads skip Claude CLI session management, fallbacks use fresh UUIDs
+    files: [app/api/chat/route.ts]
+  - task: Created POST /api/chat/council — summarizes thread, calls Claude for 5-voice council review, persists to council_sessions
+    files: [app/api/chat/council/route.ts]
+  - task: Added purple "Send to Council" button in chat actions with loading state
+    files: [components/chat/chat-actions.tsx]
+  - task: Made council links clickable in system messages (purple, navigates to /council/[id])
+    files: [components/chat/message-bubble.tsx, app/chat/page.tsx]
+  - task: Created POST/GET /api/missions endpoint (matched actual DB schema, uses proposal_id not metadata)
+    files: [app/api/missions/route.ts]
+  - task: Architecture visual HTML with before/after toggle showing 3 surfaces
+    files: [~/.agent/diagrams/makima-architecture.html]
+  - task: Verified double-post bug fix is sound (4 dedup guards all working)
+    files: [app/chat/page.tsx]
+
+blockers: []
+
+questions:
+  - Does OpenClaw gateway need any config changes to accept Shoin Chat as a client?
+  - Should council prompt use OpenClaw (real Makima) instead of claude --print for voice generation?
+
+decisions:
+  - openclaw_per_request: New WS connection per request (simple, no stale state). Optimize to pool later if needed.
+  - session_skip_makima: Makima threads skip all Claude CLI session management. OpenClaw manages its own sessions.
+  - fallback_fresh_uuid: Fallback from OpenClaw always uses fresh randomUUID(), never reuses thread session IDs.
+  - missions_schema_match: Agent correctly dropped priority/metadata columns (not in DB), added proposal_id instead.
+  - council_type_autodetect: POST /api/chat/council auto-detects council type from keyword scoring (security/technical/business/full).
+
+findings:
+  - gateway_protocol: OpenClaw uses JSON-RPC over WS. Connect with method "connect" (protocol v3, token auth), send with "chat.send" (sessionKey "main", idempotencyKey), receive "chat" events with state delta/done/error.
+  - gateway_token: 5734cf2c1b6111a538e0dccde938cb1157b8956eefd3c396 (from ~/.openclaw/clawdbot.json → gateway.auth)
+  - session_collision_bug: First message to Makima created a Claude CLI session ID but never used it. Second message found it, set isResume=true. If OpenClaw failed, fallback tried resume with unused session → "Session ID already in use" error.
+  - branch_base: Branched from main but chat UI lives on feature/agent-aware-chat. Had to rebase onto agent-aware-chat then reapply agent-created files.
+
+worked:
+  - Parallel agent spawning (3 groups, 7 tasks total, mix of background agents)
+  - Backing up agent files before git rebase, then restoring after
+  - Reading OpenClaw gateway source code (~/Code/clawdbot/src/gateway/) for exact protocol details
+
+failed:
+  - Branching from main instead of feature/agent-aware-chat — caused DU conflict on app/chat/page.tsx
+  - Initial session management applied to all threads including Makima — caused stale session ID collision on second message
+
+next:
+  - Test full end-to-end flow with OpenClaw gateway running
+  - Makima synthesis UX refinement — "Do you accept this mission?" vibe instead of plain summary block
+  - Consider using OpenClaw for council voice generation instead of claude --print
+  - Council page layout polish per Sensei feedback (HTML plan → voice cards → Makima decision → accept/reject)
+  - Commit and push feature/makima-front-door branch
+
+files:
+  created:
+    - lib/openclaw-client.ts
+    - app/api/chat/council/route.ts
+    - app/api/missions/route.ts
+    - .specs/2026-02-23-makima-front-door.md
+    - ~/.agent/diagrams/makima-architecture.html
+  modified:
+    - app/api/chat/route.ts
+    - app/chat/page.tsx
+    - components/chat/chat-actions.tsx
+    - components/chat/message-bubble.tsx
+    - package.json (added ws, @types/ws)
+    - .env.local (added OPENCLAW_GATEWAY_TOKEN, OPENCLAW_GATEWAY_PORT)

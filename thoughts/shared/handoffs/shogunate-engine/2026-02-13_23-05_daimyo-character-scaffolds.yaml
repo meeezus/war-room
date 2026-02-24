@@ -1,0 +1,94 @@
+---
+session: shogunate-engine
+date: 2026-02-13
+status: completed
+outcome: SHIPPED
+---
+
+goal: Design character scaffolds for 9 Daimyo agents — Pixar flaw framework + anime traits + tweet research
+now: COMPLETED — All 15 tasks shipped via 12-agent swarm. PR #2 merged to main (c2387eb).
+
+test: cd ~/Code/shogunate && uv run python -m pytest tests/ --tb=short -q
+
+done_this_session:
+  - task: Locked 9-agent roster through iterative character-to-domain mapping
+    files: []
+  - task: Researched Atlas Forge Pixar character framework (flaw as feature, want vs need, specificity)
+    files: []
+  - task: Read and synthesized 9 bookmarked tweets on multi-agent architecture
+    files: []
+  - task: Wrote full implementation plan — 15 tasks, 3 sprints, character details for all 9 agents
+    files: [~/.claude/plans/cheeky-squishing-barto.md]
+  - task: Added tweet-derived insights to SKILL template (voice micro-bans, definition of done, escalation triggers)
+    files: [~/.claude/plans/cheeky-squishing-barto.md]
+
+blockers: []
+
+questions:
+  - User confirmed samurai workers are preserved — plan is ready for approval
+  - Per-agent MEMORY.md files deferred (scope question was rejected, keep focused on character scaffolds)
+
+decisions:
+  - roster_locked: "9 agents: Light (Strategy), L (Legal), Bulma (Product), Ed (Engineering), Major (Ops), Nanami (Finance), AllMight (Growth), Makima (Influence), Armin (Analytics). Toji to bench."
+  - single_skill_file: "Combined SOUL+PRINCIPLES+SKILL into one expanded SKILL file per agent — avoids executor changes, executor only loads one file"
+  - sensei_md: "Shared human context file appended to every agent's system prompt by executor — condensed from ~/clawd/memory/sensei-profile.md"
+  - light_domain_change: "Light moves from Product → Strategy. Bulma takes Product."
+  - l_over_armin_for_legal: "L (Death Note) is obsessive detective, perfect for Legal. Armin moves to Analytics where his pattern recognition + honest uncertainty fits better."
+  - allmight_over_tengen: "All Might for Growth/Sales — deeper flaw (declining legend hiding weakness), better archetype than Tengen."
+  - voice_microbans: "From Vox tweet research — per-agent 'Never say X' lines prevent generic LLM hedging"
+  - definition_of_done: "From Vox role cards — domain-specific completion criteria added to SKILL template"
+  - escalation_triggers: "From Vox role cards — when to punt instead of guessing"
+  - deferred_concepts: "deriveVoiceModifiers (needs 50+ tasks/agent), affinity matrix thresholds, WORKING.md, heartbeat system, thread subscriptions — all premature"
+
+findings:
+  - ed_is_cowboy_bebop: "Edward Wong from Cowboy Bebop, NOT Edward Elric from FMA. Chaos hacker, playful, disappears mid-sprint."
+  - flaw_checking_matrix: "Each agent's flaw is naturally checked by another agent's strength (e.g., Light's god complex ← L's investigation, Ed's chaos ← Major's process)"
+  - pip_already_has_soul: "Pip has SOUL.md + PRINCIPLES.md + AGENTS.md + IDENTITY.md — full Atlas-style hierarchy. No changes needed."
+  - engine_manual_outdated: "Still references 5 agents, old domains, steps table, old SKILL structure. Added S2-T2 to update it."
+  - saboo_corrective_prompting: "Agents improve through feedback stored in memory, not upfront perfection. Start rough, iterate. Our memory injection already does this."
+  - roemmele_team_of_rivals: "Specialized roles with opposing incentives produce emergent robustness — validates our flaw-checking matrix"
+
+worked:
+  - bird skill for reading tweets (9 individual URLs)
+  - Iterative roster design through conversation (5 → 9 agents over ~12 messages)
+  - Checking existing Pip files to understand what Atlas-style setup looks like
+
+failed:
+  - bird can't read bookmark folder URLs (x.com/i/bookmarks/...) — only individual tweet URLs
+  - AskUserQuestion about scope was rejected — user wanted tweet reading first
+
+next:
+  - "Approve plan: open ~/.claude/plans/cheeky-squishing-barto.md in plan mode, call ExitPlanMode"
+  - "Sprint 0 (3 parallel agents): Update config.py DAIMYO_REGISTRY (9 agents), update executor.py _load_skill_md() for SENSEI.md, create skills/SENSEI.md"
+  - "Sprint 1 (9 parallel agents): Rewrite Ed/Light/Major/Makima SKILL files + create L/Bulma/AllMight/Nanami/Armin SKILL files"
+  - "Sprint 2 (3 parallel agents): Archive Toji to bench, update Engine Manual (~/Shugyo/Shogunate/Engine-Manual.md), run tests + verify"
+  - "CRITICAL agent instruction: Preserve existing domain expertise, samurai workers, and hard bans. Replace everything else with character-first template."
+
+files:
+  created: []
+  modified:
+    - ~/.claude/plans/cheeky-squishing-barto.md (full plan with 15 tasks, character details, tweet insights)
+
+plan_file: ~/.claude/plans/cheeky-squishing-barto.md
+plan_status: completed_and_shipped
+
+character_details_location: "All 9 agent character details (flaw, want/need, voice, principles) are in the plan file under '## Character Details per Agent'"
+
+skill_template_sections:
+  - "Character (The Flaw, Want vs Need, Voice with micro-bans, Team Tension)"
+  - "Principles (4-6 domain-specific decision heuristics)"
+  - "Your Human (shared SENSEI.md content)"
+  - "Domain Expertise (5-8 bullets)"
+  - "Samurai Workers (table of 4 domain-specific worker classes)"
+  - "Response Patterns (2-3 named protocols)"
+  - "Definition of Done (domain-specific completion criteria)"
+  - "Escalation (when to punt)"
+  - "Hard Bans (6 absolute constraints)"
+
+engine_files_to_modify:
+  - ~/Code/shogunate/engine/config.py (DAIMYO_REGISTRY — add 4 new agents, update Light domain, bench Toji)
+  - ~/Code/shogunate/engine/executor.py (_load_skill_md — append SENSEI.md)
+  - ~/Code/shogunate/skills/*.md (all 9 SKILL files)
+  - ~/Code/shogunate/skills/SENSEI.md (create — shared human context)
+  - ~/Code/shogunate/skills/bench/Toji-SKILL.md (archive)
+  - ~/Code/shogunate/docs/engine-manual.md (major update — 9 agents, tasks not steps, new SKILL structure)

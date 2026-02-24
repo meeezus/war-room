@@ -9,9 +9,8 @@ export const STATUS_COLORS: Record<string, string> = {
 // Project status colors
 export const PROJECT_STATUS_COLORS: Record<string, string> = {
   inprogress: "#3b82f6",
-  todo: "#6b7280",
+  queue: "#6b7280",
   done: "#10b981",
-  someday: "#a855f7",
   onhold: "#eab308",
 };
 

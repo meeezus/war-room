@@ -1,0 +1,27 @@
+session: war-room-tauri
+date: 2026-02-23
+status: pending
+outcome: null
+
+goal: Fix Tauri desktop app showing blank white page
+now: Tauri WebView renders empty <body></body> despite Next.js running on port 3000
+
+context:
+  - Fixed devUrl port mismatch (was 3001, now 3000)
+  - lib.rs spawns `npm run dev` and waits for port 3000 — that works
+  - WebView still shows blank page with empty body
+  - frontendDist set to "../.next" which is NOT a static export
+  - Next.js requires a Node server — .next dir isn't servable as static files
+  - Browser at localhost:3000 works perfectly
+
+investigation_needed:
+  - Is Tauri running in dev mode (using devUrl) or build mode (using frontendDist)?
+  - The binary at target/debug/ may use frontendDist instead of devUrl
+  - May need `cargo tauri dev` instead of running the binary directly
+  - Or switch to `next export` / static output mode
+  - Or configure Tauri to always proxy to the dev server
+
+files:
+  - src-tauri/tauri.conf.json
+  - src-tauri/src/lib.rs
+  - src-tauri/src/main.rs

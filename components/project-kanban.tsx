@@ -11,7 +11,9 @@ const REALTIME_ENABLED = process.env.NEXT_PUBLIC_ENABLE_REALTIME !== "false";
 const KANBAN_COLUMNS = [
   { key: "queued", label: "Queued", status: "queued", accent: "#6b7280" },
   { key: "running", label: "Running", status: "running", accent: "#3b82f6" },
+  { key: "review", label: "Review", status: "review", accent: "#f59e0b" },
   { key: "completed", label: "Completed", status: "completed", accent: "#10b981" },
+  { key: "deployed", label: "Deployed", status: "deployed", accent: "#a855f7" },
   { key: "failed", label: "Failed", status: "failed", accent: "#ef4444" },
 ] as const;
 
@@ -69,7 +71,9 @@ export function ProjectKanban({ missions: initialMissions, projectId }: ProjectK
   return (
     <div className="flex h-full gap-3 overflow-x-auto">
       {KANBAN_COLUMNS.map((col) => {
-        const allCards = missions.filter((m) => m.status === col.status);
+        const allCards = missions
+          .filter((m) => m.status === col.status)
+          .sort((a, b) => (a.priority ?? 3) - (b.priority ?? 3));
         // For completed column: show last 7 days by default
         const cards =
           col.status === "completed" && !showAllCompleted
@@ -78,8 +82,8 @@ export function ProjectKanban({ missions: initialMissions, projectId }: ProjectK
         const hiddenCompleted =
           col.status === "completed" ? allCards.length - cards.length : 0;
 
-        // Skip failed column when empty
-        if (col.status === "failed" && allCards.length === 0) return null;
+        // Skip terminal/rare columns when empty
+        if ((col.status === "failed" || col.status === "review" || col.status === "deployed") && allCards.length === 0) return null;
 
         return (
           <div

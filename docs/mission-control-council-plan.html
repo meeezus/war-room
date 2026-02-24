@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>War Room Mission Control — Council Plan</title>
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --panel: #121a23;
+      --panel-2: #192433;
+      --text: #e8eef7;
+      --muted: #9fb0c7;
+      --accent: #7dd3fc;
+      --good: #86efac;
+      --warn: #fcd34d;
+      --border: #253447;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: radial-gradient(1200px 700px at 20% -10%, #1a2a40 0%, var(--bg) 55%);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 28px 20px 60px; }
+    .hero {
+      background: linear-gradient(140deg, #172233 0%, #0f1722 70%);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.25);
+    }
+    .hero h1 { margin: 0 0 8px; font-size: 34px; }
+    .hero p { margin: 0; color: var(--muted); }
+    .meta { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .chip {
+      border: 1px solid var(--border);
+      background: #0f1724;
+      border-radius: 999px;
+      padding: 6px 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    h2 { margin: 28px 0 12px; font-size: 24px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+    }
+    .card {
+      background: linear-gradient(160deg, var(--panel), var(--panel-2));
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      min-height: 220px;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::after {
+      content: "";
+      position: absolute;
+      width: 180px;
+      height: 180px;
+      right: -80px;
+      top: -80px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(125,211,252,.18), rgba(125,211,252,0));
+    }
+    .head { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+    .avatar {
+      width: 56px; height: 56px; border-radius: 12px; object-fit: cover;
+      border: 1px solid #38516d; background: #0b1420;
+    }
+    .name { font-weight: 700; }
+    .source { font-size: 12px; color: var(--muted); }
+    .label {
+      display: inline-block;
+      border-radius: 8px;
+      padding: 3px 8px;
+      font-size: 12px;
+      border: 1px solid #35526f;
+      color: #bde7ff;
+      margin-bottom: 8px;
+      background: #122338;
+    }
+    ul { margin: 8px 0 0 18px; padding: 0; }
+    li { margin: 6px 0; color: #d6e3f6; }
+    .section {
+      background: #0e1520;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      margin-top: 12px;
+    }
+    .steps { counter-reset: n; }
+    .steps li { list-style: none; margin-left: 0; position: relative; padding-left: 34px; }
+    .steps li::before {
+      counter-increment: n;
+      content: counter(n);
+      position: absolute; left: 0; top: 1px;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: #12324d; color: #bde7ff;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 12px; border: 1px solid #2d587a;
+    }
+    .kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+    .kpi .box {
+      border: 1px solid var(--border); border-radius: 12px; padding: 12px; background: #0f1825;
+    }
+    .kpi .box b { font-size: 20px; display: block; }
+    .good { color: var(--good); }
+    .warn { color: var(--warn); }
+    .muted { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <h1>War Room Mission Control v1 — Council Plan</h1>
+      <p>Plan-mode SOP version for Discord execution: no approval wait, but strict planning gates when build scope exceeds 3 meaningful changes or touches schema/infra/auth.</p>
+      <div class="meta">
+        <span class="chip">Mode: Plan → Execute</span>
+        <span class="chip">Scope: ~/Code/war-room</span>
+        <span class="chip">Companions: Sentry + PostHog + n8n</span>
+      </div>
+    </div>
+
+    <h2>Daimyo Council Cards</h2>
+    <div class="grid">
+      <div class="card">
+        <div class="head">
+          <img class="avatar" src="https://static.wikia.nocookie.net/cowboybebop/images/8/87/Edward.png" alt="Ed"/>
+          <div><div class="name">Ed — Engineering</div><div class="source">Cowboy Bebop</div></div>
+        </div>
+        <span class="label">Build Bias</span>
+        <ul>
+          <li>Ship Mission Control as composable modules (Queue, Pipeline, Alerts, Build Ops).</li>
+          <li>Instrument everything with PostHog events from day 1.</li>
+          <li>Use Sentry only for runtime failures + traces; not behavior analytics.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="head">
+          <img class="avatar" src="https://static.wikia.nocookie.net/deathnote/images/6/6f/Light_Yagami_anime.jpg" alt="Light"/>
+          <div><div class="name">Light — Strategy</div><div class="source">Death Note</div></div>
+        </div>
+        <span class="label">Market Bias</span>
+        <ul>
+          <li>Mission Control must optimize for cash speed: lead→proposal→invoice visibility.</li>
+          <li>One dashboard should answer: "What ships today that moves revenue?"</li>
+          <li>Use council surprises as a growth engine, not random output.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="head">
+          <img class="avatar" src="https://static.wikia.nocookie.net/deathnote/images/3/3d/L_Lawliet.png" alt="L"/>
+          <div><div class="name">L — Truth Check</div><div class="source">Death Note</div></div>
+        </div>
+        <span class="label">Risk Bias</span>
+        <ul>
+          <li>Keep plan-mode gate strict: >3 changes or schema/infra/auth always planned first.</li>
+          <li>No hidden automation side-effects; every action leaves an audit trail.</li>
+          <li>Email/Gmail remains constrained signal source only.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="head">
+          <img class="avatar" src="https://static.wikia.nocookie.net/jujutsu-kaisen/images/9/9f/Kento_Nanami_%28Anime_2%29.png" alt="Nanami"/>
+          <div><div class="name">Nanami — Finance</div><div class="source">Jujutsu Kaisen</div></div>
+        </div>
+        <span class="label">Cost Bias</span>
+        <ul>
+          <li>PostHog likely starts at $0 for current scale; set product billing caps immediately.</li>
+          <li>Kill vanity tracking. Keep only metrics that map to cashflow or conversion.</li>
+          <li>Budget thresholds: warn at 50%, block at 80% of monthly tool cap.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="head">
+          <img class="avatar" src="https://static.wikia.nocookie.net/ghostintheshell/images/3/32/MotokoKusanagi.jpeg" alt="Major"/>
+          <div><div class="name">Major — Operations</div><div class="source">Ghost in the Shell</div></div>
+        </div>
+        <span class="label">Systems Bias</span>
+        <ul>
+          <li>War Room = UI layer; n8n = workflow layer; PostHog/Sentry = observability layer.</li>
+          <li>Define runbooks for "build failed", "pipeline stale", and "urgent invoice" paths.</li>
+          <li>Require rollback + validation report in every ship note.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="head">
+          <img class="avatar" src="https://static.wikia.nocookie.net/shingekinokyojin/images/f/f4/Armin_Arlert_%28Anime%29_character_image.png" alt="Armin"/>
+          <div><div class="name">Armin — Research</div><div class="source">Attack on Titan</div></div>
+        </div>
+        <span class="label">Learning Bias</span>
+        <ul>
+          <li>Create weekly insight loop: top drop-off events, replay clips, and improvement bets.</li>
+          <li>Compare conversion before/after each major UI or automation change.</li>
+          <li>Keep an experiment ledger in docs for compounding learning.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="head">
+          <img class="avatar" src="https://static.wikia.nocookie.net/dragonball/images/3/39/Bulma_DBZ_Artwork.png" alt="Bulma"/>
+          <div><div class="name">Bulma — Architecture</div><div class="source">Dragon Ball</div></div>
+        </div>
+        <span class="label">Infra Bias</span>
+        <ul>
+          <li>Add an event contract file (`lib/analytics/events.ts`) before broad tracking.</li>
+          <li>Implement feature flags through PostHog for safer progressive rollout.</li>
+          <li>Keep integration seams clean so AJAC can split from Folio cleanly.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>Mission Control v1 Sprint Plan (Discord SOP Format)</h2>
+    <div class="section">
+      <ol class="steps">
+        <li><b>Problem:</b> current war-room has wiring but lacks one coherent mission layer that ties build actions to revenue outcomes.</li>
+        <li><b>Scope In:</b> command dashboard, event instrumentation baseline, sentry/posthog wiring, n8n trigger stubs. <b>Scope Out:</b> full CRM migration, broad Gmail automation.</li>
+        <li><b>Acceptance Criteria:</b>
+          <ul>
+            <li>One Mission Control page renders live status blocks.</li>
+            <li>PostHog captures 8 core events.</li>
+            <li>Sentry captures frontend error + trace sample.</li>
+            <li>n8n webhook receives one test event from war-room.</li>
+          </ul>
+        </li>
+        <li><b>Tasks:</b>
+          <ul>
+            <li>Create `/app/mission-control/page.tsx` with modules (Revenue, Pipeline, Build Queue, Alerts).</li>
+            <li>Add `lib/analytics/events.ts` and typed track helpers.</li>
+            <li>Wire PostHog provider + key events.</li>
+            <li>Wire Sentry SDK + basic tracing/release tags.</li>
+            <li>Create `n8n` webhook connector and test flow.</li>
+          </ul>
+        </li>
+        <li><b>Validation:</b> lint + typecheck + smoke route test + event fire verification + sentry test error.</li>
+        <li><b>Rollback:</b> isolate on feature flag (`mission_control_v1`) and keep branch rollback snapshot.</li>
+      </ol>
+    </div>
+
+    <h2>PostHog Cost vs Gain (with Sentry already live)</h2>
+    <div class="kpi">
+      <div class="box"><span class="muted">Expected Cost @ current scale</span><b class="good">$0–low</b><span class="muted">(free tier likely enough initially)</span></div>
+      <div class="box"><span class="muted">Primary Gain</span><b class="good">Faster conversion decisions</b><span class="muted">Replay + funnels + events</span></div>
+      <div class="box"><span class="muted">Sentry Role</span><b class="warn">Stability truth</b><span class="muted">Errors, traces, regressions</span></div>
+      <div class="box"><span class="muted">Combined Outcome</span><b class="good">Ship fast, break less</b><span class="muted">Behavior + reliability coverage</span></div>
+    </div>
+
+    <div class="section" style="margin-top:14px">
+      <b>Recommended instrumentation split:</b>
+      <ul>
+        <li><b>Sentry:</b> runtime errors, performance traces, release health.</li>
+        <li><b>PostHog:</b> user behavior, funnels, session replay, feature flags, experiments.</li>
+      </ul>
+      <p class="muted">This becomes the default planning artifact template for future plan-mode proposals in Discord.</p>
+    </div>
+  </div>
+</body>
+</html>

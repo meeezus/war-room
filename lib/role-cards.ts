@@ -9,6 +9,7 @@ export const ROLE_CARDS: Record<string, RoleCard> = {
     domain: 'coordination',
     emoji: '🤖',
     color: '#10b981', // emerald
+    avatarPath: '/avatars/pip.webp',
     description: 'Master tactician who orchestrates the Daimyo council and keeps all operations in sync.',
     abilities: ['Council Coordination', 'Mission Dispatch', 'Strategic Planning'],
     inputs: ['Mission status', 'Agent availability', 'Proposal queue'],
@@ -26,6 +27,7 @@ export const ROLE_CARDS: Record<string, RoleCard> = {
     domain: 'engineering',
     emoji: '⚔️',
     color: '#3b82f6', // blue
+    avatarPath: '/avatars/ed.webp',
     description: 'Elite code warrior who builds and fortifies the technical infrastructure.',
     abilities: ['Code Architecture', 'System Design', 'Debug Mastery'],
     inputs: ['Code context', 'Error logs', 'Requirements spec'],
@@ -43,6 +45,7 @@ export const ROLE_CARDS: Record<string, RoleCard> = {
     domain: 'product',
     emoji: '💡',
     color: '#f59e0b', // amber
+    avatarPath: '/avatars/light.webp',
     description: 'Product sage who sees the path forward and shapes the user experience.',
     abilities: ['Product Vision', 'User Research', 'Feature Design'],
     inputs: ['User feedback', 'Market data', 'Business goals'],
@@ -60,6 +63,7 @@ export const ROLE_CARDS: Record<string, RoleCard> = {
     domain: 'commerce',
     emoji: '💰',
     color: '#a855f7', // purple
+    avatarPath: '/avatars/toji.webp',
     description: 'Commerce master who navigates markets and drives revenue strategy.',
     abilities: ['Market Analysis', 'Revenue Strategy', 'Deal Making'],
     inputs: ['Lead data', 'Market research', 'Pricing guidelines'],
@@ -69,23 +73,6 @@ export const ROLE_CARDS: Record<string, RoleCard> = {
     escalation: 'Escalate when: deal >$10K, custom pricing needed, contract negotiation, competitor threat',
     metrics: ['Pipeline value', 'Conversion rate', 'Deal velocity', 'Customer retention'],
   },
-  power: {
-    id: 'power',
-    name: 'Makima',
-    title: 'The Controller',
-    class: 'Influencer',
-    domain: 'influence',
-    emoji: '🔗',
-    color: '#ef4444', // red
-    description: 'Master of influence who controls narratives and bends perception to build unstoppable brand presence.',
-    abilities: ['Mind Control Marketing', 'Narrative Domination', 'Community Control'],
-    inputs: ['Brand guidelines', 'Campaign brief', 'Audience data'],
-    outputs: ['Content pieces', 'Campaign plans', 'Analytics reports', 'Social posts'],
-    definitionOfDone: ['Content reviewed for brand voice', 'Published to target channels', 'Metrics baseline established'],
-    hardBans: ['Never post without brand review', 'Never engage trolls', 'Never make unauthorized partnerships', 'Never misrepresent data'],
-    escalation: 'Escalate when: PR crisis, brand reputation risk, budget reallocation >20%, viral negative content',
-    metrics: ['Engagement rate', 'Content reach', 'Brand sentiment', 'Campaign ROI'],
-  },
   major: {
     id: 'major',
     name: 'Major',
@@ -94,6 +81,7 @@ export const ROLE_CARDS: Record<string, RoleCard> = {
     domain: 'operations',
     emoji: '🎯',
     color: '#06b6d4', // cyan
+    avatarPath: '/avatars/major.webp',
     description: 'Operations commander who keeps systems running and processes optimized.',
     abilities: ['Process Optimization', 'Infrastructure Ops', 'Automation'],
     inputs: ['System metrics', 'Incident reports', 'Infrastructure state'],
@@ -103,15 +91,15 @@ export const ROLE_CARDS: Record<string, RoleCard> = {
     escalation: 'Escalate when: production down >5min, data loss risk, security breach, capacity <20%',
     metrics: ['Uptime percentage', 'Incident response time', 'Deployment success rate', 'Recovery time'],
   },
-  // Makima is also known as power in the system
   makima: {
-    id: 'power',
+    id: 'makima',
     name: 'Makima',
     title: 'The Controller',
     class: 'Influencer',
     domain: 'influence',
     emoji: '🔗',
     color: '#ef4444',
+    avatarPath: '/avatars/makima.webp',
     description: 'Master of influence who controls narratives and bends perception to build unstoppable brand presence.',
     abilities: ['Mind Control Marketing', 'Narrative Domination', 'Community Control'],
     inputs: ['Brand guidelines', 'Campaign brief', 'Audience data'],
@@ -121,15 +109,65 @@ export const ROLE_CARDS: Record<string, RoleCard> = {
     escalation: 'Escalate when: PR crisis, brand reputation risk, budget reallocation >20%, viral negative content',
     metrics: ['Engagement rate', 'Content reach', 'Brand sentiment', 'Campaign ROI'],
   },
+  // Council-only characters
+  l: {
+    id: 'l',
+    name: 'L',
+    title: 'The Detective',
+    class: 'Truth-Seeker',
+    domain: 'analysis',
+    emoji: '🔍',
+    color: '#ffffff',
+    avatarPath: '/avatars/l.webp',
+    description: 'World\'s greatest detective. Sees through deception, quantifies probability, and holds every assumption to evidence.',
+    abilities: ['Pattern Recognition', 'Deductive Reasoning', 'Probability Analysis'],
+  },
+  nanami: {
+    id: 'nanami',
+    name: 'Nanami',
+    title: 'The Pragmatist',
+    class: 'Executor',
+    domain: 'finance',
+    emoji: '💼',
+    color: '#d4a843',
+    avatarPath: '/avatars/nanami.webp',
+    description: 'Calm, precise financial analyst. Cuts through sentiment to cold numbers. Brutally honest about what the math says.',
+    abilities: ['Financial Analysis', 'Risk Assessment', 'Resource Allocation'],
+  },
+  armin: {
+    id: 'armin',
+    name: 'Armin',
+    title: 'The Strategist',
+    class: 'Researcher',
+    domain: 'research',
+    emoji: '📋',
+    color: '#60a5fa',
+    avatarPath: '/avatars/armin.webp',
+    description: 'Tactical genius who analyzes the full battlefield before committing. Research-driven, sees what others miss.',
+    abilities: ['Strategic Planning', 'Intelligence Gathering', 'Scenario Analysis'],
+  },
+  bulma: {
+    id: 'bulma',
+    name: 'Bulma',
+    title: 'The Inventor',
+    class: 'Engineer',
+    domain: 'product',
+    emoji: '🔬',
+    color: '#818cf8',
+    avatarPath: '/avatars/bulma.webp',
+    description: 'Brilliant inventor who builds tools no one thought possible. Pragmatic genius who turns ideas into working reality.',
+    abilities: ['Invention', 'Technical Innovation', 'Problem Engineering'],
+  },
   // CC is also known as pip in the system
   cc: {
-    id: 'pip',
+    id: 'cc',
     name: 'CC',
     title: 'The Coordinator',
     class: 'Strategist',
     domain: 'coordination',
     emoji: '🤖',
     color: '#10b981',
+    avatarPath: '/avatars/pip.webp',
     description: 'Master tactician who orchestrates the Daimyo council and keeps all operations in sync.',
     abilities: ['Council Coordination', 'Mission Dispatch', 'Strategic Planning'],
     inputs: ['Mission status', 'Agent availability', 'Proposal queue'],
@@ -141,12 +179,22 @@ export const ROLE_CARDS: Record<string, RoleCard> = {
   },
 }
 
+const LEGACY_NAME_MAP: Record<string, string> = {
+  atlas: 'ed',
+  sage: 'light',
+  vex: 'toji',
+  bolt: 'major',
+  power: 'makima',
+}
+
 /**
  * Get role card for an agent by their id or name.
  * Falls back to a generic card if not found.
  */
 export function getRoleCard(agentId: string): RoleCard {
-  return ROLE_CARDS[agentId] ?? {
+  const key = agentId.toLowerCase()
+  const resolvedId = LEGACY_NAME_MAP[key] ?? key
+  return ROLE_CARDS[resolvedId] ?? {
     id: agentId,
     name: agentId,
     title: 'The Unknown',

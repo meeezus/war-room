@@ -1,0 +1,95 @@
+---
+session: shoin-chat
+date: 2026-02-22
+status: pending
+outcome: null
+---
+
+goal: Design inline HTML visual rendering for Shoin Chat — plan visuals appear in chat, not browser popups
+now: Decide storage model and rendering approach for HTML content in chat messages
+
+test: null
+
+context:
+  - Council skill already generates HTML and persists to Supabase (plan_html column)
+  - Council detail page renders HTML in iframe
+  - New goal: HTML visuals should render INLINE in Shoin Chat message bubbles
+  - Not "open in browser" — actual embedded rendering in the chat UI
+
+current_state:
+  - shoin_chat_files: [app/chat/page.tsx, app/api/chat/route.ts, components/chat/message-bubble.tsx, lib/chat.ts, lib/claude-cli.ts]
+  - council_html_pattern: Agent generates HTML → curl POST to Supabase → plan_html column → iframe embed in /council/[id]
+  - sensei_visuals_skill: Simplified to trigger + palette reference, no rigid templates
+  - html_output_path: ~/.agent/diagrams/{slug}.html
+
+design_questions:
+  - storage: Does HTML live in message.content? Separate message.html field? Linked attachment record?
+  - rendering: Shadow DOM? iframe inside bubble? dangerouslySetInnerHTML with sanitization?
+  - trigger: How does agent signal "this message has a visual"? Content type marker? JSON wrapper?
+  - sizing: Fixed height? Auto-expand? Collapsible?
+  - interaction: Can user zoom/pan Mermaid diagrams inside chat? Or view fullscreen?
+
+options:
+  storage_a:
+    name: Inline in content
+    desc: Message content contains HTML directly, frontend detects and renders
+    pros: Simple, no schema change
+    cons: Mixing HTML with text is messy, hard to extract later
+
+  storage_b:
+    name: Separate html field
+    desc: ChatMessage gets optional html_content field, rendered separately from text
+    pros: Clean separation, easy to query/display
+    cons: Schema migration, API change
+
+  storage_c:
+    name: Attachment model
+    desc: Separate chat_attachments table, message links to attachment with type='html_visual'
+    pros: Extensible (images, files later), normalized
+    cons: More complex, join queries
+
+  rendering_a:
+    name: iframe sandbox
+    desc: Render HTML in sandboxed iframe inside message bubble
+    pros: Full isolation, no CSS bleed, safe
+    cons: Sizing tricky, cross-origin restrictions on some features
+
+  rendering_b:
+    name: Shadow DOM
+    desc: Create shadow root, inject HTML with scoped styles
+    pros: Native, no iframe overhead, style isolation
+    cons: More complex, script execution concerns
+
+  rendering_c:
+    name: dangerouslySetInnerHTML
+    desc: Direct injection with DOMPurify sanitization
+    pros: Simplest, fast
+    cons: CSS can bleed, security requires careful sanitization
+
+references:
+  - ~/.claude/skills/council/SKILL.md — HTML generation + Supabase persistence pattern
+  - ~/.claude/skills/sensei-visuals/SKILL.md — simplified trigger + palette
+  - ~/Code/war-room/app/council/[id]/page.tsx:80-92 — current iframe embed approach
+  - ~/Code/war-room/components/chat/message-bubble.tsx — current message rendering
+
+recommendation: |
+  Start with storage_b (separate html field) + rendering_a (iframe sandbox).
+
+  Reasons:
+  - html field is clean and queryable
+  - iframe is safest for arbitrary HTML from agents
+  - Can upgrade to Shadow DOM later if iframe limitations hurt
+
+  Migration: Add html_content TEXT column to chat_messages table.
+
+  API: chat/route.ts returns { role, content, html_content? }
+
+  Frontend: message-bubble.tsx checks if html_content exists, renders iframe if so.
+
+next:
+  - Decide on storage + rendering approach
+  - Create migration if adding html_content field
+  - Update ChatMessage type in lib/types.ts
+  - Update message-bubble.tsx to conditionally render HTML
+  - Update chat API to pass through html_content from agent response
+  - Test with a simple HTML response from Claude CLI

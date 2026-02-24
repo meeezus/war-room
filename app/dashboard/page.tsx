@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { getAgents, getMissions, getEvents, getStats, getProjectsWithMetrics, getDynastyStats, getMissionStats } from "@/lib/queries";
 import type { AgentStatus, Mission, Event, DashboardStats, DynastyStats, ProjectWithMetrics } from "@/lib/types";
@@ -10,6 +10,8 @@ import { AgentSidebar } from "@/components/agent-sidebar";
 import { EventFeed } from "@/components/event-feed";
 import { StealthCard } from "@/components/stealth-card";
 import { ProjectOverview } from "@/components/project-overview";
+import { CreateProjectModal } from "@/components/create-project-modal";
+import { TerminalPanel } from "@/components/terminal/terminal-panel";
 
 
 const defaultStats: DashboardStats = {
@@ -25,6 +27,29 @@ const defaultDynastyStats: DynastyStats = {
   totalTasks: 0,
   activeTasks: 0,
 };
+
+function computeSmartPriority(project: ProjectWithMetrics): number {
+  // P0: deadline within 3 days and not done
+  if (project.target_date) {
+    const daysUntil = (new Date(project.target_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+    if (daysUntil <= 3 && project.status !== "done") return 0;
+  }
+  // P1: in progress
+  if (project.status === "inprogress") return 1;
+  // P2: queued
+  if (project.status === "queue") return 2;
+  // P3: on hold
+  if (project.status === "onhold") return 3;
+  // P4: done
+  if (project.status === "done") return 4;
+  return 2;
+}
+
+function applySmartPriority(projects: ProjectWithMetrics[]): ProjectWithMetrics[] {
+  return projects
+    .map((p) => ({ ...p, priority: computeSmartPriority(p) }))
+    .sort((a, b) => a.priority - b.priority);
+}
 
 function ConnectPrompt() {
   return (
@@ -59,6 +84,16 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [feedOpen, setFeedOpen] = useState(true);
+  const [createProjectOpen, setCreateProjectOpen] = useState(false);
+
+  const refreshProjects = useCallback(async () => {
+    const [projectsData, dynastyData] = await Promise.all([
+      getProjectsWithMetrics(),
+      getDynastyStats(),
+    ]);
+    setProjects(applySmartPriority(projectsData));
+    setDynastyStats(dynastyData);
+  }, []);
 
   useEffect(() => {
     async function fetchData() {
@@ -75,7 +110,7 @@ export default function DashboardPage() {
       setMissions(missionsData);
       setEvents(eventsData);
       setStats(statsData);
-      setProjects(projectsData);
+      setProjects(applySmartPriority(projectsData));
       setDynastyStats(dynastyData);
       setMissionStats(missionStatsData);
       setLoading(false);
@@ -89,7 +124,7 @@ export default function DashboardPage() {
         <div className="mb-4 flex-shrink-0">
           <div className="mb-3 flex items-baseline gap-3">
             <h1 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold tracking-tight text-[#E5E5E5]">
-              War Room
+              Dynasty Tenshu
             </h1>
             <span className="text-xs text-[rgba(255,255,255,0.4)]">
               Shogunate Command Center
@@ -117,10 +152,10 @@ export default function DashboardPage() {
       <div className="mb-4 flex-shrink-0">
         <div className="mb-3 flex items-baseline gap-3">
           <h1 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold tracking-tight text-[#E5E5E5]">
-            War Room
+            Dynasty Tenshu
           </h1>
           <span className="text-xs text-[rgba(255,255,255,0.4)]">
-            Dynasty Command Center
+            Shogunate Command Center
           </span>
           <span className="ml-auto font-[family-name:var(--font-jetbrains-mono)] text-xs tabular-nums text-[rgba(255,255,255,0.3)]">
             {dynastyStats.activeProjects}/{dynastyStats.totalProjects} projects
@@ -130,7 +165,21 @@ export default function DashboardPage() {
             </Link>
             {" \u00B7 "}
             {dynastyStats.activeTasks}/{dynastyStats.totalTasks} tasks
+            {" \u00B7 "}
+            <Link href="/council" className="transition-colors hover:text-[rgba(255,255,255,0.6)]">
+              ⚔️ council
+            </Link>
+            {" \u00B7 "}
+            <Link href="/chat" className="transition-colors hover:text-[rgba(255,255,255,0.6)]">
+              ⚡ chat
+            </Link>
           </span>
+          <button
+            onClick={() => setCreateProjectOpen(true)}
+            className="ml-3 px-2.5 py-1 rounded-sm border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs font-medium hover:bg-emerald-500/20 transition-colors"
+          >
+            + Project
+          </button>
         </div>
         <StatsBar stats={stats} />
       </div>
@@ -175,7 +224,7 @@ export default function DashboardPage() {
             </span>
           </div>
           <div className="flex-1 overflow-hidden">
-            <ProjectOverview projects={projects} />
+            <ProjectOverview projects={projects} onUpdate={refreshProjects} />
           </div>
         </div>
 
@@ -209,6 +258,15 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {/* Bottom - Terminal Panel */}
+      <TerminalPanel missions={missions} />
+
+      <CreateProjectModal
+        open={createProjectOpen}
+        onOpenChange={setCreateProjectOpen}
+        onCreated={refreshProjects}
+      />
     </div>
   );
 }

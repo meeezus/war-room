@@ -1,0 +1,105 @@
+---
+session: general
+date: 2026-02-22
+status: complete
+outcome: SUCCEEDED
+---
+
+goal: Council Review UI MVP — daimyo avatar cards, session viewer, seeded data, pm2 persistent server
+now: Decide on Dojo + Shoin Chat revival strategy, then plan Dynasty Tenshu Command Center vision
+
+done_this_session:
+  - task: "Implemented full Council UI from plan ~/.claude/plans/refactored-sleeping-prism.md"
+    files: [app/council/page.tsx, app/council/[id]/page.tsx, components/council/council-card.tsx, components/council/council-synthesis.tsx, components/council/council-session-card.tsx]
+  - task: "Data layer — Supabase migration, types, queries, API routes"
+    files: [supabase/migrations/20260221000001_council_sessions.sql, lib/types.ts, lib/queries.ts, app/api/council/route.ts, app/api/council/[id]/route.ts]
+  - task: "Generated 10 anime daimyo avatars via nano-banana MCP (Gemini 2.5 Flash), converted PNG→webp with cwebp"
+    files: [public/avatars/ed.webp, public/avatars/light.webp, public/avatars/l.webp, public/avatars/nanami.webp, public/avatars/major.webp, public/avatars/armin.webp, public/avatars/bulma.webp, public/avatars/makima.webp, public/avatars/pip.webp, public/avatars/toji.webp, public/avatars/cc.webp]
+  - task: "Added 4 new council-only characters to role-cards (L, Nanami, Armin, Bulma)"
+    files: [lib/role-cards.ts]
+  - task: "Seed script + CLI integration script for posting council sessions"
+    files: [scripts/seed-council-session.ts, scripts/post-council.sh]
+  - task: "Dashboard nav link to /council"
+    files: [app/dashboard/page.tsx]
+  - task: "Applied Supabase migration via browser-use (real Chrome → Supabase SQL editor → Monaco API)"
+    files: []
+  - task: "Seeded 'Mission Control vs Discord' council session — 8 daimyo voices, synthesis, recommendation, dissent"
+    files: []
+  - task: "Changed Tauri devUrl to port 3001 (folio-app on 3000)"
+    files: [src-tauri/tauri.conf.json]
+  - task: "Rebuilt Tauri binary with cargo build to pick up port change"
+    files: []
+  - task: "Set up pm2 persistent dev server on port 3001 (war-room process, launchd startup pending sudo)"
+    files: []
+
+blockers:
+  - "Pre-existing build failure: app/api/chat/route.ts imports @/lib/chat which doesn't exist. Blocks Vercel deploy. Not from council branch — exists on main."
+  - "pm2 launchd startup needs sudo: sudo env PATH=$PATH:/opt/homebrew/Cellar/node/25.6.1/bin /opt/homebrew/lib/node_modules/pm2/bin/pm2 startup launchd -u michaelenriquez --hp /Users/michaelenriquez"
+
+questions:
+  - "Dojo (3D game room, Makima FBX) and Shoin Chat (Claude CLI chat) are on unmerged feature branches — merge, cherry-pick, or rebuild fresh?"
+  - "Dynasty Tenshu Command Center — what's the bigger vision? User said 'having a bigger talk' about this."
+  - "Vercel deploy still blocked by broken @/lib/chat import. Fix or remove that route?"
+
+decisions:
+  - tauri_port_3001: "War Room runs on 3001 to coexist with folio-app on 3000"
+  - pm2_over_vercel: "User chose pm2 + Tailscale over Vercel for phone access — native feel, no cold starts, no broken build to fix"
+  - avatar_generation: "nano-banana MCP (Gemini 2.5 Flash) for anime avatars, cwebp for PNG→webp (macOS sips can't write webp)"
+  - migration_via_browser: "Used browser-use --browser real to open Supabase SQL editor, Monaco JS API to inject SQL — no exec_sql RPC available"
+
+findings:
+  - dojo_on_feature_branch: "feature/dojo-tatami-makima — 11 dojo commits (3D room, Makima FBX, tatami, click-to-move). Never merged to main. Diverged before dashboard redesign."
+  - shoin_chat_on_feature_branch: "feature/shoin-chat-rebuild — 4 commits (Claude CLI chat, thread persistence, streaming). Never merged. 5 files total."
+  - branch_topology: "Both branches forked from main before e86cd94 (dashboard alignment). Main moved on with missions, council-ui. No deletion — just never merged."
+  - war_room_branches: "8 local branches, 7 remote branches. Active: main, feature/council-ui. Unmerged: dojo-tatami-makima, shoin-chat-rebuild, vox-bridge, execution-bridge-rpg-foundation, mission-first-board-tauri."
+
+worked:
+  - "Parallel agent groups (Group A: data layer + components, Group B: pages + seed) — fast, no conflicts"
+  - "nano-banana MCP for batch avatar generation — 10 images, consistent anime style"
+  - "Monaco JS API (window.monaco.editor.getModels()[0].setValue()) to inject SQL into Supabase editor"
+  - "browser-use --browser real for Supabase SQL editor (needs auth cookies)"
+  - "cwebp -q 85 for PNG→webp conversion"
+
+failed:
+  - "sips --setProperty format webp — macOS sips cannot write webp format"
+  - "exec_sql RPC — not available on this Supabase instance (PGRST202)"
+  - "Clicking Supabase SQL editor elements via browser-use indices — hit the AI assistant chat panel instead of the editor"
+  - "Turbopack on war-room — must use --webpack flag (npm run dev -- --webpack -p 3001)"
+
+next:
+  - "Run sudo pm2 startup command to persist across reboots"
+  - "Decide Dojo + Shoin Chat fate — merge branches or rebuild on current main"
+  - "Plan Dynasty Tenshu Command Center — user mentioned a 'bigger talk' about the vision"
+  - "Fix or remove app/api/chat/route.ts broken import (blocks builds/Vercel deploy)"
+  - "Set up Tailscale for phone access to localhost:3001"
+  - "Browser-verify council UI on phone form factor"
+
+files:
+  created:
+    - app/council/page.tsx
+    - app/council/[id]/page.tsx
+    - components/council/council-card.tsx
+    - components/council/council-synthesis.tsx
+    - components/council/council-session-card.tsx
+    - app/api/council/route.ts
+    - app/api/council/[id]/route.ts
+    - supabase/migrations/20260221000001_council_sessions.sql
+    - scripts/seed-council-session.ts
+    - scripts/post-council.sh
+    - public/avatars/ed.webp
+    - public/avatars/light.webp
+    - public/avatars/l.webp
+    - public/avatars/nanami.webp
+    - public/avatars/major.webp
+    - public/avatars/armin.webp
+    - public/avatars/bulma.webp
+    - public/avatars/makima.webp
+    - public/avatars/pip.webp
+    - public/avatars/toji.webp
+    - public/avatars/cc.webp
+  modified:
+    - lib/types.ts
+    - lib/queries.ts
+    - lib/role-cards.ts
+    - app/dashboard/page.tsx
+    - src-tauri/tauri.conf.json

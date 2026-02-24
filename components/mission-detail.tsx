@@ -9,6 +9,7 @@ import { StepCard } from "./step-card";
 import { staggerContainer } from "@/lib/motion";
 import { useRealtimeSteps } from "@/lib/realtime";
 import { getTaskByProposal } from "@/lib/queries";
+import { InlineTerminal } from "./terminal/inline-terminal";
 
 const STATUS_ACCENT: Record<string, string> = {
   queued: "#6b7280",
@@ -16,6 +17,13 @@ const STATUS_ACCENT: Record<string, string> = {
   completed: "#10b981",
   failed: "#ef4444",
   stale: "#eab308",
+};
+
+const PRIORITY_COLORS: Record<number, { bg: string; text: string }> = {
+  1: { bg: "bg-red-500/15", text: "text-red-400" },
+  2: { bg: "bg-orange-500/15", text: "text-orange-400" },
+  3: { bg: "bg-yellow-500/15", text: "text-yellow-400" },
+  4: { bg: "bg-emerald-500/15", text: "text-emerald-400" },
 };
 
 function formatTimestamp(iso: string): string {
@@ -47,6 +55,8 @@ export function MissionDetail({
   steps: Task[];
 }) {
   const [missionStatus, setMissionStatus] = useState(mission.status);
+  const [priority, setPriority] = useState<number>(mission.priority ?? 3);
+  const [savingPriority, setSavingPriority] = useState(false);
   const [starting, setStarting] = useState(false);
   const [linkedTask, setLinkedTask] = useState<{ id: number; project_id: string | null; title: string } | null>(null);
   const liveSteps = useRealtimeSteps(mission.id, steps);
@@ -75,6 +85,22 @@ export function MissionDetail({
     }
     setStarting(false);
   }
+
+  async function handlePriorityChange(newPriority: number) {
+    setSavingPriority(true);
+    setPriority(newPriority);
+    try {
+      await fetch(`/api/missions/${mission.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priority: newPriority }),
+      });
+    } catch (err) {
+      console.error("Priority update error:", err);
+    }
+    setSavingPriority(false);
+  }
+
   const completedSteps = liveSteps.filter((s) => s.status === "done").length;
   const totalSteps = liveSteps.length;
   const progressPct = totalSteps > 0 ? (completedSteps / totalSteps) * 100 : 0;
@@ -128,6 +154,31 @@ export function MissionDetail({
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[rgba(255,255,255,0.4)]">
+          {/* Priority selector */}
+          <span className="flex items-center gap-1.5">
+            Priority:{" "}
+            <span className="flex items-center gap-1">
+              {[1, 2, 3, 4].map((p) => {
+                const style = PRIORITY_COLORS[p];
+                const isActive = priority === p;
+                return (
+                  <button
+                    key={p}
+                    onClick={() => handlePriorityChange(p)}
+                    disabled={savingPriority}
+                    className={`rounded px-1.5 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-medium transition-colors disabled:opacity-50 ${
+                      isActive
+                        ? `${style.bg} ${style.text}`
+                        : "bg-white/[0.04] text-white/30 hover:bg-white/[0.08] hover:text-white/50"
+                    }`}
+                  >
+                    P{p}
+                  </button>
+                );
+              })}
+            </span>
+          </span>
+
           {/* Agent */}
           <span>
             Agent:{" "}
@@ -182,6 +233,14 @@ export function MissionDetail({
             />
           </div>
         </div>
+      )}
+
+      {/* Live terminal stream — shown only while mission is running */}
+      {missionStatus === "running" && (
+        <InlineTerminal
+          streamUrl={`/api/missions/${mission.id}/stream`}
+          onComplete={() => setMissionStatus("completed")}
+        />
       )}
 
       {/* Step list */}

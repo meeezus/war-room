@@ -62,3 +62,8 @@ src-tauri/gen/
 public/sw.js
 public/sw.js.map
 public/swe-worker-*.js
+
+# agent artifacts (local only)
+.claude/
+.flow/
+.tmp_agentcraft/
