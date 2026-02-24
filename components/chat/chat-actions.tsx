@@ -35,6 +35,7 @@ export function ChatActions({ threadId, onCouncilCreated }: ChatActionsProps) {
       const data = await res.json()
       const sessionId = data.session.id
       onCouncilCreated?.(sessionId)
+      window.open(`/council/${sessionId}`, '_blank')
       setSuccess(`Council session created`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send to council')

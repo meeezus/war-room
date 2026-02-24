@@ -7,6 +7,7 @@ import { DiffViewer, isDiffContent } from './diff-viewer'
 
 interface InlineTerminalProps {
   streamUrl: string
+  inputUrl?: string
   onComplete?: () => void
 }
 
@@ -120,7 +121,7 @@ function EventLine({ event }: { event: LocalEvent }) {
   }
 }
 
-export function InlineTerminal({ streamUrl, onComplete }: InlineTerminalProps) {
+export function InlineTerminal({ streamUrl, inputUrl: inputUrlProp, onComplete }: InlineTerminalProps) {
   const [entries, setEntries] = useState<LogEntry[]>([])
   const [active, setActive] = useState(true)
   const [inputValue, setInputValue] = useState('')
@@ -131,8 +132,8 @@ export function InlineTerminal({ streamUrl, onComplete }: InlineTerminalProps) {
   // Derive mission ID from streamUrl pattern: /api/missions/<id>/stream
   const missionId = streamUrl.match(/\/api\/missions\/([^/]+)\/stream/)?.[1] ?? null
 
-  // Derive input URL from streamUrl
-  const inputUrl = missionId ? `/api/missions/${missionId}/input` : null
+  // Use explicit inputUrl prop, or derive from mission streamUrl
+  const inputUrl = inputUrlProp ?? (missionId ? `/api/missions/${missionId}/input` : null)
 
   const addEntry = useCallback((event: LocalEvent) => {
     setEntries((prev) => [...prev, { id: entryCounter++, event }])

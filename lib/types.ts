@@ -118,6 +118,8 @@ export interface Project {
   owner: string | null
   notes: string | null
   next_action: string | null
+  target_date?: string | null
+  council_session_id?: string | null
   created_at: string
   updated_at: string
 }
@@ -193,6 +195,7 @@ export interface CouncilSession {
   source: string
   metadata: Record<string, unknown>
   status: 'active' | 'archived'
+  project_id?: string | null
   created_at: string
 }
 

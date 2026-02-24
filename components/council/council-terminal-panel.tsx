@@ -18,10 +18,11 @@ export function CouncilTerminalPanel({
   const [done, setDone] = useState(false)
 
   const streamUrl = `/api/council/${sessionId}/stream`
+  const inputUrl = `/api/council/${sessionId}/input`
 
   if (!open) {
     return (
-      <div className="mt-6 pt-6 border-t border-white/[0.06]">
+      <div className="mt-6 pt-6 border-t border-white/[0.06]" data-council-terminal>
         <button
           onClick={() => setOpen(true)}
           className="px-3 py-1.5 rounded-sm border border-purple-500/30 bg-purple-500/10 text-purple-400 text-xs font-medium hover:bg-purple-500/20 transition-colors"
@@ -33,7 +34,7 @@ export function CouncilTerminalPanel({
   }
 
   return (
-    <div className="mt-6 border-t border-white/[0.06]">
+    <div className="mt-6 border-t border-white/[0.06]" data-council-terminal>
       {/* Panel header / collapse bar */}
       <div className="flex items-center gap-3 py-2 border-b border-white/[0.06] bg-white/[0.02]">
         <button
@@ -76,6 +77,7 @@ export function CouncilTerminalPanel({
           <InlineTerminal
             key={sessionId}
             streamUrl={streamUrl}
+            inputUrl={inputUrl}
             onComplete={() => setDone(true)}
           />
         </div>

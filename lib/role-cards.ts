@@ -73,24 +73,6 @@ export const ROLE_CARDS: Record<string, RoleCard> = {
     escalation: 'Escalate when: deal >$10K, custom pricing needed, contract negotiation, competitor threat',
     metrics: ['Pipeline value', 'Conversion rate', 'Deal velocity', 'Customer retention'],
   },
-  power: {
-    id: 'power',
-    name: 'Makima',
-    title: 'The Controller',
-    class: 'Influencer',
-    domain: 'influence',
-    emoji: '🔗',
-    color: '#ef4444', // red
-    avatarPath: '/avatars/makima.webp',
-    description: 'Master of influence who controls narratives and bends perception to build unstoppable brand presence.',
-    abilities: ['Mind Control Marketing', 'Narrative Domination', 'Community Control'],
-    inputs: ['Brand guidelines', 'Campaign brief', 'Audience data'],
-    outputs: ['Content pieces', 'Campaign plans', 'Analytics reports', 'Social posts'],
-    definitionOfDone: ['Content reviewed for brand voice', 'Published to target channels', 'Metrics baseline established'],
-    hardBans: ['Never post without brand review', 'Never engage trolls', 'Never make unauthorized partnerships', 'Never misrepresent data'],
-    escalation: 'Escalate when: PR crisis, brand reputation risk, budget reallocation >20%, viral negative content',
-    metrics: ['Engagement rate', 'Content reach', 'Brand sentiment', 'Campaign ROI'],
-  },
   major: {
     id: 'major',
     name: 'Major',
@@ -109,7 +91,6 @@ export const ROLE_CARDS: Record<string, RoleCard> = {
     escalation: 'Escalate when: production down >5min, data loss risk, security breach, capacity <20%',
     metrics: ['Uptime percentage', 'Incident response time', 'Deployment success rate', 'Recovery time'],
   },
-  // Makima is also known as power in the system
   makima: {
     id: 'makima',
     name: 'Makima',
@@ -198,12 +179,22 @@ export const ROLE_CARDS: Record<string, RoleCard> = {
   },
 }
 
+const LEGACY_NAME_MAP: Record<string, string> = {
+  atlas: 'ed',
+  sage: 'light',
+  vex: 'toji',
+  bolt: 'major',
+  power: 'makima',
+}
+
 /**
  * Get role card for an agent by their id or name.
  * Falls back to a generic card if not found.
  */
 export function getRoleCard(agentId: string): RoleCard {
-  return ROLE_CARDS[agentId] ?? {
+  const key = agentId.toLowerCase()
+  const resolvedId = LEGACY_NAME_MAP[key] ?? key
+  return ROLE_CARDS[resolvedId] ?? {
     id: agentId,
     name: agentId,
     title: 'The Unknown',

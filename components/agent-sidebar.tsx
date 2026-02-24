@@ -134,11 +134,6 @@ export function AgentSidebar({ agents }: { agents: AgentStatus[] }) {
                       </span>
                     </div>
                     <p className="text-xs text-[rgba(255,255,255,0.4)]">{agent.domain}</p>
-                    <div className="mt-1 flex items-center gap-2">
-                      <span className="rounded-sm bg-white/[0.06] px-1.5 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-[rgba(255,255,255,0.3)]">
-                        Lv.{agent.level}
-                      </span>
-                    </div>
                   </div>
                 </div>
               </StealthCard>

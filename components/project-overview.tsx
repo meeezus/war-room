@@ -14,9 +14,10 @@ const KANBAN_COLUMNS = [
 
 interface ProjectOverviewProps {
   projects: ProjectWithMetrics[];
+  onUpdate?: () => void;
 }
 
-export function ProjectOverview({ projects }: ProjectOverviewProps) {
+export function ProjectOverview({ projects, onUpdate }: ProjectOverviewProps) {
   const [showAllDone, setShowAllDone] = useState(false);
 
   return (
@@ -49,7 +50,7 @@ export function ProjectOverview({ projects }: ProjectOverviewProps) {
             </div>
             <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
               {cards.map((project) => (
-                <ProjectCard key={project.id} project={project} />
+                <ProjectCard key={project.id} project={project} onUpdate={onUpdate} />
               ))}
               {col.key === "done" && showAllDone && cards.length > 0 && (
                 <button

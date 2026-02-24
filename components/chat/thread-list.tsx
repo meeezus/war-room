@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Plus, MessageSquare, Archive, Trash2 } from 'lucide-react'
 
 export interface ThreadSummary {
@@ -19,6 +19,7 @@ interface ThreadListProps {
   isCreating?: boolean
   onArchive?: (id: string) => void
   onDelete?: (id: string) => void
+  onRename?: (id: string, title: string) => void
   showArchived?: boolean
   onToggleArchived?: () => void
 }
@@ -42,10 +43,45 @@ export function ThreadList({
   isCreating,
   onArchive,
   onDelete,
+  onRename,
   showArchived,
   onToggleArchived,
 }: ThreadListProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const editInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (editingId && editInputRef.current) {
+      editInputRef.current.focus()
+      editInputRef.current.select()
+    }
+  }, [editingId])
+
+  const handleStartEdit = (e: React.MouseEvent, id: string, currentTitle: string) => {
+    e.stopPropagation()
+    e.preventDefault()
+    setEditingId(id)
+    setEditTitle(currentTitle)
+  }
+
+  const handleSaveEdit = () => {
+    if (editingId && editTitle.trim() && onRename) {
+      onRename(editingId, editTitle.trim())
+    }
+    setEditingId(null)
+    setEditTitle('')
+  }
+
+  const handleEditKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSaveEdit()
+    } else if (e.key === 'Escape') {
+      setEditingId(null)
+      setEditTitle('')
+    }
+  }
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
     e.stopPropagation()
@@ -135,9 +171,24 @@ export function ThreadList({
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm text-zinc-200 truncate font-medium">
-                      {thread.title}
-                    </span>
+                    {editingId === thread.id ? (
+                      <input
+                        ref={editInputRef}
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        onBlur={handleSaveEdit}
+                        onKeyDown={handleEditKeyDown}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-sm text-zinc-200 font-medium bg-zinc-800 border border-zinc-600 rounded px-1 py-0 w-full outline-none focus:border-emerald-500"
+                      />
+                    ) : (
+                      <span
+                        className="text-sm text-zinc-200 truncate font-medium"
+                        onDoubleClick={(e) => handleStartEdit(e, thread.id, thread.title)}
+                      >
+                        {thread.title}
+                      </span>
+                    )}
                     <span className="text-[10px] text-zinc-600 flex-shrink-0 font-[family-name:var(--font-jetbrains-mono)]">
                       {timeAgo(thread.last_message_at)}
                     </span>

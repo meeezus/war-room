@@ -5,6 +5,7 @@ import { saveMessage, getThread, getThreadSessionId, setThreadSessionId, clearTh
 import { getAgentSystemPrompt } from '@/lib/agent-identity'
 import { createRequestContext } from '@/lib/request-context'
 import { sendToOpenClaw } from '@/lib/openclaw-client'
+import { createServiceClient } from '@/lib/supabase-server'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300 // 5 min max for long Claude responses
@@ -129,6 +130,13 @@ export async function POST(req: NextRequest) {
           const msg = await saveMessage(threadId, 'assistant', fullResponse, agentId)
           const doneData = JSON.stringify({ type: 'done', messageId: msg.id, agentId })
           controller.enqueue(encoder.encode(`data: ${doneData}\n\n`))
+
+          // Auto-title: if thread still has default title, generate one from user's first message
+          if (thread?.title === 'New Thread' || !thread?.title) {
+            autoTitleThread(threadId, content).catch((err) =>
+              console.error('[chat/route] Auto-title failed:', err)
+            )
+          }
         }
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : typeof err === 'object' ? JSON.stringify(err) : String(err)
@@ -149,4 +157,25 @@ export async function POST(req: NextRequest) {
       Connection: 'keep-alive',
     },
   })
+}
+
+/** Generate a short title from the user's first message and update the thread. */
+async function autoTitleThread(threadId: string, userMessage: string): Promise<void> {
+  const fillerPrefixes = /^(let'?s|i want to|can you|help me|please|hey|hi|hello)\s+/i
+  let title = userMessage.split('\n')[0].trim() // first line only
+  title = title.replace(fillerPrefixes, '')
+  // Capitalize first letter
+  title = title.charAt(0).toUpperCase() + title.slice(1)
+  // Trim to ~60 chars at word boundary
+  if (title.length > 60) {
+    title = title.slice(0, 60).replace(/\s+\S*$/, '...')
+  }
+  if (!title) return
+
+  const sb = createServiceClient()
+  if (!sb) return
+  await sb
+    .from('chat_threads')
+    .update({ title, updated_at: new Date().toISOString() })
+    .eq('id', threadId)
 }

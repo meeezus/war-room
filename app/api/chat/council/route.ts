@@ -3,6 +3,7 @@ import { getMessages, getThread } from '@/lib/chat'
 import { spawnClaude, type ClaudeSession } from '@/lib/claude-cli'
 import { createServiceClient } from '@/lib/supabase-server'
 import { randomUUID } from 'crypto'
+import { buildPlanHtmlPrompt, stripHtmlFences } from './plan-html'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -195,45 +196,58 @@ export async function POST(req: NextRequest) {
     ? thread.title
     : messages[0].content.slice(0, 120)
 
-  // 6. Call Claude with council prompt (fresh session, no resume)
+  // 6. Run council review + HTML plan generation in parallel
   const prompt = buildCouncilPrompt(conversationText)
-  const session: ClaudeSession = {
+  const reviewSession: ClaudeSession = {
     sessionId: randomUUID(),
     threadId: `council-${threadId}`,
   }
 
-  let rawResponse: string
-  try {
-    const stream = spawnClaude(prompt, session, { resume: false })
-    rawResponse = await collectStream(stream)
-  } catch (err) {
-    console.error('[chat/council] Claude CLI error:', err)
+  const [reviewResult, htmlResult] = await Promise.allSettled([
+    // Voice review generation (critical path)
+    (async () => {
+      const stream = spawnClaude(prompt, reviewSession, { resume: false })
+      const raw = await collectStream(stream)
+      return parseCouncilOutput(raw)
+    })(),
+    // HTML plan visual generation (enhancement)
+    (async () => {
+      const htmlPrompt = buildPlanHtmlPrompt(conversationText)
+      const htmlSession: ClaudeSession = {
+        sessionId: randomUUID(),
+        threadId: `council-html-${threadId}`,
+      }
+      const stream = spawnClaude(htmlPrompt, htmlSession, { resume: false })
+      return collectStream(stream)
+    })(),
+  ])
+
+  // 7. Handle review result (critical — fail if missing)
+  if (reviewResult.status === 'rejected') {
+    console.error('[chat/council] Claude CLI error:', reviewResult.reason)
     return Response.json(
       { error: 'Failed to generate council review' },
       { status: 502 }
     )
   }
 
-  if (!rawResponse.trim()) {
+  const councilOutput = reviewResult.value
+  if (!councilOutput.reviews?.length) {
     return Response.json(
       { error: 'Empty response from council generation' },
       { status: 502 }
     )
   }
 
-  // 7. Parse structured output
-  let councilOutput: CouncilOutput
-  try {
-    councilOutput = parseCouncilOutput(rawResponse)
-  } catch (err) {
-    console.error('[chat/council] Parse error:', err, '\nRaw:', rawResponse.slice(0, 500))
-    return Response.json(
-      { error: 'Failed to parse council output' },
-      { status: 502 }
-    )
+  // 8. Handle HTML result (non-critical — proceed without it)
+  let planHtml: string | null = null
+  if (htmlResult.status === 'fulfilled' && htmlResult.value.trim()) {
+    planHtml = stripHtmlFences(htmlResult.value)
+  } else if (htmlResult.status === 'rejected') {
+    console.warn('[chat/council] HTML generation failed (non-critical):', htmlResult.reason)
   }
 
-  // 8. Persist to council_sessions
+  // 9. Persist to council_sessions
   const { data, error } = await sb
     .from('council_sessions')
     .insert({
@@ -243,6 +257,7 @@ export async function POST(req: NextRequest) {
       synthesis: councilOutput.synthesis,
       recommendation: councilOutput.recommendation,
       dissent: councilOutput.dissent,
+      plan_html: planHtml,
       source: 'shoin_chat',
       metadata: { threadId },
     })

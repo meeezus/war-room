@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Dialog } from "radix-ui";
 import { createProject, createMission, getProjects } from "@/lib/queries";
-import type { CouncilSession, Project } from "@/lib/types";
+import type { CouncilSession, Mission, Project } from "@/lib/types";
 
 interface CouncilActionsProps {
   session: CouncilSession;
@@ -72,12 +73,14 @@ function CreateProjectModal({
   onOpenChange,
   defaultTitle,
   defaultGoal,
+  councilSessionId,
   onCreated,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   defaultTitle: string;
   defaultGoal: string;
+  councilSessionId?: string;
   onCreated?: (p: Project) => void;
 }) {
   const [title, setTitle] = useState(defaultTitle);
@@ -98,6 +101,7 @@ function CreateProjectModal({
     const project = await createProject({
       title: title.trim(),
       description: goal.trim() || undefined,
+      councilSessionId,
     });
     setSaving(false);
     if (project) {
@@ -163,7 +167,7 @@ function CreateMissionModal({
   onOpenChange: (v: boolean) => void;
   defaultTitle: string;
   preselectedProjectId?: string;
-  onCreated?: () => void;
+  onCreated?: (m: Mission) => void;
 }) {
   const [title, setTitle] = useState(defaultTitle);
   const [projectId, setProjectId] = useState(preselectedProjectId ?? "");
@@ -200,7 +204,7 @@ function CreateMissionModal({
     });
     setSaving(false);
     if (mission) {
-      onCreated?.();
+      onCreated?.(mission);
       onOpenChange(false);
     }
   }
@@ -263,6 +267,7 @@ function CreateMissionModal({
 // ---------------------------------------------------------------------------
 
 export function CouncilActions({ session }: CouncilActionsProps) {
+  const router = useRouter();
   const [projectModalOpen, setProjectModalOpen] = useState(false);
   const [missionModalOpen, setMissionModalOpen] = useState(false);
   const [createdProject, setCreatedProject] = useState<Project | null>(null);
@@ -309,7 +314,11 @@ export function CouncilActions({ session }: CouncilActionsProps) {
         onOpenChange={setProjectModalOpen}
         defaultTitle={defaultProjectTitle}
         defaultGoal={defaultGoal}
-        onCreated={(p) => setCreatedProject(p)}
+        councilSessionId={session.id}
+        onCreated={(p) => {
+          setCreatedProject(p);
+          router.push(`/projects/${p.id}`);
+        }}
       />
 
       <CreateMissionModal
@@ -317,6 +326,9 @@ export function CouncilActions({ session }: CouncilActionsProps) {
         onOpenChange={setMissionModalOpen}
         defaultTitle={session.topic}
         preselectedProjectId={createdProject?.id}
+        onCreated={(m) => {
+          router.push(`/missions/${m.id}`);
+        }}
       />
     </>
   );

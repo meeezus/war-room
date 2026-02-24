@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { getAgents, getMissions, getEvents, getStats, getProjectsWithMetrics, getDynastyStats, getMissionStats } from "@/lib/queries";
 import type { AgentStatus, Mission, Event, DashboardStats, DynastyStats, ProjectWithMetrics } from "@/lib/types";
@@ -27,6 +27,29 @@ const defaultDynastyStats: DynastyStats = {
   totalTasks: 0,
   activeTasks: 0,
 };
+
+function computeSmartPriority(project: ProjectWithMetrics): number {
+  // P0: deadline within 3 days and not done
+  if (project.target_date) {
+    const daysUntil = (new Date(project.target_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+    if (daysUntil <= 3 && project.status !== "done") return 0;
+  }
+  // P1: in progress
+  if (project.status === "inprogress") return 1;
+  // P2: queued
+  if (project.status === "queue") return 2;
+  // P3: on hold
+  if (project.status === "onhold") return 3;
+  // P4: done
+  if (project.status === "done") return 4;
+  return 2;
+}
+
+function applySmartPriority(projects: ProjectWithMetrics[]): ProjectWithMetrics[] {
+  return projects
+    .map((p) => ({ ...p, priority: computeSmartPriority(p) }))
+    .sort((a, b) => a.priority - b.priority);
+}
 
 function ConnectPrompt() {
   return (
@@ -63,6 +86,15 @@ export default function DashboardPage() {
   const [feedOpen, setFeedOpen] = useState(true);
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
 
+  const refreshProjects = useCallback(async () => {
+    const [projectsData, dynastyData] = await Promise.all([
+      getProjectsWithMetrics(),
+      getDynastyStats(),
+    ]);
+    setProjects(applySmartPriority(projectsData));
+    setDynastyStats(dynastyData);
+  }, []);
+
   useEffect(() => {
     async function fetchData() {
       const [agentsData, missionsData, eventsData, statsData, projectsData, dynastyData, missionStatsData] = await Promise.all([
@@ -78,7 +110,7 @@ export default function DashboardPage() {
       setMissions(missionsData);
       setEvents(eventsData);
       setStats(statsData);
-      setProjects(projectsData);
+      setProjects(applySmartPriority(projectsData));
       setDynastyStats(dynastyData);
       setMissionStats(missionStatsData);
       setLoading(false);
@@ -192,7 +224,7 @@ export default function DashboardPage() {
             </span>
           </div>
           <div className="flex-1 overflow-hidden">
-            <ProjectOverview projects={projects} />
+            <ProjectOverview projects={projects} onUpdate={refreshProjects} />
           </div>
         </div>
 
@@ -233,14 +265,7 @@ export default function DashboardPage() {
       <CreateProjectModal
         open={createProjectOpen}
         onOpenChange={setCreateProjectOpen}
-        onCreated={async () => {
-          const [projectsData, dynastyData] = await Promise.all([
-            getProjectsWithMetrics(),
-            getDynastyStats(),
-          ]);
-          setProjects(projectsData);
-          setDynastyStats(dynastyData);
-        }}
+        onCreated={refreshProjects}
       />
     </div>
   );

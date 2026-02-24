@@ -1,7 +1,6 @@
 import { createServiceClient } from '@/lib/supabase-server'
 import { CouncilCard } from '@/components/council/council-card'
-import { CouncilSynthesis } from '@/components/council/council-synthesis'
-import { CouncilActions } from '@/components/council/council-actions'
+import { CouncilSessionClient } from './council-session-client'
 import { CouncilTerminalPanel } from '@/components/council/council-terminal-panel'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -102,13 +101,8 @@ export default async function CouncilSessionPage({
           ) : null;
         })()}
 
-        {/* Makima synthesis — full-width distinct block */}
-        {(session.synthesis || session.recommendation) && (
-          <CouncilSynthesis session={session} />
-        )}
-
-        {/* Action bar — create project/mission from council output */}
-        <CouncilActions session={session} />
+        {/* Makima synthesis + action bar — client wrapper for interactivity */}
+        <CouncilSessionClient session={session} />
 
         {/* Terminal panel — live execution output */}
         <CouncilTerminalPanel sessionId={session.id} />

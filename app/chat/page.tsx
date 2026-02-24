@@ -142,6 +142,19 @@ export default function ChatPage() {
     }
   }
 
+  const handleRenameThread = async (id: string, title: string) => {
+    try {
+      await fetch(`/api/chat/threads/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title }),
+      })
+      fetchThreads()
+    } catch (err) {
+      console.error('Failed to rename thread:', err)
+    }
+  }
+
   const handleToggleArchived = () => {
     const next = !showArchived
     setShowArchived(next)
@@ -324,6 +337,7 @@ export default function ChatPage() {
           isCreating={isCreatingThread}
           onArchive={handleArchiveThread}
           onDelete={handleDeleteThread}
+          onRename={handleRenameThread}
           showArchived={showArchived}
           onToggleArchived={handleToggleArchived}
         />
