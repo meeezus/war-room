@@ -321,6 +321,9 @@ export default function ChatPage() {
     }
   }, [activeThreadId, isLoading])
 
+  const activeAgent = threads.find(t => t.id === activeThreadId)?.agent_id
+  const isMakima = activeAgent === 'makima'
+
   return (
     <div className="flex h-screen bg-zinc-950 text-zinc-100">
       {/* Thread sidebar */}
@@ -372,6 +375,15 @@ export default function ChatPage() {
             <span className="text-xs text-zinc-500 font-[family-name:var(--font-jetbrains-mono)]">
               {threads.find(t => t.id === activeThreadId)?.title}
             </span>
+          )}
+
+          {isMakima && activeThreadId && (
+            <div className="flex items-center gap-1.5 ml-auto">
+              <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-xs text-emerald-400/80 font-[family-name:var(--font-jetbrains-mono)]">
+                Pulse active
+              </span>
+            </div>
           )}
         </div>
 

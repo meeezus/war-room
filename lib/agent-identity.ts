@@ -22,9 +22,16 @@ export function getAgentSystemPrompt(agentId: string): string | null {
   if (!paths) return null
 
   try {
-    return paths
+    let prompt = paths
       .map(p => readFileSync(p, 'utf-8'))
       .join('\n\n')
+
+    // Append pulse integration instructions for Makima
+    if (agentId === 'makima') {
+      prompt += '\n\n## Pulse Integration\nYou have access to the Shogunate engine via pulse context. When you receive a [PULSE CONTEXT] block, use that information to inform your responses. You can reference active projects, missions, and tasks by name. When asked to take action (create missions, update tasks, etc.), use the [ACTION] block format described in the pulse context.'
+    }
+
+    return prompt
   } catch {
     console.error(`[agent-identity] Failed to read identity for ${agentId}`)
     return null

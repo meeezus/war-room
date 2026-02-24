@@ -6,6 +6,9 @@ import { getAgentSystemPrompt } from '@/lib/agent-identity'
 import { createRequestContext } from '@/lib/request-context'
 import { sendToOpenClaw } from '@/lib/openclaw-client'
 import { createServiceClient } from '@/lib/supabase-server'
+import { buildPulseContext } from '@/lib/pulse-context'
+import { parseActions, executeActions, stripActionBlocks } from '@/lib/pulse-actions'
+import { generateAlerts } from '@/lib/pulse-alerts'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300 // 5 min max for long Claude responses
@@ -50,6 +53,52 @@ export async function POST(req: NextRequest) {
     session = { sessionId, threadId }
   }
 
+  // Build pulse context for Makima threads (engine awareness)
+  let pulseContext = ''
+  if (isMakima) {
+    const pulseStart = Date.now()
+    try {
+      pulseContext = await buildPulseContext()
+
+      // Auto-inject alerts on first message or after 4h+ gap
+      const sb = createServiceClient()
+      let shouldInjectAlerts = false
+      if (sb) {
+        const { data: lastMsg } = await sb
+          .from('chat_messages')
+          .select('created_at')
+          .eq('thread_id', threadId)
+          .eq('role', 'assistant')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single()
+
+        if (!lastMsg) {
+          shouldInjectAlerts = true // First message in thread
+        } else {
+          const hoursSinceLast = (Date.now() - new Date(lastMsg.created_at).getTime()) / (1000 * 60 * 60)
+          shouldInjectAlerts = hoursSinceLast >= 4
+        }
+      }
+
+      if (shouldInjectAlerts) {
+        const alerts = await generateAlerts()
+        if (alerts.length > 0) {
+          const alertLines = alerts.map(a => `- **[${a.severity.toUpperCase()}]** ${a.message}`)
+          pulseContext = pulseContext.replace(
+            '### Active Projects',
+            `### Alerts\n${alertLines.join('\n')}\n\n### Active Projects`
+          )
+          console.log(`[chat/route] Injected ${alerts.length} pulse alert(s)`)
+        }
+      }
+
+      console.log(`[chat/route] Pulse context built in ${Date.now() - pulseStart}ms`)
+    } catch (err) {
+      console.error('[chat/route] Pulse context failed, proceeding without:', err)
+    }
+  }
+
   // Spawn Claude CLI and stream response
   const encoder = new TextEncoder()
   const stream = new ReadableStream({
@@ -59,13 +108,16 @@ export async function POST(req: NextRequest) {
         let sourceStream: ReadableStream<string>
 
         if (isMakima) {
+          const messageWithPulse = pulseContext
+            ? `[PULSE CONTEXT]\n${pulseContext}\n[/PULSE CONTEXT]\n\nUser: ${content}`
+            : content
           try {
-            sourceStream = sendToOpenClaw(content)
+            sourceStream = sendToOpenClaw(messageWithPulse)
           } catch {
             // sendToOpenClaw is synchronous, but catch just in case
             console.log('[chat/route] OpenClaw unavailable, falling back to claude --print')
             const fallbackSession: ClaudeSession = { sessionId: randomUUID(), threadId }
-            sourceStream = spawnClaude(content, fallbackSession, { resume: false, systemPrompt: systemPrompt || undefined })
+            sourceStream = spawnClaude(messageWithPulse, fallbackSession, { resume: false, systemPrompt: systemPrompt || undefined })
           }
         } else {
           sourceStream = spawnClaude(content, session!, { resume: isResume, systemPrompt: systemPrompt || undefined })
@@ -82,8 +134,11 @@ export async function POST(req: NextRequest) {
             // For Makima/OpenClaw: if stream errors before any content, fall back to spawnClaude
             if (isMakima && !fullResponse) {
               console.log('[chat/route] OpenClaw stream failed, falling back to claude --print')
+              const fallbackMessage = pulseContext
+                ? `[PULSE CONTEXT]\n${pulseContext}\n[/PULSE CONTEXT]\n\nUser: ${content}`
+                : content
               const fallbackSession: ClaudeSession = { sessionId: randomUUID(), threadId }
-              const fallbackStream = spawnClaude(content, fallbackSession, { resume: false, systemPrompt: systemPrompt || undefined })
+              const fallbackStream = spawnClaude(fallbackMessage, fallbackSession, { resume: false, systemPrompt: systemPrompt || undefined })
               const fallbackReader = fallbackStream.getReader()
 
               while (true) {
@@ -125,9 +180,22 @@ export async function POST(req: NextRequest) {
           controller.enqueue(encoder.encode(`data: ${sseData}\n\n`))
         }
 
-        // Save complete assistant message
+        // Parse and execute actions from Makima's response
+        let displayResponse = fullResponse
+        if (isMakima && fullResponse) {
+          const actions = parseActions(fullResponse)
+          if (actions.length > 0) {
+            displayResponse = stripActionBlocks(fullResponse)
+            const actionResults = await executeActions(actions)
+            const actionData = JSON.stringify({ type: 'action_result', actions: actionResults })
+            controller.enqueue(encoder.encode(`data: ${actionData}\n\n`))
+            console.log(`[chat/route] Executed ${actions.length} pulse action(s):`, actionResults.map(r => `${r.action.type}: ${r.success ? 'ok' : r.message}`))
+          }
+        }
+
+        // Save complete assistant message (stripped of action blocks for Makima)
         if (fullResponse) {
-          const msg = await saveMessage(threadId, 'assistant', fullResponse, agentId)
+          const msg = await saveMessage(threadId, 'assistant', displayResponse, agentId)
           const doneData = JSON.stringify({ type: 'done', messageId: msg.id, agentId })
           controller.enqueue(encoder.encode(`data: ${doneData}\n\n`))
 
