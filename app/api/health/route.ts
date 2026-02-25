@@ -21,7 +21,9 @@ async function checkSupabase(): Promise<boolean> {
   }
 }
 
-async function checkClaudeCli(): Promise<boolean> {
+async function checkClaudeCli(): Promise<boolean | 'n/a'> {
+  // Claude CLI only exists on local dev machines, not Vercel
+  if (process.env.VERCEL || process.env.VERCEL_ENV) return 'n/a'
   const paths = ['/opt/homebrew/bin/claude', '/usr/local/bin/claude']
   for (const p of paths) {
     try {
@@ -65,7 +67,7 @@ export async function GET() {
     checkPoller(),
   ])
 
-  const status = supabase && claude_cli && poller.alive ? 'ok' : 'degraded'
+  const status = supabase && (claude_cli === true || claude_cli === 'n/a') && poller.alive ? 'ok' : 'degraded'
 
   return NextResponse.json(
     {
