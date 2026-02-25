@@ -12,7 +12,10 @@ export default function HealthPage() {
 
   useEffect(() => {
     fetch("/api/health")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error("Failed");
+        return r.json();
+      })
       .then((data: HealthCheck) => {
         setHealth(data);
         setLoading(false);

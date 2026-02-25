@@ -42,9 +42,9 @@ async function checkPoller(): Promise<{ alive: boolean; last_heartbeat: string |
     const sb = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
     const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString()
     const { data } = await sb
-      .from('events')
+      .from('war_room_events')
       .select('created_at')
-      .eq('type', 'heartbeat')
+      .eq('event_type', 'heartbeat')
       .gte('created_at', tenMinutesAgo)
       .order('created_at', { ascending: false })
       .limit(1)
