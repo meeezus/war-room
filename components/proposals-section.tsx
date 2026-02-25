@@ -5,6 +5,27 @@ import type { Proposal } from "@/lib/types";
 import { approveProposal, rejectProposal, DOMAIN_TO_DAIMYO } from "@/lib/queries";
 import { StealthCard } from "./stealth-card";
 
+// Agent initials + color for awareness avatar badges
+const AGENT_AVATAR: Record<string, { initials: string; color: string; name: string }> = {
+  ed:     { initials: 'E',  color: '#3b82f6', name: 'Ed' },
+  light:  { initials: 'L',  color: '#a855f7', name: 'Light' },
+  l:      { initials: 'L',  color: '#a855f7', name: 'L' },
+  armin:  { initials: 'Ar', color: '#22c55e', name: 'Armin' },
+  nanami: { initials: 'N',  color: '#f59e0b', name: 'Nanami' },
+  major:  { initials: 'Mj', color: '#ef4444', name: 'Major' },
+  makima: { initials: 'Mk', color: '#a855f7', name: 'Makima' },
+  bulma:  { initials: 'B',  color: '#06b6d4', name: 'Bulma' },
+  toji:   { initials: 'T',  color: '#f59e0b', name: 'Toji' },
+};
+
+function getAgentAvatar(agentId: string) {
+  return AGENT_AVATAR[agentId.toLowerCase()] ?? {
+    initials: agentId.slice(0, 2).toUpperCase(),
+    color: '#888',
+    name: agentId,
+  };
+}
+
 const RISK_COLORS: Record<string, { bg: string; text: string }> = {
   low: { bg: "bg-emerald-500/15", text: "text-emerald-400" },
   medium: { bg: "bg-yellow-500/15", text: "text-yellow-400" },
@@ -115,9 +136,33 @@ export function ProposalsSection({ proposals, projectId, onUpdate }: ProposalsSe
                       {proposal.title}
                     </h4>
                     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                      <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                        {proposal.source}
-                      </span>
+                      {proposal.source === 'awareness' ? (
+                        <>
+                          {(() => {
+                            const agentId = proposal.requested_by
+                              ? DOMAIN_TO_DAIMYO[proposal.requested_by] ?? proposal.requested_by
+                              : 'unknown';
+                            const agent = getAgentAvatar(agentId);
+                            return (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-purple-500/15 px-1.5 py-0.5">
+                                <span
+                                  className="inline-flex size-4 items-center justify-center rounded-full text-[8px] font-bold text-white"
+                                  style={{ backgroundColor: agent.color }}
+                                >
+                                  {agent.initials}
+                                </span>
+                                <span className="text-[10px] font-medium text-purple-400">
+                                  noticed this
+                                </span>
+                              </span>
+                            );
+                          })()}
+                        </>
+                      ) : (
+                        <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                          {proposal.source}
+                        </span>
+                      )}
                       {proposal.domain && (
                         <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
                           {proposal.domain}
@@ -133,9 +178,11 @@ export function ProposalsSection({ proposals, projectId, onUpdate }: ProposalsSe
                           Awaiting Council
                         </span>
                       )}
-                      <span className="text-[10px] text-muted-foreground/75">
-                        by {proposal.requested_by}
-                      </span>
+                      {proposal.source !== 'awareness' && (
+                        <span className="text-[10px] text-muted-foreground/75">
+                          by {proposal.requested_by}
+                        </span>
+                      )}
                     </div>
                     {proposal.description && (
                       <div className="mt-2">
