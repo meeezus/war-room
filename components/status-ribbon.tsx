@@ -13,7 +13,6 @@ interface StatusRibbonProps {
   awarenessCount?: number;
   lastPatrol: { timestamp: string | null; discoveryCount: number };
   skillStats: { recentPatches: number; appliedPatches: number };
-  activeObjectives: number;
   councilSessions: number;
 }
 
@@ -134,7 +133,7 @@ function DiscoveriesCard({
 }: Pick<StatusRibbonProps, "pendingDiscoveries" | "criticalCount" | "warningCount" | "infoCount">) {
   return (
     <Link href="/discoveries" className="block">
-      <StealthCard hover={false} className="px-4 py-3 min-w-[200px] flex-shrink-0">
+      <StealthCard hover={false} className="px-4 py-3 min-w-[200px] min-h-[110px] flex-shrink-0 flex flex-col justify-between">
         <CardLabel romaji="Hakken" english="Discoveries" />
         <CardValue>
           <span className="text-amber-400">{pendingDiscoveries}</span>
@@ -175,21 +174,6 @@ function SkillsCard({ skillStats }: { skillStats: StatusRibbonProps["skillStats"
       <p className="text-xs text-muted-foreground font-[family-name:var(--font-jetbrains-mono)]">
         {skillStats.appliedPatches} applied total
       </p>
-    </StealthCard>
-  );
-}
-
-function ObjectivesCard({ activeObjectives }: { activeObjectives: number }) {
-  return (
-    <StealthCard hover={false} className="px-4 py-3 min-w-[200px] flex-shrink-0">
-      <CardLabel romaji="Mokuhyō" english="Objectives" />
-      <CardValue>{activeObjectives}</CardValue>
-      <Link
-        href="/objectives"
-        className="text-xs text-blue-400 mt-1 block hover:text-blue-300"
-      >
-        View all →
-      </Link>
     </StealthCard>
   );
 }
@@ -287,7 +271,6 @@ export function StatusRibbon({
   awarenessCount,
   lastPatrol,
   skillStats,
-  activeObjectives,
   councilSessions,
 }: StatusRibbonProps) {
   return (
@@ -307,7 +290,6 @@ export function StatusRibbon({
         infoCount={infoCount}
       />
       <SkillsCard skillStats={skillStats} />
-      <ObjectivesCard activeObjectives={activeObjectives} />
       <HealthCard />
       <CouncilCard activeSessions={councilSessions} />
       <ChatCard />

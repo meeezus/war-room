@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { getAgents, getMissions, getEvents, getProjectsWithMetrics, getDynastyStats, getMissionStats, getPendingDiscoveryCount, getSkillPatchStats, getLastPatrolSummary, getActiveObjectiveCount, getActiveCouncilSessionCount, getAwarenessProposalCount, getObjectivesWithMetrics } from "@/lib/queries";
+import { getAgents, getMissions, getEvents, getProjectsWithMetrics, getDynastyStats, getMissionStats, getPendingDiscoveryCount, getSkillPatchStats, getLastPatrolSummary, getActiveCouncilSessionCount, getAwarenessProposalCount, getObjectivesWithMetrics } from "@/lib/queries";
 import type { AgentStatus, Mission, Event, DynastyStats, ProjectWithMetrics, ObjectiveWithMetrics } from "@/lib/types";
 import Link from "next/link";
 import { StatusRibbon } from "@/components/status-ribbon";
@@ -73,7 +73,6 @@ export default function DashboardPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [skillStats, setSkillStats] = useState({ recentPatches: 0, appliedPatches: 0 });
   const [lastPatrol, setLastPatrol] = useState<{ timestamp: string | null; discoveryCount: number }>({ timestamp: null, discoveryCount: 0 });
-  const [activeObjectives, setActiveObjectives] = useState(0);
   const [projects, setProjects] = useState<ProjectWithMetrics[]>([]);
   const [objectives, setObjectives] = useState<ObjectiveWithMetrics[]>([]);
   const [dynastyStats, setDynastyStats] = useState<DynastyStats>(defaultDynastyStats);
@@ -98,7 +97,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function fetchData() {
-      const [agentsData, missionsData, eventsData, projectsData, dynastyData, missionStatsData, discoveryCount, skillStatsData, lastPatrolData, objectiveCount, councilSessionCount, awarenessCountData, objectivesData] = await Promise.all([
+      const [agentsData, missionsData, eventsData, projectsData, dynastyData, missionStatsData, discoveryCount, skillStatsData, lastPatrolData, councilSessionCount, awarenessCountData, objectivesData] = await Promise.all([
         getAgents(),
         getMissions(),
         getEvents(),
@@ -108,7 +107,6 @@ export default function DashboardPage() {
         getPendingDiscoveryCount(),
         getSkillPatchStats(),
         getLastPatrolSummary(),
-        getActiveObjectiveCount(),
         getActiveCouncilSessionCount(),
         getAwarenessProposalCount(),
         getObjectivesWithMetrics(),
@@ -122,7 +120,6 @@ export default function DashboardPage() {
       setPendingDiscoveries(discoveryCount);
       setSkillStats(skillStatsData);
       setLastPatrol(lastPatrolData);
-      setActiveObjectives(objectiveCount);
       setCouncilSessions(councilSessionCount);
       setAwarenessCount(awarenessCountData);
       setObjectives(objectivesData);
@@ -203,7 +200,6 @@ export default function DashboardPage() {
           pendingDiscoveries={pendingDiscoveries}
           lastPatrol={lastPatrol}
           skillStats={skillStats}
-          activeObjectives={activeObjectives}
           councilSessions={councilSessions}
           awarenessCount={awarenessCount}
         />
