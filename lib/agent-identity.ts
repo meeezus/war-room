@@ -15,6 +15,7 @@ const AGENT_IDENTITY_PATHS: Record<string, string[]> = {
   l: [resolve(HOME, 'Code/shogunate/skills/L-SKILL.md')],
   nanami: [resolve(HOME, 'Code/shogunate/skills/Nanami-SKILL.md')],
   armin: [resolve(HOME, 'Code/shogunate/skills/Armin-SKILL.md')],
+  loid: [resolve(HOME, 'clawd/x/skills/marketing/SKILL.md')],
 }
 
 export function getAgentSystemPrompt(agentId: string): string | null {

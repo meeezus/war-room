@@ -1,0 +1,133 @@
+---
+session: war-room
+date: 2026-02-24
+status: complete
+outcome: SUCCEEDED
+---
+
+goal: Objectives workflow + dashboard polish + full light/dark theme — 11 tasks, 4 sprints, 57 files changed
+now: Merge PR #8 (feature/makima-pulse → main). Then migrate chat components (zinc-* hardcoded colors) to CSS variables for light mode parity.
+
+test: npm run build
+
+done_this_session:
+  - task: "S0-T1: Ribbon overhaul — Romaji+English labels, Council/Chat cards, removed +Project and text links from header"
+    files: [components/status-ribbon.tsx, app/dashboard/page.tsx, lib/queries.ts, lib/types.ts]
+  - task: "S0-T2: /brief page renders HTML brief instead of raw JSON"
+    files: [app/brief/page.tsx, components/status-ribbon.tsx]
+  - task: "S0-T3: Rewired Makima popup to main /api/chat route with thread persistence"
+    files: [components/council/makima-chat-popup.tsx, app/council/[id]/council-session-client.tsx]
+  - task: "S0-T4: Deleted orphan files (brief-card, stats-bar, council-terminal-panel, makima-popup route)"
+    files: [components/brief-card.tsx, components/stats-bar.tsx, components/council/council-terminal-panel.tsx, app/api/chat/makima-popup/route.ts]
+  - task: "S1-T1: Create Objective form at /objectives/new (title, success_criteria required, max_iterations, project dropdown)"
+    files: [app/objectives/new/page.tsx]
+  - task: "S1-T2: +Objective button on objectives page header + empty state CTA"
+    files: [app/objectives/page.tsx]
+  - task: "S1-T3: Create Objective modal in council actions pre-filled from session topic/recommendation"
+    files: [components/council/council-actions.tsx, lib/queries.ts]
+  - task: "S2-T1: Health detail page at /health with per-service status (Supabase, Claude CLI, Poller)"
+    files: [app/health/page.tsx, components/status-ribbon.tsx]
+  - task: "S3-T1: Theme infrastructure — next-themes, ThemeProvider, ThemeToggle in dashboard header"
+    files: [components/theme-provider.tsx, components/theme-toggle.tsx, app/layout.tsx, package.json]
+  - task: "S3-T2: CSS variable migration across 43+ files — hardcoded rgba/hex/white → semantic classes"
+    files: [43 component and page files — all bracket-notation colors, shorthand text-white/, focus ring patterns migrated]
+  - task: "S3-T3: Light mode polish — tuned :root variables, stealth-card CSS, noise/mist/scrollbar/selection dark: overrides"
+    files: [app/globals.css, components/stealth-card.tsx]
+
+blockers: []
+
+questions:
+  - "Chat components (chat-input, thread-list, message-bubble, agent-selector, chat/page) still use hardcoded zinc-* palette — needs separate migration task"
+  - "SSE fragmentation bug in chat (TCP chunks split mid-line, partial chunks dropped) still unfixed"
+  - "Makima action delay (executeActions runs before done event sent to client) still unfixed"
+
+decisions:
+  - chat_zinc_out_of_scope: "Chat components use ~80 zinc-* instances across 6 files — separate migration, not part of this sprint"
+  - text_white_on_buttons_kept: "text-white on emerald button Send icon is intentional (white icon on colored bg), not migrated"
+  - light_mode_palette: "Light :root uses #FAFAFA bg, #1A1A1A fg, rgba(0,0,0,0.5) muted-fg, rgba(0,0,0,0.1) border — warm/clean, not generic shadcn"
+  - stealth_card_dual_shadows: "Light gets subtle shadow (0,0,0,0.08), dark gets heavier (0,0,0,0.5) via dark: prefix"
+
+findings:
+  - three_migration_layers: "Batch agents caught bracket-notation colors but missed: (1) shorthand text-white/40, (2) focus:border-white/[0.2] ring patterns, (3) solid hover:text-white. Required 3 cleanup passes."
+  - council_card_abstain_zinc: "council-card.tsx has bg-zinc-500/20 for abstain votes — semantic, left as-is"
+  - bg_white_image_intentional: "message-bubble.tsx bg-white on img element is intentional (image background), not migrated"
+
+worked:
+  - "4 parallel batch agents for 43-file migration completed without conflicts"
+  - "Grep sweeps after batch completion caught patterns agents missed"
+  - "dark: Tailwind prefix + .dark CSS selector for dual-mode overrides"
+  - "next-themes with attribute='class' + suppressHydrationWarning avoids flash"
+
+failed:
+  - "Batch agents only migrated bracket-notation patterns — shorthand forms (text-white/40) need separate regex pattern"
+  - "Focus ring patterns (focus:border-white/[0.2]) weren't in the original color mapping table"
+
+next:
+  - "Merge PR #8 (feature/makima-pulse → main)"
+  - "Migrate chat components zinc-* palette to CSS variables (6 files, ~80 instances)"
+  - "Fix SSE fragmentation bug — carry-forward buffer in chat page client-side reader"
+  - "Fix Makima action delay — send done event before executeActions, or run in background"
+  - "Seed 3-5 real objectives for existing projects"
+  - "Consider non-coding objective evaluator mode (check-in prompt vs code assessment)"
+
+files:
+  created:
+    - app/brief/page.tsx
+    - app/health/page.tsx
+    - app/objectives/new/page.tsx
+    - components/theme-provider.tsx
+    - components/theme-toggle.tsx
+  deleted:
+    - app/api/chat/makima-popup/route.ts
+    - components/brief-card.tsx
+    - components/stats-bar.tsx
+    - components/council/council-terminal-panel.tsx
+  modified:
+    - app/agents/[id]/page.tsx
+    - app/api/projects/route.ts
+    - app/council/[id]/council-session-client.tsx
+    - app/council/[id]/page.tsx
+    - app/council/page.tsx
+    - app/dashboard/page.tsx
+    - app/globals.css
+    - app/layout.tsx
+    - app/missions/[id]/page.tsx
+    - app/missions/page.tsx
+    - app/objectives/page.tsx
+    - app/offline/page.tsx
+    - app/projects/[id]/page.tsx
+    - components/agent-detail.tsx
+    - components/agent-sidebar.tsx
+    - components/board-section.tsx
+    - components/breadcrumb.tsx
+    - components/council/council-actions.tsx
+    - components/council/council-card.tsx
+    - components/council/council-session-card.tsx
+    - components/council/council-synthesis.tsx
+    - components/council/makima-chat-popup.tsx
+    - components/create-mission-modal.tsx
+    - components/create-project-modal.tsx
+    - components/event-feed.tsx
+    - components/kanban-board.tsx
+    - components/mission-detail.tsx
+    - components/mission-kanban-card.tsx
+    - components/mission-queue.tsx
+    - components/mission-table-view.tsx
+    - components/project-card.tsx
+    - components/project-detail.tsx
+    - components/project-kanban.tsx
+    - components/project-overview.tsx
+    - components/proposals-section.tsx
+    - components/rpg-stat-bar.tsx
+    - components/status-ribbon.tsx
+    - components/stealth-card.tsx
+    - components/step-card.tsx
+    - components/task-kanban-card.tsx
+    - components/task-row.tsx
+    - components/terminal/agent-spawn-card.tsx
+    - components/terminal/diff-viewer.tsx
+    - components/terminal/inline-terminal.tsx
+    - components/terminal/terminal-panel.tsx
+    - lib/queries.ts
+    - package.json
+    - package-lock.json

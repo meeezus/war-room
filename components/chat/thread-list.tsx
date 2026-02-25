@@ -98,28 +98,28 @@ export function ThreadList({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-zinc-800">
-        <h2 className="font-[family-name:var(--font-space-grotesk)] text-sm font-medium text-zinc-200">
+      <div className="flex items-center justify-between p-4 border-b border-border">
+        <h2 className="font-[family-name:var(--font-space-grotesk)] text-sm font-medium text-foreground">
           Threads
         </h2>
         <button
           onClick={onNewThread}
           disabled={isCreating}
-          className="h-7 w-7 rounded-md bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center transition-colors disabled:opacity-50"
+          className="h-7 w-7 rounded-md bg-muted hover:bg-muted flex items-center justify-center transition-colors disabled:opacity-50"
         >
-          <Plus className="h-3.5 w-3.5 text-zinc-300" />
+          <Plus className="h-3.5 w-3.5 text-foreground/80" />
         </button>
       </div>
 
       {/* Active / Archived toggle */}
       {onToggleArchived && (
-        <div className="flex border-b border-zinc-800">
+        <div className="flex border-b border-border">
           <button
             onClick={() => showArchived && onToggleArchived()}
             className={`flex-1 py-2 text-xs font-medium transition-colors ${
               !showArchived
                 ? 'text-emerald-400 border-b-2 border-emerald-500'
-                : 'text-zinc-500 hover:text-zinc-300'
+                : 'text-muted-foreground hover:text-foreground/80'
             }`}
           >
             Active
@@ -129,7 +129,7 @@ export function ThreadList({
             className={`flex-1 py-2 text-xs font-medium transition-colors ${
               showArchived
                 ? 'text-emerald-400 border-b-2 border-emerald-500'
-                : 'text-zinc-500 hover:text-zinc-300'
+                : 'text-muted-foreground hover:text-foreground/80'
             }`}
           >
             Archived
@@ -141,7 +141,7 @@ export function ThreadList({
       <div className="flex-1 overflow-y-auto">
         {threads.length === 0 && (
           <div className="p-4 text-center">
-            <p className="text-zinc-500 text-xs">No threads yet</p>
+            <p className="text-muted-foreground text-xs">No threads yet</p>
           </div>
         )}
         {threads.map((thread) => (
@@ -153,10 +153,10 @@ export function ThreadList({
           >
             <button
               onClick={() => onSelectThread(thread.id)}
-              className={`w-full text-left px-4 py-3 border-b border-zinc-800/50 transition-colors ${
+              className={`w-full text-left px-4 py-3 border-b border-border/50 transition-colors ${
                 activeThreadId === thread.id
                   ? 'bg-emerald-500/10 border-l-2 border-l-emerald-500'
-                  : 'hover:bg-zinc-900/50'
+                  : 'hover:bg-muted/50'
               }`}
             >
               <div className="flex items-start gap-2">
@@ -167,7 +167,7 @@ export function ThreadList({
                     className="h-5 w-5 rounded-full object-cover mt-0.5 flex-shrink-0"
                   />
                 ) : (
-                  <MessageSquare className="h-3.5 w-3.5 text-zinc-500 mt-0.5 flex-shrink-0" />
+                  <MessageSquare className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
@@ -179,22 +179,22 @@ export function ThreadList({
                         onBlur={handleSaveEdit}
                         onKeyDown={handleEditKeyDown}
                         onClick={(e) => e.stopPropagation()}
-                        className="text-sm text-zinc-200 font-medium bg-zinc-800 border border-zinc-600 rounded px-1 py-0 w-full outline-none focus:border-emerald-500"
+                        className="text-sm text-foreground font-medium bg-muted border border-border rounded px-1 py-0 w-full outline-none focus:border-emerald-500"
                       />
                     ) : (
                       <span
-                        className="text-sm text-zinc-200 truncate font-medium"
+                        className="text-sm text-foreground truncate font-medium"
                         onDoubleClick={(e) => handleStartEdit(e, thread.id, thread.title)}
                       >
                         {thread.title}
                       </span>
                     )}
-                    <span className="text-[10px] text-zinc-600 flex-shrink-0 font-[family-name:var(--font-jetbrains-mono)]">
+                    <span className="text-[10px] text-muted-foreground/60 flex-shrink-0 font-[family-name:var(--font-jetbrains-mono)]">
                       {timeAgo(thread.last_message_at)}
                     </span>
                   </div>
                   {thread.last_message && (
-                    <p className="text-xs text-zinc-500 truncate mt-0.5">
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">
                       {thread.last_message}
                     </p>
                   )}
@@ -208,19 +208,19 @@ export function ThreadList({
                 {onArchive && (
                   <button
                     onClick={(e) => handleArchive(e, thread.id)}
-                    className="h-6 w-6 rounded flex items-center justify-center bg-zinc-800 hover:bg-zinc-700 transition-colors"
+                    className="h-6 w-6 rounded flex items-center justify-center bg-muted hover:bg-muted transition-colors"
                     title="Archive thread"
                   >
-                    <Archive className="h-3 w-3 text-zinc-400" />
+                    <Archive className="h-3 w-3 text-muted-foreground" />
                   </button>
                 )}
                 {onDelete && (
                   <button
                     onClick={(e) => handleDelete(e, thread.id)}
-                    className="h-6 w-6 rounded flex items-center justify-center bg-zinc-800 hover:bg-red-900/60 transition-colors"
+                    className="h-6 w-6 rounded flex items-center justify-center bg-muted hover:bg-red-900/60 transition-colors"
                     title="Delete thread"
                   >
-                    <Trash2 className="h-3 w-3 text-zinc-400 hover:text-red-400" />
+                    <Trash2 className="h-3 w-3 text-muted-foreground hover:text-red-400" />
                   </button>
                 )}
               </div>

@@ -23,21 +23,25 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .setup(|_app| {
-            // Start Next.js dev server
-            let child = Command::new("npm")
-                .args(["run", "dev"])
-                .current_dir(env!("CARGO_MANIFEST_DIR").to_string() + "/..")
-                .spawn()
-                .expect("Failed to start Next.js dev server");
-
-            _app.manage(ServerProcess(Mutex::new(Some(child))));
-
-            // Wait for server to be ready
-            println!("Waiting for Next.js server...");
-            if wait_for_server(Duration::from_secs(30)) {
-                println!("Next.js server is ready!");
+            // Only start Next.js if not already running on port 3000
+            if TcpStream::connect("127.0.0.1:3000").is_ok() {
+                println!("Next.js server already running on port 3000, reusing.");
+                _app.manage(ServerProcess(Mutex::new(None)));
             } else {
-                eprintln!("Warning: Next.js server did not respond within 30s");
+                let child = Command::new("npm")
+                    .args(["run", "dev"])
+                    .current_dir(env!("CARGO_MANIFEST_DIR").to_string() + "/..")
+                    .spawn()
+                    .expect("Failed to start Next.js dev server");
+
+                _app.manage(ServerProcess(Mutex::new(Some(child))));
+
+                println!("Waiting for Next.js server...");
+                if wait_for_server(Duration::from_secs(30)) {
+                    println!("Next.js server is ready!");
+                } else {
+                    eprintln!("Warning: Next.js server did not respond within 30s");
+                }
             }
 
             Ok(())

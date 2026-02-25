@@ -7,7 +7,7 @@ import { createRequestContext } from '@/lib/request-context'
 import { sendToOpenClaw } from '@/lib/openclaw-client'
 import { createServiceClient } from '@/lib/supabase-server'
 import { buildPulseContext } from '@/lib/pulse-context'
-import { parseActions, executeActions, stripActionBlocks } from '@/lib/pulse-actions'
+import { parseActions, executeActions, stripActionBlocks, type PulseAction } from '@/lib/pulse-actions'
 import { generateAlerts } from '@/lib/pulse-alerts'
 
 export const runtime = 'nodejs'
@@ -187,20 +187,18 @@ export async function POST(req: NextRequest) {
           controller.enqueue(encoder.encode(`data: ${sseData}\n\n`))
         }
 
-        // Parse and execute actions from Makima's response
+        // Parse actions but don't execute yet — done event must go first
         let displayResponse = fullResponse
+        let pendingActions: PulseAction[] = []
+
         if (isMakima && fullResponse) {
-          const actions = parseActions(fullResponse)
-          if (actions.length > 0) {
+          pendingActions = parseActions(fullResponse)
+          if (pendingActions.length > 0) {
             displayResponse = stripActionBlocks(fullResponse)
-            const actionResults = await executeActions(actions)
-            const actionData = JSON.stringify({ type: 'action_result', actions: actionResults })
-            controller.enqueue(encoder.encode(`data: ${actionData}\n\n`))
-            console.log(`[chat/route] Executed ${actions.length} pulse action(s):`, actionResults.map(r => `${r.action.type}: ${r.success ? 'ok' : r.message}`))
           }
         }
 
-        // Save complete assistant message (stripped of action blocks for Makima)
+        // Save message and send done event FIRST (before any action side effects)
         if (fullResponse) {
           const msg = await saveMessage(threadId, 'assistant', displayResponse, agentId)
           const doneData = JSON.stringify({ type: 'done', messageId: msg.id, agentId })
@@ -212,6 +210,16 @@ export async function POST(req: NextRequest) {
               console.error('[chat/route] Auto-title failed:', err)
             )
           }
+        }
+
+        // Execute actions AFTER done event — fire-and-forget, don't block response
+        if (pendingActions.length > 0) {
+          executeActions(pendingActions)
+            .then((actionResults) => {
+              console.log(`[chat/route] Executed ${pendingActions.length} pulse action(s):`,
+                actionResults.map(r => `${r.action.type}: ${r.success ? 'ok' : r.message}`))
+            })
+            .catch((err) => console.error('[chat/route] Action execution failed:', err))
         }
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : typeof err === 'object' ? JSON.stringify(err) : String(err)

@@ -40,7 +40,7 @@ export function ChatInput({ threadId, disabled, onSend, isLoading }: ChatInputPr
   }
 
   return (
-    <div className="border-t border-zinc-800 bg-zinc-950 p-4" key={threadId}>
+    <div className="border-t border-border bg-background p-4" key={threadId}>
       <div className="flex items-end gap-3">
         <textarea
           ref={textareaRef}
@@ -50,15 +50,15 @@ export function ChatInput({ threadId, disabled, onSend, isLoading }: ChatInputPr
           placeholder={isLoading ? 'Claude is responding...' : 'Send a message...'}
           disabled={disabled || isLoading}
           rows={1}
-          className="flex-1 resize-none bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 resize-none bg-muted border border-border rounded-lg px-4 py-3 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
         />
         <button
           onClick={handleSubmit}
           disabled={!input.trim() || isLoading || disabled}
-          className="flex-shrink-0 h-11 w-11 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-800 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
+          className="flex-shrink-0 h-11 w-11 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:bg-muted disabled:cursor-not-allowed flex items-center justify-center transition-colors"
         >
           {isLoading ? (
-            <Loader2 className="h-4 w-4 text-zinc-400 animate-spin" />
+            <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
           ) : (
             <Send className="h-4 w-4 text-white" />
           )}

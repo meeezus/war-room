@@ -34,27 +34,9 @@ export async function POST(req: NextRequest) {
 
     if (objError) throw objError
 
-    // 2. Create an initial proposal linked to this objective
-    const { data: proposal, error: propError } = await sb
-      .from('proposals')
-      .insert({
-        title: `[Objective] ${title}`,
-        description,
-        source: 'shoin_chat',
-        requested_by: 'sensei',
-        project_id: project_id || null,
-        objective_id: objective.id,
-        status: 'pending',
-        auto_approved: false,
-        council_review: false,
-        reviews: [],
-      })
-      .select()
-      .single()
-
-    if (propError) throw propError
-
-    return Response.json({ objective, proposal })
+    // Objective created — the evaluator will propose specific missions
+    // when it detects no active work toward the success criteria.
+    return Response.json({ objective })
   } catch (err) {
     console.error('[objectives/route] Error:', err)
     return Response.json({ error: 'Failed to create objective' }, { status: 500 })

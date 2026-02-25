@@ -201,7 +201,7 @@ function HealthCard() {
 function CouncilCard({ activeSessions }: { activeSessions: number }) {
   return (
     <Link href="/council" className="block">
-      <StealthCard hover={false} className="px-4 py-3 min-w-[200px] flex-shrink-0">
+      <StealthCard hover={false} className="px-4 py-3 min-w-[200px] min-h-[110px] flex-shrink-0 flex flex-col justify-between">
         <CardLabel romaji="Hyōjō" english="Council" />
         <CardValue>{activeSessions}</CardValue>
         <p className="text-xs text-muted-foreground font-[family-name:var(--font-jetbrains-mono)]">
@@ -215,7 +215,7 @@ function CouncilCard({ activeSessions }: { activeSessions: number }) {
 function ChatCard() {
   return (
     <Link href="/chat" className="block">
-      <StealthCard hover={false} className="px-4 py-3 min-w-[200px] flex-shrink-0">
+      <StealthCard hover={false} className="px-4 py-3 min-w-[200px] min-h-[110px] flex-shrink-0 flex flex-col justify-between">
         <CardLabel romaji="Taiwa" english="Chat" />
         <CardValue>⚡</CardValue>
         <p className="text-xs text-muted-foreground font-[family-name:var(--font-jetbrains-mono)]">

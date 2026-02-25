@@ -45,10 +45,10 @@ export function AgentSelector({ open, onSelect, onClose }: AgentSelectorProps) {
     >
       <div
         data-testid="agent-selector-modal"
-        className="w-full max-w-md rounded-lg border border-zinc-800 bg-zinc-900 p-6 shadow-2xl"
+        className="w-full max-w-md rounded-lg border border-border bg-muted p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="mb-5 text-base font-semibold text-zinc-200 font-[family-name:var(--font-space-grotesk)]">
+        <h2 className="mb-5 text-base font-semibold text-foreground font-[family-name:var(--font-space-grotesk)]">
           New conversation with...
         </h2>
         <div data-testid="agent-grid" className="grid grid-cols-3 gap-3">
@@ -57,7 +57,7 @@ export function AgentSelector({ open, onSelect, onClose }: AgentSelectorProps) {
               key={agent.id}
               data-testid={`agent-card-${agent.id}`}
               onClick={() => onSelect(agent.id)}
-              className="flex flex-col items-center gap-1.5 rounded-lg p-3 transition-colors hover:bg-zinc-800 hover:ring-1 hover:ring-zinc-700 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
+              className="flex flex-col items-center gap-1.5 rounded-lg p-3 transition-colors hover:bg-muted hover:ring-1 hover:ring-ring focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
             >
               <img
                 src={`/avatars/${agent.id}.webp`}
@@ -66,10 +66,10 @@ export function AgentSelector({ open, onSelect, onClose }: AgentSelectorProps) {
                   agent.id === 'cc' ? 'ring-2 ring-emerald-400' : ''
                 }`}
               />
-              <span className="text-sm text-zinc-200 font-[family-name:var(--font-space-grotesk)]">
+              <span className="text-sm text-foreground font-[family-name:var(--font-space-grotesk)]">
                 {agent.name}
               </span>
-              <span className="text-[10px] text-zinc-500 font-[family-name:var(--font-jetbrains-mono)]">
+              <span className="text-[10px] text-muted-foreground font-[family-name:var(--font-jetbrains-mono)]">
                 {agent.specialty}
               </span>
             </button>
