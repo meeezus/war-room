@@ -42,7 +42,7 @@ export default function DiscoveriesPage() {
       const res = await fetch(`/api/discoveries?status=${statusFilter}&severity=${severityParam}`)
       if (res.ok) {
         const data = await res.json()
-        setDiscoveries(data)
+        setDiscoveries(data.discoveries || [])
       }
     } catch {
       // silently fail, leave list empty
