@@ -45,13 +45,13 @@ export function AgentSelector({ open, onSelect, onClose }: AgentSelectorProps) {
     >
       <div
         data-testid="agent-selector-modal"
-        className="w-full max-w-md rounded-lg border border-border bg-muted p-6 shadow-2xl"
+        className="w-full max-w-md mx-4 rounded-lg border border-border bg-muted p-4 sm:p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="mb-5 text-base font-semibold text-foreground font-[family-name:var(--font-space-grotesk)]">
           New conversation with...
         </h2>
-        <div data-testid="agent-grid" className="grid grid-cols-3 gap-3">
+        <div data-testid="agent-grid" className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
           {SELECTABLE_AGENTS.map((agent) => (
             <button
               key={agent.id}

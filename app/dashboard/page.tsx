@@ -12,6 +12,7 @@ import { StealthCard } from "@/components/stealth-card";
 import { ProjectOverview } from "@/components/project-overview";
 import { TerminalPanel } from "@/components/terminal/terminal-panel";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Menu, Radio, X } from "lucide-react";
 
 
 const defaultDynastyStats: DynastyStats = {
@@ -80,8 +81,10 @@ export default function DashboardPage() {
   const [councilSessions, setCouncilSessions] = useState(0);
   const [awarenessCount, setAwarenessCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [feedOpen, setFeedOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(typeof window !== 'undefined' ? window.innerWidth >= 768 : true);
+  const [feedOpen, setFeedOpen] = useState(typeof window !== 'undefined' ? window.innerWidth >= 768 : true);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [mobileFeedOpen, setMobileFeedOpen] = useState(false);
 
   const refreshProjects = useCallback(async () => {
     const [projectsData, dynastyData] = await Promise.all([
@@ -127,13 +130,13 @@ export default function DashboardPage() {
 
   if (!supabase) {
     return (
-      <div className="flex h-screen flex-col overflow-hidden bg-background p-4">
-        <div className="mb-4 flex-shrink-0">
-          <div className="mb-3 flex items-baseline gap-3">
-            <h1 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold tracking-tight text-foreground">
+      <div className="flex h-screen flex-col overflow-hidden bg-background p-2 md:p-4">
+        <div className="mb-2 md:mb-4 flex-shrink-0">
+          <div className="mb-2 md:mb-3 flex items-baseline gap-3">
+            <h1 className="font-[family-name:var(--font-space-grotesk)] text-lg md:text-2xl font-bold tracking-tight text-foreground">
               Dynasty Tenshu
             </h1>
-            <span className="text-xs text-muted-foreground">
+            <span className="hidden md:inline text-xs text-muted-foreground">
               Shogunate Command Center
             </span>
           </div>
@@ -154,17 +157,24 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background p-4">
+    <div className="flex h-screen flex-col overflow-hidden bg-background p-2 md:p-4">
       {/* Header */}
-      <div className="mb-4 flex-shrink-0">
-        <div className="mb-3 flex items-baseline gap-3">
-          <h1 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold tracking-tight text-foreground">
+      <div className="mb-2 md:mb-4 flex-shrink-0">
+        <div className="mb-2 md:mb-3 flex items-center md:items-baseline gap-2 md:gap-3 flex-wrap">
+          {/* Mobile sidebar toggle */}
+          <button
+            onClick={() => setMobileSidebarOpen(true)}
+            className="md:hidden h-8 w-8 rounded-md hover:bg-muted flex items-center justify-center transition-colors flex-shrink-0"
+          >
+            <Menu className="h-4 w-4 text-muted-foreground" />
+          </button>
+          <h1 className="font-[family-name:var(--font-space-grotesk)] text-lg md:text-2xl font-bold tracking-tight text-foreground">
             Dynasty Tenshu
           </h1>
-          <span className="text-xs text-muted-foreground">
+          <span className="hidden md:inline text-xs text-muted-foreground">
             Shogunate Command Center
           </span>
-          <span className="ml-auto font-[family-name:var(--font-jetbrains-mono)] text-xs tabular-nums text-muted-foreground/75">
+          <span className="ml-auto hidden md:inline font-[family-name:var(--font-jetbrains-mono)] text-xs tabular-nums text-muted-foreground/75">
             {dynastyStats.activeProjects}/{dynastyStats.totalProjects} projects
             {" \u00B7 "}
             <Link href="/missions" className="transition-colors hover:text-foreground/60">
@@ -173,6 +183,13 @@ export default function DashboardPage() {
             {" \u00B7 "}
             {dynastyStats.activeTasks}/{dynastyStats.totalTasks} tasks
           </span>
+          {/* Mobile event feed toggle */}
+          <button
+            onClick={() => setMobileFeedOpen(true)}
+            className="md:hidden h-8 w-8 rounded-md hover:bg-muted flex items-center justify-center transition-colors flex-shrink-0 ml-auto"
+          >
+            <Radio className="h-4 w-4 text-muted-foreground" />
+          </button>
           <ThemeToggle />
         </div>
         <StatusRibbon
@@ -185,10 +202,54 @@ export default function DashboardPage() {
         />
       </div>
 
+      {/* Mobile Sidebar Drawer */}
+      {mobileSidebarOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileSidebarOpen(false)} />
+          <div className="absolute inset-y-0 left-0 w-72 bg-background border-r border-border p-4 overflow-y-auto">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="font-[family-name:var(--font-space-grotesk)] text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Daimyo Council
+              </span>
+              <button
+                onClick={() => setMobileSidebarOpen(false)}
+                className="h-8 w-8 rounded-md hover:bg-muted flex items-center justify-center"
+              >
+                <X className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </div>
+            <AgentSidebar agents={agents} />
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Event Feed Drawer */}
+      {mobileFeedOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileFeedOpen(false)} />
+          <div className="absolute inset-y-0 right-0 w-80 max-w-[90vw] bg-background border-l border-border p-4 flex flex-col overflow-hidden">
+            <div className="mb-3 flex items-center justify-between flex-shrink-0">
+              <span className="font-[family-name:var(--font-space-grotesk)] text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Event Feed
+              </span>
+              <button
+                onClick={() => setMobileFeedOpen(false)}
+                className="h-8 w-8 rounded-md hover:bg-muted flex items-center justify-center"
+              >
+                <X className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <EventFeed events={events} />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Content */}
       <div className="flex flex-1 gap-4 overflow-hidden">
-        {/* Left - Agent Sidebar */}
-        <div className={`transition-all duration-150 flex-shrink-0 overflow-hidden ${sidebarOpen ? "w-64" : "w-10"}`}>
+        {/* Left - Agent Sidebar (desktop only) */}
+        <div className={`hidden md:block transition-all duration-150 flex-shrink-0 overflow-hidden ${sidebarOpen ? "w-64" : "w-10"}`}>
           {sidebarOpen ? (
             <div className="flex h-full flex-col">
               <div className="mb-2 flex h-6 items-center justify-between">
@@ -234,8 +295,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Right - Event Feed */}
-        <div className={`transition-all duration-150 flex-shrink-0 overflow-hidden ${feedOpen ? "w-80" : "w-10"}`}>
+        {/* Right - Event Feed (desktop only) */}
+        <div className={`hidden md:block transition-all duration-150 flex-shrink-0 overflow-hidden ${feedOpen ? "w-80" : "w-10"}`}>
           {feedOpen ? (
             <div className="flex h-full flex-col">
               <div className="mb-2 flex h-6 items-center justify-between">
