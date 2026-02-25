@@ -107,6 +107,12 @@ function PatrolCard({ lastPatrol }: { lastPatrol: StatusRibbonProps["lastPatrol"
           {lastPatrol.discoveryCount} discoveries
         </p>
       )}
+      <Link
+        href="/discoveries"
+        className="text-xs text-blue-400 mt-1 block hover:text-blue-300"
+      >
+        View all →
+      </Link>
     </StealthCard>
   );
 }

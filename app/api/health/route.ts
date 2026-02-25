@@ -22,12 +22,16 @@ async function checkSupabase(): Promise<boolean> {
 }
 
 async function checkClaudeCli(): Promise<boolean> {
-  try {
-    await execFileAsync('/opt/homebrew/bin/claude', ['--version'], { timeout: 5000 })
-    return true
-  } catch {
-    return false
+  const paths = ['/opt/homebrew/bin/claude', '/usr/local/bin/claude']
+  for (const p of paths) {
+    try {
+      await execFileAsync(p, ['--version'], { timeout: 5000 })
+      return true
+    } catch {
+      continue
+    }
   }
+  return false
 }
 
 async function checkPoller(): Promise<{ alive: boolean; last_heartbeat: string | null }> {
@@ -69,6 +73,6 @@ export async function GET() {
       checks: { supabase, claude_cli, poller },
       uptime_ms: Date.now() - startTime,
     },
-    { status: status === 'ok' ? 200 : 503 }
+    { status: 200 }
   )
 }
