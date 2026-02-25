@@ -1,0 +1,70 @@
+---
+session: war-room
+date: 2026-02-25
+status: complete
+outcome: SUCCEEDED
+---
+
+goal: Discovery browser page + health fix + shogunate engine upgrades — autonomous night build
+now: Review and merge PR #11 (discovery browser), test /discoveries page, consider Folio log scanner
+
+test: npm run build
+
+done_this_session:
+  - task: "S1-T1: GET /api/discoveries route with multi-select severity filter"
+    files: [app/api/discoveries/route.ts]
+  - task: "S1-T2: /discoveries page with filter bar, approve/dismiss, empty state"
+    files: [app/discoveries/page.tsx]
+  - task: "S1-T3: PatrolCard 'View all →' link to /discoveries"
+    files: [components/status-ribbon.tsx]
+  - task: "Health endpoint fix cherry-picked from overnight PR #10"
+    files: [app/api/health/route.ts, app/health/page.tsx]
+  - task: "Shogunate: reflexive proposals, parallel patrol, batched skill evolution"
+    files: [engine/evaluator.py, engine/patrol.py, engine/skill_evolution.py]
+  - task: "Closed PR #10 (overnight partial), created clean PR #11"
+    files: []
+  - task: "Council review: technical council, 3 amendments applied"
+    files: []
+
+blockers: []
+
+questions:
+  - "Folio log scanner was skipped (overnight syntax error) — worth building next session?"
+  - "Shogunate changes on feature/makima-coo — when to merge to main?"
+  - "Discovery browser needs real data — patrol must run to populate discoveries table"
+
+decisions:
+  - council_amendments: "3 applied: .in() for severity multi-select, empty state UX, cherry-pick health fix"
+  - pr10_closed: "Overnight PR #10 was partial (--print mode + syntax error). Closed, cherry-picked health fix into PR #11"
+  - shogunate_committed: "3 engine files committed on feature/makima-coo with verified-clean changes"
+
+findings:
+  - overnight_print_mode: "--print mode in overnight script described changes but only wrote to files that existed in cwd context. Shogunate changes worked because prompt referenced correct paths."
+  - overnight_syntax_error: "Heredoc in overnight-sprint.sh line 106 had unescaped parentheses. Killed T3 (Folio scanner) and T4 (discovery browser)."
+  - health_endpoint_pattern: "Always return 200 with status field in payload. HTTP status codes for health checks break client-side parsers."
+
+worked:
+  - "3 parallel agents for independent files — zero conflicts, all completed"
+  - "Council review caught 3 real issues before shipping"
+  - "Cherry-picking specific files from overnight branch preserved health fix without the mess"
+
+failed:
+  - "Overnight script --print mode didn't implement most tasks (described only)"
+  - "Heredoc syntax in overnight script broke on unescaped parens"
+
+next:
+  - "Merge PR #11 after review"
+  - "Test /discoveries with real data (run patrol or seed discoveries)"
+  - "Folio log scanner — deferred from tonight"
+  - "Shogunate PR for feature/makima-coo"
+  - "Overnight script fix (heredoc syntax) if planning to reuse"
+
+files:
+  created:
+    - app/api/discoveries/route.ts
+    - app/discoveries/page.tsx
+    - .specs/2026-02-25-night-build.md
+  modified:
+    - components/status-ribbon.tsx
+    - app/api/health/route.ts
+    - app/health/page.tsx

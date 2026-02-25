@@ -90,9 +90,10 @@ export default async function ObjectivesPage() {
             {objectives.map((obj) => {
               const pct = Math.min(100, Math.round((obj.iteration_count / obj.max_iterations) * 100))
               return (
-                <div
+                <Link
                   key={obj.id}
-                  className="rounded-sm border border-border bg-card backdrop-blur-xl p-4"
+                  href={`/objectives/${obj.id}`}
+                  className="block rounded-sm border border-border bg-card backdrop-blur-xl p-4 transition-colors hover:border-border/80 hover:bg-card/80"
                 >
                   {/* Top row: title + status */}
                   <div className="flex items-start justify-between gap-3 mb-2">
@@ -138,7 +139,7 @@ export default async function ObjectivesPage() {
                       {formatDate(obj.created_at)}
                     </span>
                   </div>
-                </div>
+                </Link>
               )
             })}
           </div>

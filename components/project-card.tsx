@@ -47,7 +47,6 @@ export function ProjectCard({ project, onUpdate, discoveryCount = 0 }: ProjectCa
   const progressPct = project.totalTasks > 0 ? (project.taskCounts.done / project.totalTasks) * 100 : 0;
 
   const [menuOpen, setMenuOpen] = useState(false);
-  const [statusSubmenuOpen, setStatusSubmenuOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(project.title);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -59,7 +58,6 @@ export function ProjectCard({ project, onUpdate, discoveryCount = 0 }: ProjectCa
     function handleClick(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
-        setStatusSubmenuOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClick);
@@ -112,7 +110,6 @@ export function ProjectCard({ project, onUpdate, discoveryCount = 0 }: ProjectCa
 
   function handleStatusChange(status: string) {
     patchProject({ status });
-    setStatusSubmenuOpen(false);
     setMenuOpen(false);
   }
 
@@ -166,7 +163,6 @@ export function ProjectCard({ project, onUpdate, discoveryCount = 0 }: ProjectCa
                 e.stopPropagation();
                 e.preventDefault();
                 setMenuOpen(!menuOpen);
-                setStatusSubmenuOpen(false);
               }}
               className="flex size-6 items-center justify-center rounded-sm text-muted-foreground/75 transition-colors hover:bg-accent hover:text-foreground/60"
             >
@@ -192,49 +188,32 @@ export function ProjectCard({ project, onUpdate, discoveryCount = 0 }: ProjectCa
                   Rename
                 </button>
 
-                {/* Status submenu */}
-                <div
-                  className="relative"
-                  onMouseEnter={() => setStatusSubmenuOpen(true)}
-                  onMouseLeave={() => setStatusSubmenuOpen(false)}
-                >
+                {/* Status options (inline) */}
+                <div className="border-t border-border my-1" />
+                <div className="px-2 py-1">
+                  <span className="px-1 text-[10px] uppercase tracking-wider text-muted-foreground/50">Status</span>
+                </div>
+                {STATUS_OPTIONS.map((opt) => (
                   <button
-                    className="flex w-full items-center justify-between px-3 py-1.5 text-left text-xs text-foreground/60 transition-colors hover:bg-muted hover:text-foreground"
+                    key={opt.value}
+                    className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-muted ${
+                      project.status === opt.value
+                        ? "text-foreground font-medium"
+                        : "text-foreground/60"
+                    }`}
                     onClick={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
-                      setStatusSubmenuOpen(!statusSubmenuOpen);
+                      handleStatusChange(opt.value);
                     }}
                   >
-                    Status
-                    <span className="text-[10px] text-muted-foreground/75">&rsaquo;</span>
+                    <span
+                      className="inline-block size-1.5 rounded-full"
+                      style={{ backgroundColor: PROJECT_STATUS_COLORS[opt.value] }}
+                    />
+                    {opt.label}
                   </button>
-                  {statusSubmenuOpen && (
-                    <div className="absolute left-full top-0 z-50 ml-1 min-w-[120px] rounded-sm border border-border bg-[rgba(14,14,14,0.97)] py-1 shadow-xl backdrop-blur-xl">
-                      {STATUS_OPTIONS.map((opt) => (
-                        <button
-                          key={opt.value}
-                          className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-muted ${
-                            project.status === opt.value
-                              ? "text-foreground font-medium"
-                              : "text-foreground/60"
-                          }`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            handleStatusChange(opt.value);
-                          }}
-                        >
-                          <span
-                            className="inline-block size-1.5 rounded-full"
-                            style={{ backgroundColor: PROJECT_STATUS_COLORS[opt.value] }}
-                          />
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                ))}
 
                 {/* Divider */}
                 <div className="my-1 border-t border-border" />

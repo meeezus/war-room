@@ -1,0 +1,71 @@
+---
+session: war-room
+date: 2026-02-25
+status: complete
+outcome: SUCCEEDED
+---
+
+goal: Agent Awareness Loop — proactive event monitoring + dashboard integration
+now: Review and merge PR #12 (awareness dashboard), test awareness loop with real poller data
+
+test: npm run build
+
+done_this_session:
+  - task: "S1-T1: engine/awareness.py — domain router, event scanner, batched Haiku evaluation"
+    files: [engine/awareness.py, tests/unit/test_awareness.py]
+  - task: "S1-T2: Poller step 0.25 — awareness scan every 6th cycle (~60s)"
+    files: [engine/poller.py, engine/config.py]
+  - task: "S1-T3: Awareness event emission + notification severity"
+    files: [engine/notifications.py]
+  - task: "S2-T1: Dashboard awareness badge — purple count on SituationCard"
+    files: [lib/queries.ts, app/dashboard/page.tsx, components/status-ribbon.tsx]
+  - task: "Council review: technical council, 3 amendments applied"
+    files: []
+  - task: "Created PR #12 for war-room, committed shogunate on feature/makima-coo"
+    files: []
+  - task: "Night build recap visual generated"
+    files: []
+
+blockers: []
+
+questions:
+  - "Awareness loop needs real event data to test — run poller and trigger some events"
+  - "Shogunate feature/makima-coo has both awareness loop AND reflexive proposals — when to merge?"
+  - "Bulma's UX concern: awareness proposals should show agent avatar + 'noticed this' label on proposals page — next session?"
+
+decisions:
+  - council_amendments: "3 applied: batched Haiku (not per-event), 60s cadence (not 10s), 10-min lookback cap + 5s timeout"
+  - rate_limiting: "2 proposals per agent per hour, tracked in poller state dict"
+  - config_kill_switch: "AWARENESS_ENABLED=false disables entirely, all config env-var-driven"
+
+findings:
+  - batched_haiku_pattern: "One Haiku call per agent with all events summarized is 80% cheaper than per-event calls. Ed caught this in council."
+  - cadence_optimization: "Major's insight: 60s cadence (every 6th poll cycle) eliminates latency tax without reducing responsiveness. Events aren't that time-sensitive."
+  - domain_routing: "Using DOMAIN_TO_DAIMYO dict lookup (not keyword matching) is cleaner and already exists in config."
+
+worked:
+  - "3 parallel agents: awareness.py, poller+config, dashboard — zero conflicts"
+  - "Council caught 3 real architectural issues before shipping"
+  - "33 unit tests covering all routing rules, rate limiting, timeouts, edge cases"
+
+failed: []
+
+next:
+  - "Merge PR #12 after review"
+  - "Test awareness with live poller (generate events, verify proposals)"
+  - "Bulma's UX: tag awareness proposals with agent avatar on proposals page"
+  - "Shogunate PR for feature/makima-coo (includes awareness + reflexive proposals)"
+  - "Consider: awareness routing for new event types as system grows"
+
+files:
+  created:
+    - engine/awareness.py
+    - tests/unit/test_awareness.py
+    - .specs/2026-02-25-agent-awareness-loop.md
+  modified:
+    - engine/poller.py
+    - engine/config.py
+    - engine/notifications.py
+    - lib/queries.ts
+    - app/dashboard/page.tsx
+    - components/status-ribbon.tsx

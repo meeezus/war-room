@@ -765,3 +765,14 @@ export async function getActiveCouncilSessionCount(): Promise<number> {
   if (error) { console.error('getActiveCouncilSessionCount error:', error); return 0 }
   return count ?? 0
 }
+
+export async function getAwarenessProposalCount(): Promise<number> {
+  if (!supabase) return 0
+  const { count, error } = await supabase
+    .from('proposals')
+    .select('*', { count: 'exact', head: true })
+    .eq('source', 'awareness')
+    .eq('status', 'pending')
+  if (error) { console.error('getAwarenessProposalCount error:', error); return 0 }
+  return count ?? 0
+}
