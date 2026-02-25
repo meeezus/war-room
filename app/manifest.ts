@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Shogunate War Room",
-    short_name: "War Room",
+    name: "Dynasty Tenshu",
+    short_name: "Tenshu",
     description: "Live operational dashboard for the Shogunate AI Council",
     start_url: "/dashboard",
     display: "standalone",

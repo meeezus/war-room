@@ -97,33 +97,38 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function fetchData() {
-      const [agentsData, missionsData, eventsData, projectsData, dynastyData, missionStatsData, discoveryCount, skillStatsData, lastPatrolData, councilSessionCount, awarenessCountData, objectivesData] = await Promise.all([
-        getAgents(),
-        getMissions(),
-        getEvents(),
-        getProjectsWithMetrics(),
-        getDynastyStats(),
-        getMissionStats(),
-        getPendingDiscoveryCount(),
-        getSkillPatchStats(),
-        getLastPatrolSummary(),
-        getActiveCouncilSessionCount(),
-        getAwarenessProposalCount(),
-        getObjectivesWithMetrics(),
-      ]);
-      setAgents(agentsData);
-      setMissions(missionsData);
-      setEvents(eventsData);
-      setProjects(applySmartPriority(projectsData));
-      setDynastyStats(dynastyData);
-      setMissionStats(missionStatsData);
-      setPendingDiscoveries(discoveryCount);
-      setSkillStats(skillStatsData);
-      setLastPatrol(lastPatrolData);
-      setCouncilSessions(councilSessionCount);
-      setAwarenessCount(awarenessCountData);
-      setObjectives(objectivesData);
-      setLoading(false);
+      try {
+        const [agentsData, missionsData, eventsData, projectsData, dynastyData, missionStatsData, discoveryCount, skillStatsData, lastPatrolData, councilSessionCount, awarenessCountData, objectivesData] = await Promise.all([
+          getAgents(),
+          getMissions(),
+          getEvents(),
+          getProjectsWithMetrics(),
+          getDynastyStats(),
+          getMissionStats(),
+          getPendingDiscoveryCount(),
+          getSkillPatchStats(),
+          getLastPatrolSummary(),
+          getActiveCouncilSessionCount(),
+          getAwarenessProposalCount(),
+          getObjectivesWithMetrics(),
+        ]);
+        setAgents(agentsData);
+        setMissions(missionsData);
+        setEvents(eventsData);
+        setProjects(applySmartPriority(projectsData));
+        setDynastyStats(dynastyData);
+        setMissionStats(missionStatsData);
+        setPendingDiscoveries(discoveryCount);
+        setSkillStats(skillStatsData);
+        setLastPatrol(lastPatrolData);
+        setCouncilSessions(councilSessionCount);
+        setAwarenessCount(awarenessCountData);
+        setObjectives(objectivesData);
+      } catch (err) {
+        console.error('Dashboard fetch error:', err);
+      } finally {
+        setLoading(false);
+      }
     }
     fetchData();
   }, []);
