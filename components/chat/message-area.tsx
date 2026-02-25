@@ -25,7 +25,7 @@ export function MessageArea({ messages, streamingContent, isLoading, isFetching,
   if (isFetching) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <Loader2 className="h-6 w-6 text-zinc-500 animate-spin" />
+        <Loader2 className="h-6 w-6 text-muted-foreground animate-spin" />
       </div>
     )
   }
@@ -34,8 +34,8 @@ export function MessageArea({ messages, streamingContent, isLoading, isFetching,
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-zinc-500 text-sm">Start a conversation</p>
-          <p className="text-zinc-600 text-xs mt-1">Messages are sent to Claude Code</p>
+          <p className="text-muted-foreground text-sm">Start a conversation</p>
+          <p className="text-muted-foreground/60 text-xs mt-1">Messages are sent to Claude Code</p>
         </div>
       </div>
     )

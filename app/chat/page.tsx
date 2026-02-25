@@ -245,13 +245,15 @@ export default function ChatPage() {
 
       const decoder = new TextDecoder()
       let accumulated = ''
+      let sseBuffer = ''
 
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
 
-        const text = decoder.decode(value, { stream: true })
-        const lines = text.split('\n')
+        sseBuffer += decoder.decode(value, { stream: true })
+        const lines = sseBuffer.split('\n')
+        sseBuffer = lines.pop() || ''
 
         for (const line of lines) {
           if (!line.startsWith('data: ')) continue
@@ -325,9 +327,9 @@ export default function ChatPage() {
   const isMakima = activeAgent === 'makima'
 
   return (
-    <div className="flex h-screen bg-zinc-950 text-zinc-100">
+    <div className="flex h-screen bg-background text-foreground">
       {/* Thread sidebar */}
-      <div className={`${sidebarOpen ? 'w-72' : 'w-0'} flex-shrink-0 border-r border-zinc-800 bg-zinc-950 transition-all duration-200 overflow-hidden`}>
+      <div className={`${sidebarOpen ? 'w-72' : 'w-0'} flex-shrink-0 border-r border-border bg-background transition-all duration-200 overflow-hidden`}>
         <ThreadList
           threads={threads}
           activeThreadId={activeThreadId}
@@ -349,17 +351,17 @@ export default function ChatPage() {
       {/* Main chat area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-800 bg-zinc-950">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-background">
           <Link
             href="/dashboard"
-            className="h-8 w-8 rounded-md hover:bg-zinc-800 flex items-center justify-center transition-colors flex-shrink-0"
+            className="h-8 w-8 rounded-md hover:bg-muted flex items-center justify-center transition-colors flex-shrink-0"
           >
-            <ArrowLeft className="h-4 w-4 text-zinc-400" />
+            <ArrowLeft className="h-4 w-4 text-muted-foreground" />
           </Link>
 
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="h-8 w-8 rounded-md hover:bg-zinc-800 flex items-center justify-center transition-colors flex-shrink-0"
+            className="h-8 w-8 rounded-md hover:bg-muted flex items-center justify-center transition-colors flex-shrink-0"
           >
             {sidebarOpen ? <ChevronLeft className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </button>
@@ -372,7 +374,7 @@ export default function ChatPage() {
           </div>
 
           {activeThreadId && (
-            <span className="text-xs text-zinc-500 font-[family-name:var(--font-jetbrains-mono)]">
+            <span className="text-xs text-muted-foreground font-[family-name:var(--font-jetbrains-mono)]">
               {threads.find(t => t.id === activeThreadId)?.title}
             </span>
           )}
@@ -433,15 +435,15 @@ export default function ChatPage() {
         ) : (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
-              <Zap className="h-8 w-8 text-zinc-700 mx-auto mb-3" />
-              <p className="text-zinc-500 text-sm">Select a thread or create a new one</p>
+              <Zap className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
+              <p className="text-muted-foreground text-sm">Select a thread or create a new one</p>
             </div>
           </div>
         )}
       </div>
 
       {/* Right panel — future canvas placeholder */}
-      <div className="hidden lg:block w-0 border-l border-zinc-800" />
+      <div className="hidden lg:block w-0 border-l border-border" />
 
       <AgentSelector
         open={agentSelectorOpen}

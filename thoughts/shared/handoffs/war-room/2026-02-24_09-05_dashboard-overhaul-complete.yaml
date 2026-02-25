@@ -1,0 +1,103 @@
+---
+session: war-room
+date: 2026-02-24
+status: complete
+outcome: SUCCEEDED
+---
+
+goal: Dashboard Ribbon + Council Rework + Navigation + Objectives page — 12 tasks swarmed across 11 parallel agents
+now: Push migration (done), verify live at localhost:3000. Next session — wire up objectives workflow (create objective form, council integration, seed real objectives).
+
+test: npm run build
+
+done_this_session:
+  - task: "S0-T1: Seeded L, Nanami, Armin, Bulma into agent_status, removed Power (with FK cleanup)"
+    files: [supabase/migrations/20260226000001_seed_missing_agents.sql]
+  - task: "S0-T2: Created reusable Breadcrumb component with className support"
+    files: [components/breadcrumb.tsx]
+  - task: "S1-T1: Created StatusRibbon with 5 cards (SitRep, Patrol, Skills, Objectives, Health)"
+    files: [components/status-ribbon.tsx, lib/queries.ts, lib/types.ts]
+  - task: "S1-T2: Wired StatusRibbon into Dashboard, removed StatsBar + BriefCard from sidebar"
+    files: [app/dashboard/page.tsx]
+  - task: "S2-T1: Removed Accept/Reject/Iterate from CouncilSynthesis + handler wiring"
+    files: [components/council/council-synthesis.tsx, app/council/[id]/council-session-client.tsx]
+  - task: "S2-T2: Added Reject button (red), removed disabled Respond button from CouncilActions"
+    files: [components/council/council-actions.tsx]
+  - task: "S2-T3: Created Makima chat popup + dedicated API endpoint, removed CouncilTerminalPanel"
+    files: [components/council/makima-chat-popup.tsx, app/api/chat/makima-popup/route.ts, app/council/[id]/page.tsx, app/council/[id]/council-session-client.tsx]
+  - task: "S2-T4: Added Breadcrumb to council list and session pages"
+    files: [app/council/page.tsx, app/council/[id]/page.tsx]
+  - task: "S3-T1: Expanded /api/health with poller heartbeat check (10-min window)"
+    files: [app/api/health/route.ts]
+  - task: "S3-T2: Added Breadcrumb to project-detail and mission-detail components"
+    files: [components/project-detail.tsx, components/mission-detail.tsx]
+  - task: "S3-T3: Investigated chat streaming — found SSE fragmentation bug + Makima action delay"
+    files: []
+  - task: "S3-T4: Created Objectives page with status badges, progress bars, success criteria"
+    files: [app/objectives/page.tsx, lib/types.ts]
+  - task: "Fixed Breadcrumb className prop (build failure from agent passing className without prop support)"
+    files: [components/breadcrumb.tsx]
+  - task: "Fixed migration FK constraint — Power referenced in agent_relationships, added CASCADE delete"
+    files: [supabase/migrations/20260226000001_seed_missing_agents.sql]
+
+blockers: []
+
+questions:
+  - "Makima popup agent created dedicated /api/chat/makima-popup/route.ts — review if this should reuse main chat route instead"
+  - "Objectives workflow design: where do Create Objective buttons go? Dashboard header + council actions?"
+  - "Objectives need guardrails in create form: title, success_criteria (required), max_iterations, linked project"
+
+decisions:
+  - swarm_12_agents: "11 parallel agents for Group A, 1 dependent (dashboard wiring) for Group B. All completed successfully."
+  - breadcrumb_classname: "Added optional className prop after build failure — agent passed className without it being in interface"
+  - power_fk_cleanup: "DELETE from agent_relationships before agent_status — FK constraint blocked simple DELETE"
+  - dedicated_makima_endpoint: "Agent created /api/chat/makima-popup/route.ts instead of reusing /api/chat — cleaner separation"
+  - objectives_page_added: "User requested objectives page mid-plan — added S3-T4 and 5th ribbon card"
+  - getLastPatrolSummary_rename: "Named getLastPatrolSummary (not getLastPatrolEvent) to avoid collision with existing function"
+
+findings:
+  - sse_fragmentation_bug: "Client-side SSE parsing splits on \\n but TCP chunks can fragment mid-line — partial chunks silently dropped. Needs carry-forward buffer."
+  - makima_action_delay: "executeActions() runs synchronously after stream but BEFORE done event — client sees freeze during action execution"
+  - orphan_files: "council-terminal-panel.tsx, brief-card.tsx, stats-bar.tsx no longer imported but files remain. Harmless, clean up later."
+  - objectives_concept: "Objectives sit above projects — goal with success criteria + iteration cap. Evaluator assesses missions against criteria. Table + API exist from reflexive-execution sprint."
+
+worked:
+  - "11-agent parallel swarm completed all tasks without file conflicts"
+  - "Detailed agent prompts with exact file contents + line numbers prevented most issues"
+  - "Explicit compatibility notes between agents touching same files (makima-popup + rm-synthesis-btns + council-breadcrumbs all touched council files)"
+  - "Immediate build check caught className type error"
+
+failed:
+  - "FK constraint on power DELETE — should have checked agent_relationships before writing migration"
+  - "Breadcrumb agent didn't add className prop but council-breadcrumbs agent used it — agents don't coordinate prop additions"
+
+next:
+  - "Design + implement Create Objective form with guardrails (title, success_criteria required, max_iterations, project_id)"
+  - "Add Create Objective button to council actions + dashboard header"
+  - "Seed 3-5 real objectives for existing projects"
+  - "Wire objectives into StatusRibbon card (count exists, needs click-through)"
+  - "Fix SSE fragmentation bug (carry-forward buffer in chat page client-side reader)"
+  - "Fix Makima action delay (send done event before executeActions, or run in background)"
+  - "Clean up orphan files (council-terminal-panel.tsx, brief-card.tsx, stats-bar.tsx)"
+  - "Consider: non-coding objectives need different evaluator mode (check-in prompt vs code assessment)"
+
+files:
+  created:
+    - components/status-ribbon.tsx
+    - components/breadcrumb.tsx
+    - components/council/makima-chat-popup.tsx
+    - app/api/chat/makima-popup/route.ts
+    - app/objectives/page.tsx
+    - supabase/migrations/20260226000001_seed_missing_agents.sql
+  modified:
+    - app/dashboard/page.tsx
+    - app/council/page.tsx
+    - app/council/[id]/page.tsx
+    - app/council/[id]/council-session-client.tsx
+    - components/council/council-synthesis.tsx
+    - components/council/council-actions.tsx
+    - components/project-detail.tsx
+    - components/mission-detail.tsx
+    - app/api/health/route.ts
+    - lib/types.ts
+    - lib/queries.ts

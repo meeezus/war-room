@@ -45,7 +45,7 @@ export function ChatActions({ threadId, onCouncilCreated }: ChatActionsProps) {
   }
 
   return (
-    <div className="flex flex-col gap-2 px-4 py-2 border-t border-zinc-800/50">
+    <div className="flex flex-col gap-2 px-4 py-2 border-t border-border/50">
       <div className="flex gap-2">
         <button
           type="button"

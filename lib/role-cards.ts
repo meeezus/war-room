@@ -109,6 +109,18 @@ export const ROLE_CARDS: Record<string, RoleCard> = {
     escalation: 'Escalate when: PR crisis, brand reputation risk, budget reallocation >20%, viral negative content',
     metrics: ['Engagement rate', 'Content reach', 'Brand sentiment', 'Campaign ROI'],
   },
+  loid: {
+    id: 'loid',
+    name: 'Loid',
+    title: 'The Spy',
+    class: 'Operative',
+    domain: 'brand',
+    emoji: '🕵️',
+    color: '#c084fc', // violet
+    avatarPath: '/avatars/loid.webp',
+    description: 'Master of perception who reverse-engineers trust. Crafts pitches, positions brands, and makes the prospect feel like choosing you was their idea.',
+    abilities: ['Brand Positioning', 'Sales Strategy', 'Client Perception'],
+  },
   // Council-only characters
   l: {
     id: 'l',
