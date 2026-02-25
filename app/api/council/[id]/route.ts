@@ -38,8 +38,8 @@ export async function PATCH(
   }
 
   const { status } = body as Record<string, unknown>
-  if (status !== 'active' && status !== 'archived') {
-    return Response.json({ error: 'status must be active or archived' }, { status: 400 })
+  if (status !== 'active' && status !== 'resolved' && status !== 'archived') {
+    return Response.json({ error: 'status must be active, resolved, or archived' }, { status: 400 })
   }
 
   if (status === 'archived') {
@@ -48,7 +48,7 @@ export async function PATCH(
   } else {
     const { error } = await sb
       .from('council_sessions')
-      .update({ status: 'active' })
+      .update({ status: status as string })
       .eq('id', id)
     if (error) return Response.json({ error: 'Failed to update session' }, { status: 500 })
   }

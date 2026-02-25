@@ -1,5 +1,5 @@
 import { createServiceClient } from '@/lib/supabase-server'
-import { CouncilSessionCard } from '@/components/council/council-session-card'
+import { CouncilSessionList } from '@/components/council/council-session-list'
 import { Breadcrumb } from '@/components/breadcrumb'
 import type { CouncilSession } from '@/lib/types'
 
@@ -47,7 +47,7 @@ export default async function CouncilPage() {
         {/* Sessions list */}
         {sessions.length === 0 ? (
           <div className="rounded-sm border border-border bg-card/50 p-12 text-center">
-            <div className="text-3xl mb-3">⚔️</div>
+            <div className="text-3xl mb-3">&#x2694;&#xFE0F;</div>
             <h3 className="font-[family-name:var(--font-space-grotesk)] font-semibold text-sm text-foreground mb-2">
               No council sessions yet
             </h3>
@@ -56,11 +56,7 @@ export default async function CouncilPage() {
             </p>
           </div>
         ) : (
-          <div className="flex flex-col gap-3">
-            {sessions.map((session) => (
-              <CouncilSessionCard key={session.id} session={session} />
-            ))}
-          </div>
+          <CouncilSessionList sessions={sessions} />
         )}
       </div>
     </div>

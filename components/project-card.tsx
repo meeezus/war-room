@@ -304,6 +304,7 @@ export function ProjectCard({ project, onUpdate, discoveryCount = 0 }: ProjectCa
   if (renaming || menuOpen) {
     return (
       <motion.div
+        className={menuOpen ? "relative z-50" : ""}
         whileTap={prefersReducedMotion ? undefined : tapScale}
         whileHover={prefersReducedMotion ? undefined : hoverLift}
         transition={SPRING_CONFIG}

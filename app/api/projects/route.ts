@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  const { title, description, status, councilSessionId } = body as Record<string, unknown>
+  const { title, description, status, councilSessionId, objective_id } = body as Record<string, unknown>
 
   if (!title || typeof title !== 'string') {
     return Response.json({ error: 'title is required' }, { status: 400 })
@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
     description: typeof description === 'string' ? description : undefined,
     status: typeof status === 'string' ? status : undefined,
     councilSessionId: typeof councilSessionId === 'string' ? councilSessionId : undefined,
+    objectiveId: typeof objective_id === 'string' ? objective_id : undefined,
   })
 
   if (!project) {

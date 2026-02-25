@@ -126,6 +126,44 @@ function PatrolCard({ lastPatrol }: { lastPatrol: StatusRibbonProps["lastPatrol"
   );
 }
 
+function DiscoveriesCard({
+  pendingDiscoveries,
+  criticalCount = 0,
+  warningCount = 0,
+  infoCount = 0,
+}: Pick<StatusRibbonProps, "pendingDiscoveries" | "criticalCount" | "warningCount" | "infoCount">) {
+  return (
+    <Link href="/discoveries" className="block">
+      <StealthCard hover={false} className="px-4 py-3 min-w-[200px] flex-shrink-0">
+        <CardLabel romaji="Hakken" english="Discoveries" />
+        <CardValue>
+          <span className="text-amber-400">{pendingDiscoveries}</span>
+        </CardValue>
+        <p className="text-xs text-muted-foreground font-[family-name:var(--font-jetbrains-mono)]">
+          pending review
+        </p>
+        {criticalCount > 0 && (
+          <div className="flex gap-1.5 mt-1 flex-wrap">
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 font-[family-name:var(--font-jetbrains-mono)]">
+              {criticalCount} critical
+            </span>
+            {warningCount > 0 && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 font-[family-name:var(--font-jetbrains-mono)]">
+                {warningCount} warning
+              </span>
+            )}
+            {infoCount > 0 && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 font-[family-name:var(--font-jetbrains-mono)]">
+                {infoCount} info
+              </span>
+            )}
+          </div>
+        )}
+      </StealthCard>
+    </Link>
+  );
+}
+
 function SkillsCard({ skillStats }: { skillStats: StatusRibbonProps["skillStats"] }) {
   return (
     <StealthCard hover={false} className="px-4 py-3 min-w-[200px] flex-shrink-0">
@@ -262,6 +300,12 @@ export function StatusRibbon({
         awarenessCount={awarenessCount}
       />
       <PatrolCard lastPatrol={lastPatrol} />
+      <DiscoveriesCard
+        pendingDiscoveries={pendingDiscoveries}
+        criticalCount={criticalCount}
+        warningCount={warningCount}
+        infoCount={infoCount}
+      />
       <SkillsCard skillStats={skillStats} />
       <ObjectivesCard activeObjectives={activeObjectives} />
       <HealthCard />

@@ -4,7 +4,7 @@ export interface Proposal {
   id: string
   title: string
   description: string | null
-  source: 'discord' | 'cron' | 'trigger' | 'manual' | 'patrol' | 'awareness'
+  source: 'discord' | 'cron' | 'trigger' | 'manual' | 'patrol' | 'awareness' | 'reflexive'
   requested_by: string
   domain: 'engineering' | 'product' | 'commerce' | 'influence' | 'operations' | 'coordination' | null
   cost_estimate: number | null
@@ -16,6 +16,7 @@ export interface Proposal {
   approved_at: string | null
   approved_by: string | null
   project_id: string | null
+  discovery_id: string | null
   status: 'pending' | 'approved' | 'rejected' | 'completed' | 'failed'
   created_at: string
   updated_at: string
@@ -123,6 +124,7 @@ export interface Project {
   next_action: string | null
   target_date?: string | null
   council_session_id?: string | null
+  objective_id?: string | null
   created_at: string
   updated_at: string
 }
@@ -197,7 +199,7 @@ export interface CouncilSession {
   plan_html: string | null
   source: string
   metadata: Record<string, unknown>
-  status: 'active' | 'archived'
+  status: 'active' | 'resolved' | 'archived'
   project_id?: string | null
   created_at: string
 }
@@ -248,7 +250,7 @@ export type Discovery = {
   file_path?: string
   evidence?: string
   suggested_action?: string
-  status: 'pending' | 'approved' | 'dismissed' | 'executed'
+  status: 'pending' | 'approved' | 'dismissed' | 'executed' | 'escalated'
   feedback?: string
   proposal_id?: string
   created_at: string
@@ -294,4 +296,11 @@ export interface Objective {
   created_at: string
   updated_at: string
   completed_at: string | null
+}
+
+export interface ObjectiveWithMetrics extends Objective {
+  projectCount: number
+  activeMissions: number
+  pendingProposals: number
+  completedProjects: number
 }

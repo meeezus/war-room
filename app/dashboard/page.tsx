@@ -2,14 +2,14 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { getAgents, getMissions, getEvents, getProjectsWithMetrics, getDynastyStats, getMissionStats, getPendingDiscoveryCount, getSkillPatchStats, getLastPatrolSummary, getActiveObjectiveCount, getActiveCouncilSessionCount, getAwarenessProposalCount } from "@/lib/queries";
-import type { AgentStatus, Mission, Event, DynastyStats, ProjectWithMetrics } from "@/lib/types";
+import { getAgents, getMissions, getEvents, getProjectsWithMetrics, getDynastyStats, getMissionStats, getPendingDiscoveryCount, getSkillPatchStats, getLastPatrolSummary, getActiveObjectiveCount, getActiveCouncilSessionCount, getAwarenessProposalCount, getObjectivesWithMetrics } from "@/lib/queries";
+import type { AgentStatus, Mission, Event, DynastyStats, ProjectWithMetrics, ObjectiveWithMetrics } from "@/lib/types";
 import Link from "next/link";
 import { StatusRibbon } from "@/components/status-ribbon";
 import { AgentSidebar } from "@/components/agent-sidebar";
 import { EventFeed } from "@/components/event-feed";
 import { StealthCard } from "@/components/stealth-card";
-import { ProjectOverview } from "@/components/project-overview";
+import { ObjectiveOverview } from "@/components/objective-overview";
 import { TerminalPanel } from "@/components/terminal/terminal-panel";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Menu, Radio, X } from "lucide-react";
@@ -75,6 +75,7 @@ export default function DashboardPage() {
   const [lastPatrol, setLastPatrol] = useState<{ timestamp: string | null; discoveryCount: number }>({ timestamp: null, discoveryCount: 0 });
   const [activeObjectives, setActiveObjectives] = useState(0);
   const [projects, setProjects] = useState<ProjectWithMetrics[]>([]);
+  const [objectives, setObjectives] = useState<ObjectiveWithMetrics[]>([]);
   const [dynastyStats, setDynastyStats] = useState<DynastyStats>(defaultDynastyStats);
   const [missionStats, setMissionStats] = useState({ active: 0, total: 0 });
   const [pendingDiscoveries, setPendingDiscoveries] = useState(0);
@@ -97,7 +98,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function fetchData() {
-      const [agentsData, missionsData, eventsData, projectsData, dynastyData, missionStatsData, discoveryCount, skillStatsData, lastPatrolData, objectiveCount, councilSessionCount, awarenessCountData] = await Promise.all([
+      const [agentsData, missionsData, eventsData, projectsData, dynastyData, missionStatsData, discoveryCount, skillStatsData, lastPatrolData, objectiveCount, councilSessionCount, awarenessCountData, objectivesData] = await Promise.all([
         getAgents(),
         getMissions(),
         getEvents(),
@@ -110,6 +111,7 @@ export default function DashboardPage() {
         getActiveObjectiveCount(),
         getActiveCouncilSessionCount(),
         getAwarenessProposalCount(),
+        getObjectivesWithMetrics(),
       ]);
       setAgents(agentsData);
       setMissions(missionsData);
@@ -123,6 +125,7 @@ export default function DashboardPage() {
       setActiveObjectives(objectiveCount);
       setCouncilSessions(councilSessionCount);
       setAwarenessCount(awarenessCountData);
+      setObjectives(objectivesData);
       setLoading(false);
     }
     fetchData();
@@ -175,6 +178,10 @@ export default function DashboardPage() {
             Shogunate Command Center
           </span>
           <span className="ml-auto hidden md:inline font-[family-name:var(--font-jetbrains-mono)] text-xs tabular-nums text-muted-foreground/75">
+            <Link href="/objectives" className="transition-colors hover:text-foreground/60">
+              {objectives.filter(o => o.status === 'active').length}/{objectives.length} objectives
+            </Link>
+            {" \u00B7 "}
             {dynastyStats.activeProjects}/{dynastyStats.totalProjects} projects
             {" \u00B7 "}
             <Link href="/missions" className="transition-colors hover:text-foreground/60">
@@ -278,11 +285,11 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Center - Project Overview */}
+        {/* Center - Objective Overview */}
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <div className="mb-2 flex h-6 items-center gap-2">
             <span className="font-[family-name:var(--font-space-grotesk)] text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Projects
+              Objectives
             </span>
             {pendingDiscoveries > 0 && (
               <span className="rounded-full bg-blue-500/15 px-1.5 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-medium text-blue-400">
@@ -291,7 +298,7 @@ export default function DashboardPage() {
             )}
           </div>
           <div className="flex-1 overflow-hidden">
-            <ProjectOverview projects={projects} onUpdate={refreshProjects} />
+            <ObjectiveOverview objectives={objectives} />
           </div>
         </div>
 

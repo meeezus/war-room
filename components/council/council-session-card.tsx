@@ -14,6 +14,8 @@ const COUNCIL_TYPE_LABELS: Record<string, string> = {
   security: "Security",
 };
 
+const STALE_THRESHOLD_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
+
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
   return d.toLocaleDateString("en-US", {
@@ -23,11 +25,18 @@ function formatDate(dateStr: string): string {
   });
 }
 
+function isStale(session: CouncilSession): boolean {
+  if (session.status !== "active") return false;
+  const age = Date.now() - new Date(session.created_at).getTime();
+  return age > STALE_THRESHOLD_MS;
+}
+
 export function CouncilSessionCard({ session }: CouncilSessionCardProps) {
   const typeLabel = COUNCIL_TYPE_LABELS[session.council_type] ?? session.council_type;
   const approvals = session.reviews.filter((r) => r.verdict === "approve").length;
   const concerns = session.reviews.filter((r) => r.verdict === "concern").length;
   const rejections = session.reviews.filter((r) => r.verdict === "reject").length;
+  const stale = isStale(session);
 
   return (
     <Link href={`/council/${session.id}`}>
@@ -50,9 +59,24 @@ export function CouncilSessionCard({ session }: CouncilSessionCardProps) {
             </div>
           </div>
 
-          <span className="text-[10px] font-medium px-2 py-0.5 rounded border border-border text-muted-foreground flex-shrink-0">
-            {typeLabel}
-          </span>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {session.status === "resolved" && (
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 inline-flex items-center gap-1">
+                <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                Resolved
+              </span>
+            )}
+            {stale && (
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded border border-amber-500/30 bg-amber-500/10 text-amber-400">
+                Stale
+              </span>
+            )}
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded border border-border text-muted-foreground">
+              {typeLabel}
+            </span>
+          </div>
         </div>
 
         {/* Verdict summary */}

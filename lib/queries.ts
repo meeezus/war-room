@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import type { AgentStatus, Mission, Step, Event, DashboardStats, Project, ProjectWithMetrics, Board, Task, DynastyStats, Proposal, CouncilSession, ActiveAgent, Discovery } from '@/lib/types'
+import type { AgentStatus, Mission, Step, Event, DashboardStats, Project, ProjectWithMetrics, Board, Task, DynastyStats, Proposal, CouncilSession, ActiveAgent, Discovery, Objective, ObjectiveWithMetrics } from '@/lib/types'
 
 // Domain → Daimyo routing (matches engine/config.py DOMAIN_TO_DAIMYO)
 export const DOMAIN_TO_DAIMYO: Record<string, string> = {
@@ -515,6 +515,7 @@ export async function createProject(input: {
   description?: string
   status?: string
   councilSessionId?: string
+  objectiveId?: string
 }): Promise<Project | null> {
   if (!supabase) return null
   const { data, error } = await supabase
@@ -525,6 +526,7 @@ export async function createProject(input: {
       goal: input.description ?? null,
       status: input.status ?? 'todo',
       priority: 50,
+      ...(input.objectiveId ? { objective_id: input.objectiveId } : {}),
     })
     .select()
     .single()
@@ -754,6 +756,62 @@ export async function getActiveObjectiveCount(): Promise<number> {
     .select('id', { count: 'exact', head: true })
     .eq('status', 'active')
   return count ?? 0
+}
+
+export async function getObjectivesWithMetrics(): Promise<ObjectiveWithMetrics[]> {
+  if (!supabase) return []
+
+  // Fetch objectives, projects (with objective_id), active missions, and pending proposals in parallel
+  const [objectivesRes, projectsRes, missionsRes, proposalsRes] = await Promise.all([
+    supabase.from('objectives').select('*').order('created_at', { ascending: false }),
+    supabase.from('projects').select('id, objective_id, status'),
+    supabase.from('missions').select('id, objective_id, status').in('status', ['queued', 'running']),
+    supabase.from('proposals').select('id, objective_id').eq('status', 'pending'),
+  ])
+
+  const objectives = (objectivesRes.data as Objective[]) ?? []
+  const projects = (projectsRes.data ?? []) as { id: string; objective_id: string | null; status: string }[]
+  const missions = (missionsRes.data ?? []) as { id: string; objective_id: string | null; status: string }[]
+  const proposals = (proposalsRes.data ?? []) as { id: string; objective_id: string | null }[]
+
+  return objectives.map(obj => {
+    const objProjects = projects.filter(p => p.objective_id === obj.id)
+    return {
+      ...obj,
+      projectCount: objProjects.length,
+      completedProjects: objProjects.filter(p => p.status === 'done').length,
+      activeMissions: missions.filter(m => m.objective_id === obj.id).length,
+      pendingProposals: proposals.filter(p => p.objective_id === obj.id).length,
+    }
+  })
+}
+
+export async function getObjectiveWithRelated(id: string): Promise<{
+  objective: Objective | null
+  projects: Project[]
+  missions: Mission[]
+  proposals: Proposal[]
+}> {
+  if (!supabase) return { objective: null, projects: [], missions: [], proposals: [] }
+
+  const [objectiveRes, projectsRes, missionsRes, proposalsRes] = await Promise.all([
+    supabase.from('objectives').select('*').eq('id', id).single(),
+    supabase.from('projects').select('*').eq('objective_id', id).order('priority', { ascending: true }),
+    supabase.from('missions').select('*').eq('objective_id', id).order('created_at', { ascending: false }).limit(50),
+    supabase.from('proposals').select('*').eq('objective_id', id).order('created_at', { ascending: false }).limit(50),
+  ])
+
+  if (objectiveRes.error) { console.error('getObjectiveWithRelated objective error:', objectiveRes.error) }
+  if (projectsRes.error) { console.error('getObjectiveWithRelated projects error:', projectsRes.error) }
+  if (missionsRes.error) { console.error('getObjectiveWithRelated missions error:', missionsRes.error) }
+  if (proposalsRes.error) { console.error('getObjectiveWithRelated proposals error:', proposalsRes.error) }
+
+  return {
+    objective: (objectiveRes.data as Objective) ?? null,
+    projects: (projectsRes.data as Project[]) ?? [],
+    missions: (missionsRes.data as Mission[]) ?? [],
+    proposals: (proposalsRes.data as Proposal[]) ?? [],
+  }
 }
 
 export async function getActiveCouncilSessionCount(): Promise<number> {
