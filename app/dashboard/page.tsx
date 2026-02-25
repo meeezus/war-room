@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { getAgents, getMissions, getEvents, getProjectsWithMetrics, getDynastyStats, getMissionStats, getPendingDiscoveryCount, getSkillPatchStats, getLastPatrolSummary, getActiveObjectiveCount, getActiveCouncilSessionCount } from "@/lib/queries";
+import { getAgents, getMissions, getEvents, getProjectsWithMetrics, getDynastyStats, getMissionStats, getPendingDiscoveryCount, getSkillPatchStats, getLastPatrolSummary, getActiveObjectiveCount, getActiveCouncilSessionCount, getAwarenessProposalCount } from "@/lib/queries";
 import type { AgentStatus, Mission, Event, DynastyStats, ProjectWithMetrics } from "@/lib/types";
 import Link from "next/link";
 import { StatusRibbon } from "@/components/status-ribbon";
@@ -78,6 +78,7 @@ export default function DashboardPage() {
   const [missionStats, setMissionStats] = useState({ active: 0, total: 0 });
   const [pendingDiscoveries, setPendingDiscoveries] = useState(0);
   const [councilSessions, setCouncilSessions] = useState(0);
+  const [awarenessCount, setAwarenessCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [feedOpen, setFeedOpen] = useState(true);
@@ -93,7 +94,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function fetchData() {
-      const [agentsData, missionsData, eventsData, projectsData, dynastyData, missionStatsData, discoveryCount, skillStatsData, lastPatrolData, objectiveCount, councilSessionCount] = await Promise.all([
+      const [agentsData, missionsData, eventsData, projectsData, dynastyData, missionStatsData, discoveryCount, skillStatsData, lastPatrolData, objectiveCount, councilSessionCount, awarenessCountData] = await Promise.all([
         getAgents(),
         getMissions(),
         getEvents(),
@@ -105,6 +106,7 @@ export default function DashboardPage() {
         getLastPatrolSummary(),
         getActiveObjectiveCount(),
         getActiveCouncilSessionCount(),
+        getAwarenessProposalCount(),
       ]);
       setAgents(agentsData);
       setMissions(missionsData);
@@ -117,6 +119,7 @@ export default function DashboardPage() {
       setLastPatrol(lastPatrolData);
       setActiveObjectives(objectiveCount);
       setCouncilSessions(councilSessionCount);
+      setAwarenessCount(awarenessCountData);
       setLoading(false);
     }
     fetchData();
@@ -178,6 +181,7 @@ export default function DashboardPage() {
           skillStats={skillStats}
           activeObjectives={activeObjectives}
           councilSessions={councilSessions}
+          awarenessCount={awarenessCount}
         />
       </div>
 

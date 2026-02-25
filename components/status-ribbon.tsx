@@ -10,6 +10,7 @@ interface StatusRibbonProps {
   criticalCount?: number;
   warningCount?: number;
   infoCount?: number;
+  awarenessCount?: number;
   lastPatrol: { timestamp: string | null; discoveryCount: number };
   skillStats: { recentPatches: number; appliedPatches: number };
   activeObjectives: number;
@@ -57,7 +58,8 @@ function SituationCard({
   criticalCount = 0,
   warningCount = 0,
   infoCount = 0,
-}: Pick<StatusRibbonProps, "pendingDiscoveries" | "criticalCount" | "warningCount" | "infoCount">) {
+  awarenessCount = 0,
+}: Pick<StatusRibbonProps, "pendingDiscoveries" | "criticalCount" | "warningCount" | "infoCount" | "awarenessCount">) {
   return (
     <StealthCard hover={false} className="px-4 py-3 min-w-[200px] flex-shrink-0">
       <CardLabel romaji="Dōjō Hōkoku" english="SitRep" />
@@ -79,6 +81,13 @@ function SituationCard({
           </span>
         )}
       </div>
+      {awarenessCount > 0 && (
+        <div className="flex items-center gap-1 mt-1">
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-400 font-[family-name:var(--font-jetbrains-mono)]">
+            {awarenessCount} awareness
+          </span>
+        </div>
+      )}
       <Link
         href="/brief"
         className="text-xs text-blue-400 mt-1 block hover:text-blue-300"
@@ -237,6 +246,7 @@ export function StatusRibbon({
   criticalCount,
   warningCount,
   infoCount,
+  awarenessCount,
   lastPatrol,
   skillStats,
   activeObjectives,
@@ -249,6 +259,7 @@ export function StatusRibbon({
         criticalCount={criticalCount}
         warningCount={warningCount}
         infoCount={infoCount}
+        awarenessCount={awarenessCount}
       />
       <PatrolCard lastPatrol={lastPatrol} />
       <SkillsCard skillStats={skillStats} />
