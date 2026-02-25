@@ -246,6 +246,9 @@ export default function ChatPage() {
       const decoder = new TextDecoder()
       let accumulated = ''
       let sseBuffer = ''
+      // Batch streaming updates to avoid overwhelming React with rapid setState calls.
+      // Chunks arrive faster than 60fps — we coalesce them and flush once per frame.
+      let pendingFlush = false
 
       while (true) {
         const { done, value } = await reader.read()
@@ -262,10 +265,27 @@ export default function ChatPage() {
 
           try {
             const event = JSON.parse(jsonStr)
-            if (event.type === 'chunk') {
+            if (event.type === 'typing') {
+              // Server signals it's working — typing indicator already shows
+              // via isLoading && !streamingContent in MessageArea
+              continue
+            } else if (event.type === 'chunk') {
               accumulated += event.content
-              setStreamingContent(accumulated)
+              // Batch: schedule a single React update per animation frame.
+              // Multiple chunks between frames get coalesced into one setState.
+              if (!pendingFlush) {
+                pendingFlush = true
+                requestAnimationFrame(() => {
+                  // Read `accumulated` at flush time so we get ALL chunks
+                  // that arrived since the rAF was scheduled, not a stale snapshot
+                  setStreamingContent(accumulated)
+                  pendingFlush = false
+                })
+              }
             } else if (event.type === 'done') {
+              // Flush any remaining accumulated content before completing
+              // Cancel any pending rAF — we set final state synchronously
+              pendingFlush = false
               // Add the complete message directly to state
               // Don't rely solely on Realtime (WebSocket can be flaky)
               const activeAgent = threads.find(t => t.id === activeThreadId)?.agent_id || 'cc'
@@ -287,6 +307,7 @@ export default function ChatPage() {
               })
               setStreamingContent('')
             } else if (event.type === 'error') {
+              pendingFlush = false
               // If we already have content, keep it as the message
               if (accumulated) {
                 const activeAgentPartial = threads.find(t => t.id === activeThreadId)?.agent_id || 'cc'
@@ -311,6 +332,11 @@ export default function ChatPage() {
             // Partial JSON, skip
           }
         }
+      }
+
+      // Flush final accumulated content if rAF didn't fire yet
+      if (pendingFlush && accumulated) {
+        setStreamingContent(accumulated)
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to send message'

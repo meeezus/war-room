@@ -53,61 +53,67 @@ export async function POST(req: NextRequest) {
     session = { sessionId, threadId }
   }
 
-  // Build pulse context for Makima threads (engine awareness)
-  let pulseContext = ''
-  if (isMakima) {
-    const pulseStart = Date.now()
-    try {
-      pulseContext = await buildPulseContext()
-
-      // Auto-inject alerts on first message or after 4h+ gap
-      const sb = createServiceClient()
-      let shouldInjectAlerts = false
-      if (sb) {
-        const { data: lastMsg } = await sb
-          .from('chat_messages')
-          .select('created_at')
-          .eq('thread_id', threadId)
-          .eq('role', 'assistant')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single()
-
-        if (!lastMsg) {
-          shouldInjectAlerts = true // First message in thread
-        } else {
-          const hoursSinceLast = (Date.now() - new Date(lastMsg.created_at).getTime()) / (1000 * 60 * 60)
-          shouldInjectAlerts = hoursSinceLast >= 4
-        }
-      }
-
-      if (shouldInjectAlerts) {
-        const alerts = await generateAlerts()
-        if (alerts.length > 0) {
-          const alertLines = alerts.map(a => `- **[${a.severity.toUpperCase()}]** ${a.message}`)
-          pulseContext = pulseContext.replace(
-            '### Active Projects',
-            `### Alerts\n${alertLines.join('\n')}\n\n### Active Projects`
-          )
-          console.log(`[chat/route] Injected ${alerts.length} pulse alert(s)`)
-        }
-      }
-
-      console.log(`[chat/route] Pulse context built in ${Date.now() - pulseStart}ms`)
-    } catch (err) {
-      console.error('[chat/route] Pulse context failed, proceeding without:', err)
-    }
-  }
-
   // Spawn Claude CLI and stream response
+  // NOTE: Pulse context for Makima is built INSIDE the stream to avoid blocking
+  // the HTTP response. A typing indicator is sent first for instant feedback.
   const encoder = new TextEncoder()
   const stream = new ReadableStream({
     async start(controller) {
       try {
+        // Send typing indicator immediately — client sees feedback within milliseconds
+        const typingData = JSON.stringify({ type: 'typing' })
+        controller.enqueue(encoder.encode(`data: ${typingData}\n\n`))
+
         // Choose stream source: Makima goes through OpenClaw, others through claude --print
         let sourceStream: ReadableStream<string>
+        // Hoisted so fallback error handler can also access it
+        let pulseContext = ''
 
         if (isMakima) {
+          // Build pulse context here (inside stream) so the typing indicator
+          // is already visible to the user while we query Supabase
+          const pulseStart = Date.now()
+          try {
+            pulseContext = await buildPulseContext()
+
+            // Auto-inject alerts on first message or after 4h+ gap
+            const sb = createServiceClient()
+            let shouldInjectAlerts = false
+            if (sb) {
+              const { data: lastMsg } = await sb
+                .from('chat_messages')
+                .select('created_at')
+                .eq('thread_id', threadId)
+                .eq('role', 'assistant')
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single()
+
+              if (!lastMsg) {
+                shouldInjectAlerts = true // First message in thread
+              } else {
+                const hoursSinceLast = (Date.now() - new Date(lastMsg.created_at).getTime()) / (1000 * 60 * 60)
+                shouldInjectAlerts = hoursSinceLast >= 4
+              }
+            }
+
+            if (shouldInjectAlerts) {
+              const alerts = await generateAlerts()
+              if (alerts.length > 0) {
+                const alertLines = alerts.map(a => `- **[${a.severity.toUpperCase()}]** ${a.message}`)
+                pulseContext = pulseContext.replace(
+                  '### Active Projects',
+                  `### Alerts\n${alertLines.join('\n')}\n\n### Active Projects`
+                )
+                console.log(`[chat/route] Injected ${alerts.length} pulse alert(s)`)
+              }
+            }
+
+            console.log(`[chat/route] Pulse context built in ${Date.now() - pulseStart}ms`)
+          } catch (err) {
+            console.error('[chat/route] Pulse context failed, proceeding without:', err)
+          }
+
           const messageWithPulse = pulseContext
             ? `[PULSE CONTEXT]\n${pulseContext}\n[/PULSE CONTEXT]\n\nUser: ${content}`
             : content
