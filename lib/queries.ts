@@ -724,7 +724,7 @@ export async function getSkillPatchStats(): Promise<{ recentPatches: number; app
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
   const [recentRes, appliedRes] = await Promise.all([
     supabase.from('skill_patches').select('id', { count: 'exact', head: true }).gte('created_at', thirtyDaysAgo),
-    supabase.from('skill_patches').select('id', { count: 'exact', head: true }).eq('status', 'applied'),
+    supabase.from('skill_patches').select('id', { count: 'exact', head: true }).eq('applied', true),
   ])
   return {
     recentPatches: recentRes.count ?? 0,
