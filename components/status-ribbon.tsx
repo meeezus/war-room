@@ -253,7 +253,7 @@ export function StatusRibbon({
   councilSessions,
 }: StatusRibbonProps) {
   return (
-    <div className="flex gap-3 overflow-x-auto pb-2">
+    <div className="flex gap-2 md:gap-3 overflow-x-auto pb-2">
       <SituationCard
         pendingDiscoveries={pendingDiscoveries}
         criticalCount={criticalCount}

@@ -328,8 +328,16 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-screen bg-background text-foreground">
+      {/* Thread sidebar backdrop (mobile) */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Thread sidebar */}
-      <div className={`${sidebarOpen ? 'w-72' : 'w-0'} flex-shrink-0 border-r border-border bg-background transition-all duration-200 overflow-hidden`}>
+      <div className={`${sidebarOpen ? 'w-72 fixed inset-y-0 left-0 z-40 md:relative md:z-auto' : 'w-0'} flex-shrink-0 border-r border-border bg-background transition-all duration-200 overflow-hidden`}>
         <ThreadList
           threads={threads}
           activeThreadId={activeThreadId}
@@ -351,7 +359,7 @@ export default function ChatPage() {
       {/* Main chat area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-background">
+        <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2 sm:py-3 border-b border-border bg-background">
           <Link
             href="/dashboard"
             className="h-8 w-8 rounded-md hover:bg-muted flex items-center justify-center transition-colors flex-shrink-0"

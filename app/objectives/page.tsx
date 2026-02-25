@@ -38,7 +38,7 @@ export default async function ObjectivesPage() {
     <div className="min-h-screen bg-background text-foreground p-6 md:p-10">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="mb-8 flex items-start justify-between gap-4">
+        <div className="mb-6 md:mb-8 flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
           <div>
             <Breadcrumb segments={[
               { label: 'Dashboard', href: '/dashboard' },
@@ -114,7 +114,7 @@ export default async function ObjectivesPage() {
 
                   {/* Progress bar */}
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="h-1.5 rounded-full bg-muted w-32 overflow-hidden">
+                    <div className="h-1.5 rounded-full bg-muted w-24 sm:w-32 overflow-hidden">
                       <div
                         className="h-full rounded-full bg-emerald-500 transition-all"
                         style={{ width: `${pct}%` }}
