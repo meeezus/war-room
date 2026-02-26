@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { emitMessage } from '@/lib/spark-bridge'
 
 // ---------------------------------------------------------------------------
 // Types matching the chat_channels migration schema
@@ -238,6 +239,9 @@ export async function saveChannelMessage(
     await sb.rpc('increment_thread_count', { message_id: options.threadId })
   }
 
+  // Emit to Spark (fire and forget)
+  emitMessage(channelId, role, content, options?.agentId).catch(() => {})
+
   return data
 }
 
@@ -269,5 +273,9 @@ export async function forwardMessage(
     .select()
     .single()
   if (error) throw error
+
+  // Emit to Spark (fire and forget)
+  emitMessage(targetChannelId, original.role, original.content, original.agent_id).catch(() => {})
+
   return data
 }
