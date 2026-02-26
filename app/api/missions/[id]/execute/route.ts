@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { exec } from 'child_process'
 import { createServiceClient } from '@/lib/supabase-server'
+import { captureError } from '@/lib/sentry'
 
 export async function POST(
   request: NextRequest,
@@ -50,9 +51,9 @@ export async function POST(
     `cd "${engineDir}" && uv run python -c "from engine.executor import execute_mission; execute_mission('${id}')"`,
     { timeout: 1800000 }, // 30 min timeout
     (error, stdout, stderr) => {
-      if (error) console.error(`Execute mission ${id} error:`, error.message)
+      if (error) captureError(error, 'missions/execute.error', { missionId: id })
       if (stdout) console.log(`Execute mission ${id}:`, stdout.trim())
-      if (stderr) console.error(`Execute mission ${id} stderr:`, stderr)
+      if (stderr) captureError(new Error(stderr), 'missions/execute.stderr', { missionId: id })
     }
   )
 

@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { createServiceClient } from '@/lib/supabase-server'
+import { captureError } from '@/lib/sentry'
 
 /**
  * POST /api/missions/from-plan
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (missionError) {
-      console.error('[from-plan] Mission insert error:', missionError)
+      captureError(missionError, 'from-plan.missionInsert')
       return Response.json({ error: missionError.message }, { status: 500 })
     }
 
@@ -72,7 +73,7 @@ export async function POST(req: NextRequest) {
         .select('id')
 
       if (tasksError) {
-        console.error('[from-plan] Tasks insert error:', tasksError)
+        captureError(tasksError, 'from-plan.tasksInsert', { missionId: mission.id, projectId })
         // Mission was created, tasks failed - partial success
       } else if (insertedTasks) {
         taskIds.push(...insertedTasks.map(t => t.id))
@@ -92,7 +93,7 @@ export async function POST(req: NextRequest) {
       taskIds,
     })
   } catch (err) {
-    console.error('[from-plan] Error:', err)
+    captureError(err, 'from-plan')
     return Response.json({ error: 'Failed to create mission from plan' }, { status: 500 })
   }
 }

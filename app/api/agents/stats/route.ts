@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { DaimyoStats } from '@/lib/types'
+import { captureError } from '@/lib/sentry'
 
 // This endpoint calls the Python engine's RPG stats module
 // We'll use subprocess to call the Python script
@@ -20,7 +21,7 @@ export async function GET() {
 
     return NextResponse.json(stats)
   } catch (error) {
-    console.error('Error fetching RPG stats:', error)
+    captureError(error, 'agents/stats.GET')
 
     // Return baseline stats on error
     const baselineStats: Record<string, DaimyoStats> = {

@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { createServiceClient } from '@/lib/supabase-server'
+import { captureError } from '@/lib/sentry'
 
 export async function GET(req: NextRequest) {
   const sb = createServiceClient()
@@ -54,7 +55,7 @@ export async function GET(req: NextRequest) {
       limit,
     })
   } catch (err) {
-    console.error('[discoveries] Error:', err)
+    captureError(err, 'discoveries.GET')
     return Response.json({ error: 'Failed to fetch discoveries' }, { status: 500 })
   }
 }
@@ -91,7 +92,7 @@ export async function POST(req: NextRequest) {
 
     return Response.json({ repos })
   } catch (err) {
-    console.error('[discoveries/repos] Error:', err)
+    captureError(err, 'discoveries/repos.POST')
     return Response.json({ error: 'Failed to fetch repos' }, { status: 500 })
   }
 }

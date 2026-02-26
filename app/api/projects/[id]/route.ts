@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase-server'
+import { captureError } from '@/lib/sentry'
 
 export async function PATCH(
   req: NextRequest,
@@ -46,7 +47,7 @@ export async function PATCH(
     if (error.code === 'PGRST116') {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
-    console.error('[projects/[id]] PATCH error:', error)
+    captureError(error, 'projects/id.PATCH', { projectId: id })
     return NextResponse.json({ error: 'Failed to update project' }, { status: 500 })
   }
 
@@ -75,7 +76,7 @@ export async function DELETE(
     if (error.code === 'PGRST116') {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
-    console.error('[projects/[id]] DELETE error:', error)
+    captureError(error, 'projects/id.DELETE', { projectId: id })
     return NextResponse.json({ error: 'Failed to delete project' }, { status: 500 })
   }
 

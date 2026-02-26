@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { createServiceClient } from '@/lib/supabase-server'
+import { captureError } from '@/lib/sentry'
 
 export async function POST(req: NextRequest) {
   try {
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
     // when it detects no active work toward the success criteria.
     return Response.json({ objective })
   } catch (err) {
-    console.error('[objectives/route] Error:', err)
+    captureError(err, 'objectives.POST')
     return Response.json({ error: 'Failed to create objective' }, { status: 500 })
   }
 }

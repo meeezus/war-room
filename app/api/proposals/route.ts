@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase-server'
+import { captureError } from '@/lib/sentry'
 
 export async function POST(req: NextRequest) {
   try {
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest) {
     if (error) throw error
     return NextResponse.json({ proposal: data })
   } catch (err) {
-    console.error('[proposals/route] Error:', err)
+    captureError(err, 'proposals.POST')
     return NextResponse.json(
       { error: 'Failed to create proposal' },
       { status: 500 }

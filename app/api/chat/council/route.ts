@@ -5,6 +5,7 @@ import { createServiceClient } from '@/lib/supabase-server'
 import { randomUUID } from 'crypto'
 import { buildPlanHtmlPrompt, stripHtmlFences } from './plan-html'
 import { buildCouncilPrompt } from './council-prompt'
+import { captureError, captureWarning } from '@/lib/sentry'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -183,7 +184,7 @@ export async function POST(req: NextRequest) {
 
   // 7. Handle review result (critical — fail if missing)
   if (reviewResult.status === 'rejected') {
-    console.error('[chat/council] Claude CLI error:', reviewResult.reason)
+    captureError(reviewResult.reason, 'chat/council.claudeCliError', { threadId })
     return Response.json(
       { error: 'Failed to generate council review' },
       { status: 502 }
@@ -203,7 +204,7 @@ export async function POST(req: NextRequest) {
   if (htmlResult.status === 'fulfilled' && htmlResult.value.trim()) {
     planHtml = stripHtmlFences(htmlResult.value)
   } else if (htmlResult.status === 'rejected') {
-    console.warn('[chat/council] HTML generation failed (non-critical):', htmlResult.reason)
+    captureWarning('HTML generation failed (non-critical)', { threadId, operation: 'chat/council.htmlGeneration' })
   }
 
   // 9. Persist to council_sessions
@@ -224,7 +225,7 @@ export async function POST(req: NextRequest) {
     .single()
 
   if (error) {
-    console.error('[chat/council] Supabase insert error:', error)
+    captureError(error, 'chat/council.insert', { threadId })
     return Response.json({ error: 'Failed to create council session' }, { status: 500 })
   }
 

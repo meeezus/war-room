@@ -1,4 +1,5 @@
 import { createServiceClient } from '@/lib/supabase-server'
+import { captureError } from '@/lib/sentry'
 import type { Mission, Task, Project, Discovery } from '@/lib/types'
 
 // ---------------------------------------------------------------------------
@@ -145,7 +146,7 @@ export async function generateAlerts(): Promise<PulseAlert[]> {
 
     return alerts
   } catch (err) {
-    console.error('[pulse-alerts] generateAlerts error:', err)
+    captureError(err, 'pulse.generateAlerts')
     return []
   }
 }

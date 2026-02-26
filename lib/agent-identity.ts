@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
+import { captureWarning } from '@/lib/sentry'
 
 const HOME = process.env.HOME || '/Users/michaelenriquez'
 
@@ -34,7 +35,7 @@ export function getAgentSystemPrompt(agentId: string): string | null {
 
     return prompt
   } catch {
-    console.error(`[agent-identity] Failed to read identity for ${agentId}`)
+    captureWarning(`Failed to read identity for ${agentId}`, { agentId })
     return null
   }
 }

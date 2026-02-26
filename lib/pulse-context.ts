@@ -1,5 +1,6 @@
 import { createServiceClient } from '@/lib/supabase-server'
 import type { Project, Mission, Task, Event } from '@/lib/types'
+import { captureError } from '@/lib/sentry'
 
 // ---------------------------------------------------------------------------
 // Relative time helper (no deps)
@@ -99,14 +100,14 @@ export async function buildPulseContext(): Promise<string> {
     ])
 
     // Log errors but don't throw
-    if (projectsRes.error) console.error('[pulse] projects query error:', projectsRes.error)
-    if (missionsRes.error) console.error('[pulse] missions query error:', missionsRes.error)
-    if (eventsRes.error) console.error('[pulse] events query error:', eventsRes.error)
-    if (staleTasksRes.error) console.error('[pulse] stale tasks query error:', staleTasksRes.error)
-    if (failedMissionsRes.error) console.error('[pulse] failed missions query error:', failedMissionsRes.error)
-    if (failedTasksRes.error) console.error('[pulse] failed tasks query error:', failedTasksRes.error)
-    if (agentCountRes.error) console.error('[pulse] agent count query error:', agentCountRes.error)
-    if (pendingProposalsRes.error) console.error('[pulse] pending proposals query error:', pendingProposalsRes.error)
+    if (projectsRes.error) captureError(projectsRes.error, 'pulse.buildPulseContext.projects')
+    if (missionsRes.error) captureError(missionsRes.error, 'pulse.buildPulseContext.missions')
+    if (eventsRes.error) captureError(eventsRes.error, 'pulse.buildPulseContext.events')
+    if (staleTasksRes.error) captureError(staleTasksRes.error, 'pulse.buildPulseContext.staleTasks')
+    if (failedMissionsRes.error) captureError(failedMissionsRes.error, 'pulse.buildPulseContext.failedMissions')
+    if (failedTasksRes.error) captureError(failedTasksRes.error, 'pulse.buildPulseContext.failedTasks')
+    if (agentCountRes.error) captureError(agentCountRes.error, 'pulse.buildPulseContext.agentCount')
+    if (pendingProposalsRes.error) captureError(pendingProposalsRes.error, 'pulse.buildPulseContext.pendingProposals')
 
     const projects = (projectsRes.data ?? []) as Project[]
     const missions = (missionsRes.data ?? []) as Mission[]
@@ -207,7 +208,7 @@ export async function buildPulseContext(): Promise<string> {
 
     return lines.join('\n')
   } catch (err) {
-    console.error('[pulse] buildPulseContext error:', err)
+    captureError(err, 'pulse.buildPulseContext')
     return '## Shogunate Pulse\n\n_Error fetching engine state. Check server logs._'
   }
 }

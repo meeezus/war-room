@@ -7,6 +7,7 @@ import { buildPulseContext } from '@/lib/pulse-context'
 import { saveChannelMessage } from '@/lib/channels'
 import { parseActions, executeActions, stripActionBlocks, type PulseAction } from '@/lib/pulse-actions'
 import { emitMessage } from '@/lib/spark-bridge'
+import { captureError } from '@/lib/sentry'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -22,7 +23,7 @@ export const maxDuration = 300
  * Response: SSE stream (typing / chunk / done / error events)
  */
 export async function POST(req: NextRequest) {
-  const { channelId, content } = await req.json()
+  const { channelId, content, threadId } = await req.json()
 
   if (!channelId || !content) {
     return Response.json(
@@ -38,6 +39,7 @@ export async function POST(req: NextRequest) {
   emitMessage(channelId, 'user', content).catch(() => {})
 
   const encoder = new TextEncoder()
+  let keepaliveInterval: ReturnType<typeof setInterval> | null = null
   const stream = new ReadableStream({
     async start(controller) {
       try {
@@ -50,7 +52,7 @@ export async function POST(req: NextRequest) {
         try {
           pulseContext = await buildPulseContext()
         } catch (err) {
-          console.error('[channel-reply] Pulse context failed:', err)
+          captureError(err, 'channel-reply.pulseContext')
         }
 
         const messageWithPulse = pulseContext
@@ -72,13 +74,23 @@ export async function POST(req: NextRequest) {
 
         const reader = sourceStream.getReader()
         let fullResponse = ''
-        const STREAM_READ_TIMEOUT = 30_000
+        const STREAM_READ_TIMEOUT = 90_000 // 90s for Tailscale latency
+
+        // Keepalive interval to prevent browser timeout
+        keepaliveInterval = setInterval(() => {
+          try {
+            controller.enqueue(encoder.encode(': keepalive\n\n'))
+          } catch {
+            if (keepaliveInterval) clearInterval(keepaliveInterval)
+          }
+        }, 15_000) // Send keepalive every 15s
+
         const readWithTimeout = () =>
           Promise.race([
             reader.read(),
             new Promise<never>((_, reject) =>
               setTimeout(
-                () => reject(new Error('Stream read timed out after 30s')),
+                () => reject(new Error('Stream read timed out after 90s')),
                 STREAM_READ_TIMEOUT
               )
             ),
@@ -133,10 +145,11 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // Save assistant message to channel
+        // Save assistant message to channel (or thread if threadId provided)
         if (fullResponse) {
           const msg = await saveChannelMessage(channelId, 'assistant', displayResponse, {
             agentId,
+            threadId: threadId || undefined,
           })
           const doneData = JSON.stringify({ type: 'done', messageId: msg.id, agentId })
           controller.enqueue(encoder.encode(`data: ${doneData}\n\n`))
@@ -154,7 +167,7 @@ export async function POST(req: NextRequest) {
                 results.map((r) => `${r.action.type}: ${r.success ? 'ok' : r.message}`)
               )
             })
-            .catch((err) => console.error('[channel-reply] Action execution failed:', err))
+            .catch((err) => captureError(err, 'channel-reply.executeActions'))
         }
       } catch (err) {
         const errMsg =
@@ -163,10 +176,11 @@ export async function POST(req: NextRequest) {
             : typeof err === 'object'
               ? JSON.stringify(err)
               : String(err)
-        console.error('[channel-reply] Error:', errMsg)
+        captureError(err, 'channel-reply')
         const errorData = JSON.stringify({ type: 'error', message: errMsg })
         controller.enqueue(encoder.encode(`data: ${errorData}\n\n`))
       } finally {
+        if (keepaliveInterval) clearInterval(keepaliveInterval)
         controller.close()
       }
     },

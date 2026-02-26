@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { analyzeQueries, createProposals } from '@/lib/query-analyzer'
+import { captureError } from '@/lib/sentry'
 
 /**
  * Daily cron job - analyzes Jack's queries from last 24h and creates improvement proposals
@@ -60,7 +61,7 @@ export async function GET(req: NextRequest) {
       durationMs: duration,
     })
   } catch (err) {
-    console.error('[cron] Analysis failed:', err)
+    captureError(err, 'cron/analyzeQueries')
 
     return NextResponse.json(
       {

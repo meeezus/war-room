@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase-server'
+import { captureError } from '@/lib/sentry'
 
 export async function GET(req: NextRequest) {
   try {
@@ -29,7 +30,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ proposals: data ?? [] })
   } catch (err) {
-    console.error('[proposals/list] Error:', err)
+    captureError(err, 'proposals/list.GET')
     return NextResponse.json(
       { error: 'Failed to fetch proposals' },
       { status: 500 }

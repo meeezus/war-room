@@ -1,13 +1,14 @@
 import { NextRequest } from 'next/server'
 import { deleteThread, archiveThread } from '@/lib/chat'
 import { createServiceClient } from '@/lib/supabase-server'
+import { captureError } from '@/lib/sentry'
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
-    const { id } = await params
     const body = await req.json()
     const { status, title } = body as { status?: 'active' | 'archived'; title?: string }
 
@@ -33,7 +34,7 @@ export async function PATCH(
     if (error) throw error
     return Response.json({ thread: data })
   } catch (err) {
-    console.error('[threads/[id]/route] PATCH Error:', err)
+    captureError(err, 'threads/id.PATCH', { threadId: id, route: '/api/chat/threads/[id]' })
     return Response.json({ error: 'Failed to update thread' }, { status: 500 })
   }
 }
@@ -42,12 +43,12 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
-    const { id } = await params
     await deleteThread(id)
     return Response.json({ success: true })
   } catch (err) {
-    console.error('[threads/[id]/route] DELETE Error:', err)
+    captureError(err, 'threads/id.DELETE', { threadId: id, route: '/api/chat/threads/[id]' })
     return Response.json({ error: 'Failed to delete thread' }, { status: 500 })
   }
 }

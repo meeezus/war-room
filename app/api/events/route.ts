@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { createServiceClient } from '@/lib/supabase-server'
 import { supabase } from '@/lib/supabase'
+import { captureError } from '@/lib/sentry'
 
 /**
  * GET /api/events - List recent events
@@ -22,7 +23,7 @@ export async function GET() {
     .limit(100)
 
   if (error) {
-    console.error('[events] GET error:', error)
+    captureError(error, 'events.GET')
     return Response.json({ error: error.message }, { status: 500 })
   }
 
@@ -68,13 +69,13 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (error) {
-      console.error('[events] POST error:', error)
+      captureError(error, 'events.POST')
       return Response.json({ error: error.message }, { status: 500 })
     }
 
     return Response.json({ event: data })
   } catch (err) {
-    console.error('[events] Error:', err)
+    captureError(err, 'events')
     return Response.json({ error: 'Failed to create event' }, { status: 500 })
   }
 }

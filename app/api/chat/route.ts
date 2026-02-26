@@ -10,6 +10,7 @@ import { buildPulseContext } from '@/lib/pulse-context'
 import { parseActions, executeActions, stripActionBlocks, type PulseAction } from '@/lib/pulse-actions'
 import { generateAlerts } from '@/lib/pulse-alerts'
 import { emitMessage } from '@/lib/spark-bridge'
+import { captureError } from '@/lib/sentry'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300 // 5 min max for long Claude responses
@@ -103,6 +104,7 @@ export async function POST(req: NextRequest) {
   // NOTE: Pulse context for Makima is built INSIDE the stream to avoid blocking
   // the HTTP response. A typing indicator is sent first for instant feedback.
   const encoder = new TextEncoder()
+  let keepaliveInterval: ReturnType<typeof setInterval> | null = null
   const stream = new ReadableStream({
     async start(controller) {
       try {
@@ -157,7 +159,7 @@ export async function POST(req: NextRequest) {
 
             console.log(`[chat/route] Pulse context built in ${Date.now() - pulseStart}ms`)
           } catch (err) {
-            console.error('[chat/route] Pulse context failed, proceeding without:', err)
+            captureError(err, 'chat/route.pulseContext', { threadId })
           }
 
           const messageWithPulse = pulseContext
@@ -177,11 +179,21 @@ export async function POST(req: NextRequest) {
 
         const reader = sourceStream.getReader()
         let fullResponse = ''
-        const STREAM_READ_TIMEOUT = 30_000
+        const STREAM_READ_TIMEOUT = 90_000 // 90s for Tailscale latency
+
+        // Keepalive interval to prevent browser timeout
+        keepaliveInterval = setInterval(() => {
+          try {
+            controller.enqueue(encoder.encode(': keepalive\n\n'))
+          } catch {
+            if (keepaliveInterval) clearInterval(keepaliveInterval)
+          }
+        }, 15_000) // Send keepalive every 15s
+
         const readWithTimeout = () => Promise.race([
           reader.read(),
           new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('Stream read timed out after 30s')), STREAM_READ_TIMEOUT)
+            setTimeout(() => reject(new Error('Stream read timed out after 90s')), STREAM_READ_TIMEOUT)
           )
         ])
 
@@ -262,7 +274,7 @@ export async function POST(req: NextRequest) {
           // Auto-title: if thread still has default title, generate one from user's first message
           if (thread?.title === 'New Thread' || !thread?.title) {
             autoTitleThread(threadId, content).catch((err) =>
-              console.error('[chat/route] Auto-title failed:', err)
+              captureError(err, 'chat/route.autoTitle', { threadId, agentId })
             )
           }
         }
@@ -274,14 +286,15 @@ export async function POST(req: NextRequest) {
               console.log(`[chat/route] Executed ${pendingActions.length} pulse action(s):`,
                 actionResults.map(r => `${r.action.type}: ${r.success ? 'ok' : r.message}`))
             })
-            .catch((err) => console.error('[chat/route] Action execution failed:', err))
+            .catch((err) => captureError(err, 'chat/route.executeActions', { threadId, agentId }))
         }
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : typeof err === 'object' ? JSON.stringify(err) : String(err)
-        console.error('[chat/route] Error:', errMsg)
+        captureError(err, 'chat/route', { threadId, agentId })
         const errorData = JSON.stringify({ type: 'error', message: errMsg })
         controller.enqueue(encoder.encode(`data: ${errorData}\n\n`))
       } finally {
+        if (keepaliveInterval) clearInterval(keepaliveInterval)
         inFlightRequests.delete(threadId)
         controller.close()
       }

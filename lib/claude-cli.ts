@@ -1,4 +1,5 @@
 import { spawn } from 'child_process'
+import { captureError } from '@/lib/sentry'
 
 const CLAUDE_PATH = '/opt/homebrew/bin/claude'
 const TIMEZONE = 'America/Chicago'
@@ -142,7 +143,7 @@ export function spawnClaude(
           }
 
           if (chunk.type === 'result' && chunk.errors?.length) {
-            console.error('[claude-cli] Result errors:', chunk.errors)
+            captureError(new Error(JSON.stringify(chunk.errors)), 'claude-cli.resultErrors')
           }
         } catch {
           // Non-JSON line, skip

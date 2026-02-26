@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getThreads, createThread, cleanupArchivedThreads } from '@/lib/chat'
+import { captureError } from '@/lib/sentry'
 
 export async function GET(req: NextRequest) {
   try {
@@ -9,7 +10,7 @@ export async function GET(req: NextRequest) {
     const threads = await getThreads({ status })
     return Response.json({ threads })
   } catch (err) {
-    console.error('[threads/route] Error:', err)
+    captureError(err, 'threads.GET', { route: '/api/chat/threads' })
     return Response.json({ error: 'Failed to fetch threads' }, { status: 500 })
   }
 }
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
     const thread = await createThread(title || 'New Thread', agentId)
     return Response.json({ thread })
   } catch (err) {
-    console.error('[threads/route] Error:', err)
+    captureError(err, 'threads.POST', { route: '/api/chat/threads' })
     return Response.json({ error: 'Failed to create thread' }, { status: 500 })
   }
 }

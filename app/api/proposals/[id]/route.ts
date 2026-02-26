@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { exec } from 'child_process'
 import { createServiceClient } from '@/lib/supabase-server'
+import { captureError } from '@/lib/sentry'
 
 const DOMAIN_TO_DAIMYO: Record<string, string> = {
   engineering: 'ed',
@@ -108,9 +109,9 @@ export async function PATCH(
       `cd "${engineDir}" && uv run python -c "from engine.mission import run_pending; missions = run_pending(); print(f'Created {len(missions)} mission(s)')"`,
       { timeout: 60000 },
       (error, stdout, stderr) => {
-        if (error) console.error('Engine run_pending error:', error.message)
+        if (error) captureError(error, 'proposals/id.runPending', { proposalId: id })
         if (stdout) console.log('Engine run_pending:', stdout.trim())
-        if (stderr) console.error('Engine run_pending stderr:', stderr)
+        if (stderr) captureError(new Error(stderr), 'proposals/id.runPendingStderr', { proposalId: id })
       }
     )
 

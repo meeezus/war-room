@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { createServiceClient } from '@/lib/supabase-server'
 import { getCouncilSessions } from '@/lib/queries'
 import type { CouncilReview } from '@/lib/types'
+import { captureError } from '@/lib/sentry'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -64,7 +65,7 @@ export async function POST(req: NextRequest) {
     .single()
 
   if (error) {
-    console.error('[council/route] POST error:', error)
+    captureError(error, 'council.POST')
     return Response.json({ error: 'Failed to create session' }, { status: 500 })
   }
   return Response.json({ session: data }, { status: 201 })

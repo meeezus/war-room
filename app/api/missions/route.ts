@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase-server'
+import { captureError } from '@/lib/sentry'
 
 export async function POST(req: NextRequest) {
   const sb = createServiceClient()
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest) {
     .single()
 
   if (error) {
-    console.error('[missions/route] POST error:', error)
+    captureError(error, 'missions.POST')
     return NextResponse.json({ error: 'Failed to create mission' }, { status: 500 })
   }
 
@@ -60,7 +61,7 @@ export async function GET(req: NextRequest) {
   const { data, error } = await query
 
   if (error) {
-    console.error('[missions/route] GET error:', error)
+    captureError(error, 'missions.GET')
     return NextResponse.json({ error: 'Failed to fetch missions' }, { status: 500 })
   }
 

@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@supabase/supabase-js'
 import { ChatMessage } from './chat'
+import { captureError } from '@/lib/sentry'
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || '',
@@ -162,7 +163,7 @@ Respond in this exact JSON format:
       suggestions: evaluation.suggestions,
     }
   } catch (err) {
-    console.error('Evaluation failed:', err)
+    captureError(err, 'query-analyzer.evaluateQuery')
     return {
       queryId,
       query,
