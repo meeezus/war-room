@@ -309,3 +309,12 @@ export interface ObjectiveWithMetrics extends Objective {
   activeMissions: number
   pendingProposals: number
 }
+
+export interface ActiveWorker {
+  id: number
+  title: string
+  kind: 'research' | 'code' | 'review' | 'test' | 'deploy' | 'write' | 'analyze' | null
+  daimyo: string | null
+  started_at: string | null
+  mission_id: string | null
+}
