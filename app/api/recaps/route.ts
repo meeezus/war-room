@@ -58,10 +58,21 @@ export async function GET() {
   const diagramsDir = path.join(home, '.agent', 'diagrams')
   const plansDir = path.join(home, 'Shugyo', 'plans')
 
-  const allRecaps: RecapItem[] = [
+  const rawRecaps: RecapItem[] = [
     ...scanDirectory(diagramsDir, 'diagrams'),
     ...scanDirectory(plansDir, 'plans'),
   ]
+
+  // Deduplicate by filename — when the same file exists in both directories,
+  // keep only the one with the newer modification time
+  const deduped = new Map<string, RecapItem>()
+  for (const recap of rawRecaps) {
+    const existing = deduped.get(recap.name)
+    if (!existing || new Date(recap.modified).getTime() > new Date(existing.modified).getTime()) {
+      deduped.set(recap.name, recap)
+    }
+  }
+  const allRecaps = Array.from(deduped.values())
 
   // Sort most recent first
   allRecaps.sort((a, b) => new Date(b.modified).getTime() - new Date(a.modified).getTime())

@@ -64,7 +64,7 @@ function SituationCard({
 }: Pick<StatusRibbonProps, "pendingDiscoveries" | "criticalCount" | "warningCount" | "infoCount" | "awarenessCount" | "lastPatrol">) {
   const recentPatrol = isRecentPatrol(lastPatrol.timestamp);
   return (
-    <StealthCard hover={false} className="px-4 py-3 min-w-[200px] flex-shrink-0">
+    <StealthCard hover={false} className="px-4 py-3 min-w-[200px] min-h-[110px] flex-shrink-0 flex flex-col justify-between">
       <CardLabel romaji="Dōjō Hōkoku" english="SitRep" />
       <CardValue>{pendingDiscoveries}</CardValue>
       <div className="flex gap-1.5 mt-1 flex-wrap">
@@ -113,7 +113,7 @@ function SituationCard({
 
 function SkillsCard({ skillStats }: { skillStats: StatusRibbonProps["skillStats"] }) {
   return (
-    <StealthCard hover={false} className="px-4 py-3 min-w-[200px] flex-shrink-0">
+    <StealthCard hover={false} className="px-4 py-3 min-w-[200px] min-h-[110px] flex-shrink-0 flex flex-col justify-between">
       <CardLabel romaji="Ginō" english="Skills" />
       <CardValue>{skillStats.recentPatches}</CardValue>
       <p className="text-xs text-muted-foreground font-[family-name:var(--font-jetbrains-mono)]">
@@ -150,7 +150,7 @@ function HealthCard() {
 
   return (
     <Link href="/health" className="block">
-      <StealthCard hover={false} className="px-4 py-3 min-w-[200px] flex-shrink-0">
+      <StealthCard hover={false} className="px-4 py-3 min-w-[200px] min-h-[110px] flex-shrink-0 flex flex-col justify-between">
         <CardLabel romaji="Kenzen" english="Health" />
         {health ? (
           <div className="flex flex-col gap-1 mt-1">
@@ -285,6 +285,7 @@ export function StatusRibbon({
 }: StatusRibbonProps) {
   return (
     <div className="flex gap-2 md:gap-3 overflow-x-auto pb-2">
+      <ChatCard />
       <SituationCard
         pendingDiscoveries={pendingDiscoveries}
         criticalCount={criticalCount}
@@ -299,7 +300,6 @@ export function StatusRibbon({
       <ProposalsCard />
       <RecapCard recapCount={recapCount} />
       <UsageCard usageData={usageData} />
-      <ChatCard />
     </div>
   );
 }

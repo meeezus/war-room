@@ -14,7 +14,6 @@ import { staggerContainer, staggerItem } from "@/lib/motion";
 const KANBAN_COLUMNS = [
   { key: "queued",    label: "Queued",    colorClass: "text-blue-500",   bgClass: "bg-blue-500/10",   borderClass: "border-blue-500/20" },
   { key: "running",   label: "Running",   colorClass: "text-amber-500",  bgClass: "bg-amber-500/10",  borderClass: "border-amber-500/20" },
-  { key: "review",    label: "Review",    colorClass: "text-purple-500", bgClass: "bg-purple-500/10", borderClass: "border-purple-500/20" },
   { key: "completed", label: "Completed", colorClass: "text-green-500",  bgClass: "bg-green-500/10",  borderClass: "border-green-500/20" },
   { key: "failed",    label: "Failed",    colorClass: "text-red-500",    bgClass: "bg-red-500/10",    borderClass: "border-red-500/20" },
 ] as const;
@@ -24,14 +23,13 @@ type KanbanStatus = (typeof KANBAN_COLUMNS)[number]["key"];
 const STATUS_DOT: Record<string, string> = {
   queued:    "bg-blue-500",
   running:   "bg-amber-500",
-  review:    "bg-purple-500",
   completed: "bg-green-500",
   deployed:  "bg-emerald-500",
   failed:    "bg-red-500",
   stale:     "bg-yellow-500",
 };
 
-const FILTER_OPTIONS = ["all", "queued", "running", "review", "completed", "failed", "stale"] as const;
+const FILTER_OPTIONS = ["all", "queued", "running", "completed", "failed", "stale"] as const;
 type FilterStatus = (typeof FILTER_OPTIONS)[number];
 
 type SortKey = "newest" | "oldest" | "longest";
@@ -361,7 +359,6 @@ export default function MissionsPage() {
     all:       missions.length,
     queued:    missions.filter((m) => m.status === "queued").length,
     running:   missions.filter((m) => m.status === "running").length,
-    review:    missions.filter((m) => m.status === "review").length,
     completed: missions.filter((m) => m.status === "completed").length,
     failed:    missions.filter((m) => m.status === "failed").length,
     stale:     missions.filter((m) => m.status === "stale").length,
@@ -469,7 +466,6 @@ export default function MissionsPage() {
               all:       "border-border text-muted-foreground",
               queued:    "border-blue-500/30 text-blue-400",
               running:   "border-amber-500/30 text-amber-400",
-              review:    "border-purple-500/30 text-purple-400",
               completed: "border-green-500/30 text-green-400",
               failed:    "border-red-500/30 text-red-400",
               stale:     "border-yellow-500/30 text-yellow-400",
@@ -478,7 +474,6 @@ export default function MissionsPage() {
               all:       "bg-muted",
               queued:    "bg-blue-500/10",
               running:   "bg-amber-500/10",
-              review:    "bg-purple-500/10",
               completed: "bg-green-500/10",
               failed:    "bg-red-500/10",
               stale:     "bg-yellow-500/10",
@@ -500,7 +495,6 @@ export default function MissionsPage() {
                       {
                         queued:    "bg-blue-500",
                         running:   "bg-amber-500",
-                        review:    "bg-purple-500",
                         completed: "bg-green-500",
                         failed:    "bg-red-500",
                         stale:     "bg-yellow-500",

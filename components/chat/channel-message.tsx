@@ -52,11 +52,12 @@ export function ChannelMessage({
 }: ChannelMessageProps) {
   const [showActions, setShowActions] = useState(false)
   const hasActions = onReply || onForward || onThread
+  const isUser = message.role === 'user'
 
   return (
     <div
       data-testid="channel-message"
-      className="group relative flex gap-3 px-4 py-1.5 hover:bg-muted/40 transition-colors"
+      className={`group relative flex gap-3 px-4 py-1.5 hover:bg-muted/40 transition-colors ${isUser ? 'flex-row-reverse' : ''}`}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
     >
@@ -67,6 +68,10 @@ export function ChannelMessage({
           alt={message.agent_id}
           className="flex-shrink-0 h-8 w-8 rounded-full object-cover mt-0.5"
         />
+      ) : isUser ? (
+        <div className="flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center bg-emerald-500/20 mt-0.5">
+          <span className="text-xs font-medium text-emerald-400">M</span>
+        </div>
       ) : (
         <div className="flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center bg-muted mt-0.5">
           <span className="text-xs font-medium text-muted-foreground">
@@ -76,9 +81,9 @@ export function ChannelMessage({
       )}
 
       {/* Body */}
-      <div className="flex-1 min-w-0">
+      <div className={`flex-1 min-w-0 ${isUser ? 'text-right' : ''}`}>
         {/* Header: name + timestamp */}
-        <div className="flex items-baseline gap-2">
+        <div className={`flex items-baseline gap-2 ${isUser ? 'flex-row-reverse' : ''}`}>
           <span className="text-sm font-medium text-foreground">
             {message.agent_id
               ? agentDisplayName(message.agent_id)
@@ -146,7 +151,7 @@ export function ChannelMessage({
 
       {/* Hover action bar */}
       {showActions && hasActions && (
-        <div className="absolute right-4 top-1 flex items-center gap-1 bg-background border border-border rounded-md shadow-sm">
+        <div className={`absolute ${isUser ? 'left-4' : 'right-4'} top-1 flex items-center gap-1 bg-background border border-border rounded-md shadow-sm`}>
           {onReply && (
             <button
               onClick={() => onReply(message)}

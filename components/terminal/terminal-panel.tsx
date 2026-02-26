@@ -133,8 +133,7 @@ export function TerminalPanel() {
         <div className="flex items-center gap-3 px-4 py-1.5">
           <button
             onClick={() => setCollapsed(false)}
-            className="flex items-center gap-1.5 transition-colors"
-            style={{ color: '#4b5563' }}
+            className="flex items-center gap-1.5 transition-colors text-muted-foreground"
             aria-label="Expand event stream"
           >
             <span
@@ -152,7 +151,8 @@ export function TerminalPanel() {
           </button>
           <span
             className="ml-auto text-xs"
-            style={{ fontFamily: 'var(--font-jetbrains-mono, monospace)', color: '#4b5563' }}
+            className="text-muted-foreground"
+            style={{ fontFamily: 'var(--font-jetbrains-mono, monospace)' }}
           >
             {events.length} events
           </span>
@@ -168,14 +168,13 @@ export function TerminalPanel() {
     >
       {/* Header */}
       <div
-        className="flex items-center gap-3 px-4 py-1.5 border-b flex-shrink-0"
-        style={{ borderColor: '#1f2937', background: '#111111' }}
+        className="flex items-center gap-3 px-4 py-1.5 border-b border-border flex-shrink-0"
+        style={{ background: '#111111' }}
       >
         {/* Collapse toggle */}
         <button
           onClick={() => setCollapsed(true)}
-          className="flex items-center gap-1.5 transition-colors"
-          style={{ color: '#4b5563' }}
+          className="flex items-center gap-1.5 transition-colors text-muted-foreground"
           aria-label="Collapse event stream"
         >
           <span className="inline-block text-[10px]">&#9660;</span>
@@ -193,7 +192,7 @@ export function TerminalPanel() {
             className={connected ? 'animate-pulse' : ''}
             style={{
               fontSize: '8px',
-              color: connected ? '#22c55e' : '#4b5563',
+              color: connected ? '#22c55e' : 'var(--muted-foreground)',
             }}
           >
             &#9679;
@@ -202,7 +201,7 @@ export function TerminalPanel() {
             className="text-xs"
             style={{
               fontFamily: 'var(--font-jetbrains-mono, monospace)',
-              color: connected ? '#22c55e' : '#4b5563',
+              color: connected ? '#22c55e' : 'var(--muted-foreground)',
               opacity: 0.7,
             }}
           >

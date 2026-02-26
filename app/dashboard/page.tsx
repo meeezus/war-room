@@ -2,17 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { getAgents, getMissions, getEvents, getMissionStats, getPendingDiscoveryCount, getSkillPatchStats, getLastPatrolSummary, getActiveCouncilSessionCount, getAwarenessProposalCount, getObjectivesWithMetrics } from "@/lib/queries";
-import type { AgentStatus, Mission, Event, ObjectiveWithMetrics } from "@/lib/types";
+import { getAgents, getMissions, getMissionStats, getPendingDiscoveryCount, getSkillPatchStats, getLastPatrolSummary, getActiveCouncilSessionCount, getAwarenessProposalCount, getObjectivesWithMetrics } from "@/lib/queries";
+import type { AgentStatus, Mission, ObjectiveWithMetrics } from "@/lib/types";
 import Link from "next/link";
 import { StatusRibbon } from "@/components/status-ribbon";
 import { AgentSidebar } from "@/components/agent-sidebar";
-import { EventFeed } from "@/components/event-feed";
 import { StealthCard } from "@/components/stealth-card";
 import { ObjectiveOverview } from "@/components/objective-overview";
 import { TerminalPanel } from "@/components/terminal/terminal-panel";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Menu, Radio, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 
 function ConnectPrompt() {
   return (
@@ -39,7 +38,6 @@ function ConnectPrompt() {
 export default function DashboardPage() {
   const [agents, setAgents] = useState<AgentStatus[]>([]);
   const [missions, setMissions] = useState<Mission[]>([]);
-  const [events, setEvents] = useState<Event[]>([]);
   const [skillStats, setSkillStats] = useState({ recentPatches: 0, appliedPatches: 0 });
   const [lastPatrol, setLastPatrol] = useState<{ timestamp: string | null; discoveryCount: number }>({ timestamp: null, discoveryCount: 0 });
   const [objectives, setObjectives] = useState<ObjectiveWithMetrics[]>([]);
@@ -51,17 +49,14 @@ export default function DashboardPage() {
   const [usageData, setUsageData] = useState<{ quotaPercent: number; dailyCost: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(typeof window !== 'undefined' ? window.innerWidth >= 768 : true);
-  const [feedOpen, setFeedOpen] = useState(typeof window !== 'undefined' ? window.innerWidth >= 768 : true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [mobileFeedOpen, setMobileFeedOpen] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [agentsData, missionsData, eventsData, missionStatsData, discoveryCount, skillStatsData, lastPatrolData, councilSessionCount, awarenessCountData, objectivesData] = await Promise.all([
+        const [agentsData, missionsData, missionStatsData, discoveryCount, skillStatsData, lastPatrolData, councilSessionCount, awarenessCountData, objectivesData] = await Promise.all([
           getAgents(),
           getMissions(),
-          getEvents(),
           getMissionStats(),
           getPendingDiscoveryCount(),
           getSkillPatchStats(),
@@ -72,7 +67,6 @@ export default function DashboardPage() {
         ]);
         setAgents(agentsData);
         setMissions(missionsData);
-        setEvents(eventsData);
         setMissionStats(missionStatsData);
         setPendingDiscoveries(discoveryCount);
         setSkillStats(skillStatsData);
@@ -162,13 +156,6 @@ export default function DashboardPage() {
             {" \u00B7 "}
             {missions.filter(m => m.status === 'failed').length + pendingDiscoveries} need attention
           </span>
-          {/* Mobile event feed toggle */}
-          <button
-            onClick={() => setMobileFeedOpen(true)}
-            className="md:hidden h-8 w-8 rounded-md hover:bg-muted flex items-center justify-center transition-colors flex-shrink-0 ml-auto"
-          >
-            <Radio className="h-4 w-4 text-muted-foreground" />
-          </button>
           <ThemeToggle />
         </div>
         <StatusRibbon
