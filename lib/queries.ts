@@ -25,6 +25,7 @@ export async function getMissions(status?: string): Promise<Mission[]> {
   let query = supabase
     .from('missions')
     .select('*')
+    .not('status', 'eq', 'archived')
     .order('priority', { ascending: true })
     .order('created_at', { ascending: false })
   if (status) {
@@ -854,4 +855,15 @@ export async function getAwarenessProposalCount(): Promise<number> {
     .eq('status', 'pending')
   if (error) { console.error('getAwarenessProposalCount error:', error); return 0 }
   return count ?? 0
+}
+
+export async function archiveFailed(): Promise<{ archived: number }> {
+  if (!supabase) return { archived: 0 }
+  const { data, error } = await supabase
+    .from('missions')
+    .update({ status: 'archived' })
+    .eq('status', 'failed')
+    .select('id')
+  if (error) { console.error('archiveFailed error:', error); return { archived: 0 } }
+  return { archived: data?.length ?? 0 }
 }
