@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import type { AgentStatus, Mission, Step, Event, DashboardStats, Project, ProjectWithMetrics, Board, Task, DynastyStats, Proposal, CouncilSession, ActiveAgent, Discovery, Objective, ObjectiveWithMetrics } from '@/lib/types'
+import type { AgentStatus, Mission, Step, Event, DashboardStats, Project, ProjectWithMetrics, Board, Task, DynastyStats, Proposal, CouncilSession, ActiveAgent, Discovery, Objective, ObjectiveWithMetrics, ActiveWorker } from '@/lib/types'
 
 // Domain → Daimyo routing (matches engine/config.py DOMAIN_TO_DAIMYO)
 export const DOMAIN_TO_DAIMYO: Record<string, string> = {
@@ -854,4 +854,32 @@ export async function getAwarenessProposalCount(): Promise<number> {
     .eq('status', 'pending')
   if (error) { console.error('getAwarenessProposalCount error:', error); return 0 }
   return count ?? 0
+}
+
+export async function getActiveWorkers(): Promise<ActiveWorker[]> {
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('id, title, kind, daimyo, started_at, mission_id')
+    .eq('status', 'in_progress')
+    .order('started_at', { ascending: true })
+  if (error) { console.error('getActiveWorkers error:', error); return [] }
+  return (data ?? []) as ActiveWorker[]
+}
+
+export async function getDaimyoActivity(): Promise<Record<string, number>> {
+  if (!supabase) return {}
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+  const { data, error } = await supabase
+    .from('missions')
+    .select('assigned_to')
+    .eq('status', 'completed')
+    .gte('completed_at', sevenDaysAgo)
+  if (error) { console.error('getDaimyoActivity error:', error); return {} }
+  const counts: Record<string, number> = {}
+  for (const row of (data ?? [])) {
+    const agent = (row as { assigned_to: string }).assigned_to
+    counts[agent] = (counts[agent] ?? 0) + 1
+  }
+  return counts
 }
