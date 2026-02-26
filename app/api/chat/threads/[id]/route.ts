@@ -9,7 +9,7 @@ export async function PATCH(
   try {
     const { id } = await params
     const body = await req.json()
-    const { status, title } = body as { status?: 'active' | 'archived'; title?: string }
+    const { status, title, unread } = body as { status?: 'active' | 'archived'; title?: string; unread?: boolean }
 
     if (status === 'archived') {
       await archiveThread(id)
@@ -19,6 +19,7 @@ export async function PATCH(
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
     if (status) updates.status = status
     if (title) updates.title = title
+    if (typeof unread === 'boolean') updates.unread = unread
 
     const sb = createServiceClient()
     if (!sb) return Response.json({ error: 'Service unavailable' }, { status: 503 })

@@ -1,4 +1,6 @@
 import { createServiceClient } from '@/lib/supabase-server'
+import { sendPushBroadcast } from '@/lib/push-notifications-server'
+import { emitDecision } from '@/lib/spark-bridge'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -279,6 +281,35 @@ export async function executeActions(actions: PulseAction[]): Promise<ActionResu
           })
           break
         }
+      }
+
+      // For important action types, send push notification and emit to Spark
+      const lastResult = results[results.length - 1]
+      if (
+        lastResult?.success &&
+        (action.type === 'create_mission' || action.type === 'create_proposal')
+      ) {
+        sendPushBroadcast({
+          title: action.type === 'create_mission' ? 'New Mission' : 'New Proposal',
+          body: action.title,
+          url: '/chat',
+        }).catch((err) =>
+          console.error('[pulse-actions] Push failed:', err)
+        )
+
+        emitDecision(
+          action.type,
+          {
+            id: lastResult.id,
+            title: action.title,
+            ...(action.type === 'create_proposal' && 'description' in action && {
+              description: action.description,
+            }),
+          },
+          'Makima pulse action'
+        ).catch((err) =>
+          console.error('[pulse-actions] Spark emit failed:', err)
+        )
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)

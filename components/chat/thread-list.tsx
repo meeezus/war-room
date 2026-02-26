@@ -9,6 +9,7 @@ export interface ThreadSummary {
   last_message: string | null
   last_message_at: string
   agent_id: string | null
+  unread?: boolean
 }
 
 interface ThreadListProps {
@@ -22,6 +23,7 @@ interface ThreadListProps {
   onRename?: (id: string, title: string) => void
   showArchived?: boolean
   onToggleArchived?: () => void
+  agentStatuses?: Record<string, string>
 }
 
 function timeAgo(dateStr: string): string {
@@ -46,6 +48,7 @@ export function ThreadList({
   onRename,
   showArchived,
   onToggleArchived,
+  agentStatuses,
 }: ThreadListProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -160,15 +163,31 @@ export function ThreadList({
               }`}
             >
               <div className="flex items-start gap-2">
-                {thread.agent_id && thread.agent_id !== 'cc' ? (
-                  <img
-                    src={`/avatars/${thread.agent_id}.webp`}
-                    alt={thread.agent_id}
-                    className="h-5 w-5 rounded-full object-cover mt-0.5 flex-shrink-0"
-                  />
-                ) : (
-                  <MessageSquare className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                {thread.unread && (
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0 mt-1.5" />
                 )}
+                <div className="relative flex-shrink-0">
+                  {thread.agent_id && thread.agent_id !== 'cc' ? (
+                    <img
+                      src={`/avatars/${thread.agent_id}.webp`}
+                      alt={thread.agent_id}
+                      className="h-5 w-5 rounded-full object-cover mt-0.5"
+                    />
+                  ) : (
+                    <MessageSquare className="h-3.5 w-3.5 text-muted-foreground mt-0.5" />
+                  )}
+                  {thread.agent_id && agentStatuses?.[thread.agent_id] && (
+                    <div
+                      data-testid="agent-status-dot"
+                      className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-background ${
+                        agentStatuses[thread.agent_id] === 'online' ? 'bg-emerald-500' :
+                        agentStatuses[thread.agent_id] === 'busy' ? 'bg-amber-500 animate-pulse' :
+                        agentStatuses[thread.agent_id] === 'idle' ? 'bg-blue-500' :
+                        'bg-gray-500'
+                      }`}
+                    />
+                  )}
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     {editingId === thread.id ? (

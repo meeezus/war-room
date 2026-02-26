@@ -23,13 +23,17 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Dynasty Tenshu",
-  description: "Command dashboard for the AI executive council",
+  title: "War Room",
+  description: "Makima's command center",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: "/icons/makima-192.png",
+    apple: "/icons/makima-192.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Dynasty Tenshu",
+    title: "War Room",
   },
 };
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { ThreadList, type ThreadSummary } from '@/components/chat/thread-list'
 import { MessageArea } from '@/components/chat/message-area'
 import { ChatInput } from '@/components/chat/chat-input'
@@ -8,9 +8,11 @@ import { AgentSelector } from '@/components/chat/agent-selector'
 import { ChatActions } from '@/components/chat/chat-actions'
 import { supabase } from '@/lib/supabase'
 import type { ChatMessage } from '@/lib/chat'
+import { useRealtimeChannel } from '@/lib/use-realtime-channel'
+import { NotificationBanner } from '@/components/chat/notification-banner'
+import { subscribeToPush } from '@/lib/push-notifications'
 import { ArrowLeft, ChevronLeft, Menu, Zap } from 'lucide-react'
 import Link from 'next/link'
-import type { RealtimeChannel } from '@supabase/supabase-js'
 
 export default function ChatPage() {
   const [threads, setThreads] = useState<ThreadSummary[]>([])
@@ -21,28 +23,57 @@ export default function ChatPage() {
   const [isFetchingMessages, setIsFetchingMessages] = useState(false)
   const [isCreatingThread, setIsCreatingThread] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(typeof window !== 'undefined' ? window.innerWidth >= 768 : true)
+  const [isTyping, setIsTyping] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showArchived, setShowArchived] = useState(false)
   const [agentSelectorOpen, setAgentSelectorOpen] = useState(false)
-  const channelRef = useRef<RealtimeChannel | null>(null)
+  const [agentStatuses, setAgentStatuses] = useState<Record<string, string>>({})
+
+  // Fetch initial agent statuses
+  useEffect(() => {
+    if (!supabase) return
+    supabase.from('agent_presence').select('id, status').then(({ data }) => {
+      if (data) {
+        setAgentStatuses(Object.fromEntries(data.map((a: { id: string; status: string }) => [a.id, a.status])))
+      }
+    })
+  }, [])
+
+  // Subscribe to agent_presence status changes
+  useRealtimeChannel(
+    'agent-presence-status',
+    (channel) =>
+      channel.on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'agent_presence',
+        },
+        (payload) => {
+          const row = payload.new as { id: string; status: string } | undefined
+          if (row) {
+            setAgentStatuses((prev) => ({
+              ...prev,
+              [row.id]: row.status,
+            }))
+          }
+        },
+      ),
+  )
 
   // Fetch threads on mount
   useEffect(() => {
     fetchThreads()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Subscribe to Realtime for active thread messages
-  useEffect(() => {
-    if (!activeThreadId || !supabase) return
-
-    // Clean up previous channel
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current)
-    }
-
-    const channel = supabase
-      .channel(`chat-messages-${activeThreadId}`)
-      .on(
+  // Subscribe to realtime inserts for the active thread's messages.
+  // useRealtimeChannel handles cleanup, dedup, and exponential backoff reconnection.
+  useRealtimeChannel(
+    activeThreadId ? `chat-messages-${activeThreadId}` : null,
+    (channel) =>
+      channel.on(
         'postgres_changes',
         {
           event: 'INSERT',
@@ -57,7 +88,7 @@ export default function ChatPage() {
             if (prev.some((m) => m.id === newMsg.id)) return prev
             // Optimistic dedup: replace temp message with real DB message
             const tempIdx = prev.findIndex(
-              (m) => m.id.startsWith('temp-') && m.role === newMsg.role && m.content === newMsg.content
+              (m) => m.id.startsWith('temp-') && m.role === newMsg.role && m.content === newMsg.content,
             )
             if (tempIdx !== -1) {
               const updated = [...prev]
@@ -66,38 +97,20 @@ export default function ChatPage() {
             }
             return [...prev, newMsg]
           })
-        }
-      )
-      .subscribe()
+        },
+      ),
+  )
 
-    channelRef.current = channel
-
-    return () => {
-      supabase?.removeChannel(channel)
-      channelRef.current = null
-    }
-  }, [activeThreadId])
-
-  // Subscribe to thread list updates
-  useEffect(() => {
-    if (!supabase) return
-
-    const channel = supabase
-      .channel('chat-threads-updates')
-      .on(
+  // Subscribe to thread list updates (singleton channel, lives for component lifetime)
+  useRealtimeChannel(
+    'chat-threads-updates',
+    (channel) =>
+      channel.on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'chat_threads' },
-        () => {
-          // Refresh thread list on any change
-          fetchThreads()
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase?.removeChannel(channel)
-    }
-  }, [])
+        () => fetchThreads(),
+      ),
+  )
 
   const fetchThreads = async (archived = showArchived) => {
     try {
@@ -179,12 +192,29 @@ export default function ChatPage() {
     }
   }
 
+  const markThreadRead = async (threadId: string) => {
+    try {
+      await fetch(`/api/chat/threads/${threadId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ unread: false }),
+      })
+      // Optimistically update local state
+      setThreads((prev) =>
+        prev.map((t) => (t.id === threadId ? { ...t, unread: false } : t))
+      )
+    } catch (err) {
+      console.error('Failed to mark thread as read:', err)
+    }
+  }
+
   const selectThread = (threadId: string) => {
     setActiveThreadId(threadId)
     setMessages([])
     setStreamingContent('')
     setError(null)
     fetchMessages(threadId)
+    markThreadRead(threadId)
   }
 
   const createThread = async (agentId?: string) => {
@@ -266,10 +296,10 @@ export default function ChatPage() {
           try {
             const event = JSON.parse(jsonStr)
             if (event.type === 'typing') {
-              // Server signals it's working — typing indicator already shows
-              // via isLoading && !streamingContent in MessageArea
+              setIsTyping(true)
               continue
             } else if (event.type === 'chunk') {
+              setIsTyping(false)
               accumulated += event.content
               // Batch: schedule a single React update per animation frame.
               // Multiple chunks between frames get coalesced into one setState.
@@ -343,11 +373,20 @@ export default function ChatPage() {
       setError(msg)
     } finally {
       setIsLoading(false)
+      setIsTyping(false)
       setStreamingContent('')
       // Refresh thread list to update last_message
       fetchThreads()
     }
   }, [activeThreadId, isLoading])
+
+  const handleRequestNotifications = async () => {
+    const permission = await Notification.requestPermission()
+    if (permission === 'granted') {
+      return await subscribeToPush()
+    }
+    return false
+  }
 
   const activeAgent = threads.find(t => t.id === activeThreadId)?.agent_id
   const isMakima = activeAgent === 'makima'
@@ -379,6 +418,7 @@ export default function ChatPage() {
           onRename={handleRenameThread}
           showArchived={showArchived}
           onToggleArchived={handleToggleArchived}
+          agentStatuses={agentStatuses}
         />
       </div>
 
@@ -432,6 +472,7 @@ export default function ChatPage() {
               isLoading={isLoading}
               isFetching={isFetchingMessages}
               agentId={threads.find(t => t.id === activeThreadId)?.agent_id}
+              isTyping={isTyping}
             />
             {/* Chat actions — show after last assistant message */}
             {!isLoading && messages.length > 0 && messages[messages.length - 1]?.role === 'assistant' && (
@@ -487,6 +528,8 @@ export default function ChatPage() {
         }}
         onClose={() => setAgentSelectorOpen(false)}
       />
+
+      <NotificationBanner onRequestPermission={handleRequestNotifications} />
     </div>
   )
 }

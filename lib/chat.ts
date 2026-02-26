@@ -105,6 +105,15 @@ export async function cleanupArchivedThreads(olderThanDays = 30): Promise<void> 
   if (error) throw error
 }
 
+export async function markThreadRead(id: string): Promise<void> {
+  const sb = getServiceClient()
+  const { error } = await sb
+    .from('chat_threads')
+    .update({ unread: false, updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) throw error
+}
+
 export async function getThread(id: string): Promise<ChatThread | null> {
   const sb = getServiceClient()
   const { data, error } = await sb

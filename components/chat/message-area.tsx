@@ -11,9 +11,10 @@ interface MessageAreaProps {
   isLoading?: boolean
   isFetching?: boolean
   agentId?: string | null
+  isTyping?: boolean
 }
 
-export function MessageArea({ messages, streamingContent, isLoading, isFetching, agentId }: MessageAreaProps) {
+export function MessageArea({ messages, streamingContent, isLoading, isFetching, agentId, isTyping }: MessageAreaProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -61,14 +62,13 @@ export function MessageArea({ messages, streamingContent, isLoading, isFetching,
           isStreaming={isLoading}
         />
       )}
-      {/* Loading indicator when waiting for first chunk */}
-      {isLoading && !streamingContent && (
-        <MessageBubble
-          role="assistant"
-          content=""
-          agentId={agentId || 'cc'}
-          isStreaming
-        />
+      {/* Typing indicator — bouncing dots while waiting for first chunk */}
+      {isTyping && !streamingContent && (
+        <div data-testid="typing-indicator" className="flex items-center gap-1 px-4 py-3">
+          <span className="w-2 h-2 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: '0ms' }} />
+          <span className="w-2 h-2 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: '150ms' }} />
+          <span className="w-2 h-2 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: '300ms' }} />
+        </div>
       )}
       <div ref={bottomRef} />
     </div>
