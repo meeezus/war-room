@@ -1,6 +1,7 @@
 "use client"
 
-import { ChevronDown, ChevronRight, Hash, Plus, MessageSquare } from 'lucide-react'
+import { useState } from 'react'
+import { ChevronDown, ChevronRight, Hash, Plus, MessageSquare, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ThreadSummary } from './thread-list'
 import type { Category, Channel } from './channel-sidebar'
@@ -34,6 +35,7 @@ export function UnifiedSidebar({
   activeThreadId,
   onSelectThread,
   onNewThread,
+  onDelete,
   // Channel props
   categories,
   channels,
@@ -43,6 +45,8 @@ export function UnifiedSidebar({
   onCreateCategory,
   onToggleCategory,
 }: UnifiedSidebarProps) {
+  const [hoveredThreadId, setHoveredThreadId] = useState<string | null>(null)
+
   const channelsByCategory = (categoryId: string) =>
     channels.filter((ch) => ch.category_id === categoryId)
 
@@ -83,27 +87,45 @@ export function UnifiedSidebar({
             </button>
           </div>
           {threads.map((thread) => (
-            <button
+            <div
               key={thread.id}
-              onClick={() => onSelectThread(thread.id)}
-              className={cn(
-                'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors',
-                activeThreadId === thread.id
-                  ? 'bg-emerald-500/10 text-emerald-400'
-                  : 'text-foreground/70 hover:bg-muted/50'
-              )}
+              className="relative group"
+              onMouseEnter={() => setHoveredThreadId(thread.id)}
+              onMouseLeave={() => setHoveredThreadId(null)}
             >
-              {thread.agent_id && thread.agent_id !== 'cc' ? (
-                <img
-                  src={`/avatars/${thread.agent_id}.webp`}
-                  alt={thread.agent_id}
-                  className="h-5 w-5 rounded-full object-cover flex-shrink-0"
-                />
-              ) : (
-                <MessageSquare className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+              <button
+                onClick={() => onSelectThread(thread.id)}
+                className={cn(
+                  'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors',
+                  activeThreadId === thread.id
+                    ? 'bg-emerald-500/10 text-emerald-400'
+                    : 'text-foreground/70 hover:bg-muted/50'
+                )}
+              >
+                {thread.agent_id && thread.agent_id !== 'cc' ? (
+                  <img
+                    src={`/avatars/${thread.agent_id}.webp`}
+                    alt={thread.agent_id}
+                    className="h-5 w-5 rounded-full object-cover flex-shrink-0"
+                  />
+                ) : (
+                  <MessageSquare className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                )}
+                <span className="text-sm truncate pr-6">{thread.title}</span>
+              </button>
+              {hoveredThreadId === thread.id && onDelete && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onDelete(thread.id)
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 rounded flex items-center justify-center bg-muted hover:bg-red-900/60 transition-colors"
+                  title="Delete thread"
+                >
+                  <Trash2 className="h-3 w-3 text-muted-foreground hover:text-red-400" />
+                </button>
               )}
-              <span className="text-sm truncate">{thread.title}</span>
-            </button>
+            </div>
           ))}
         </div>
 
