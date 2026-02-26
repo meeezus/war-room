@@ -10,10 +10,11 @@ interface MessageAreaProps {
   streamingContent?: string
   isLoading?: boolean
   isFetching?: boolean
+  isTyping?: boolean
   agentId?: string | null
 }
 
-export function MessageArea({ messages, streamingContent, isLoading, isFetching, agentId }: MessageAreaProps) {
+export function MessageArea({ messages, streamingContent, isLoading, isFetching, isTyping, agentId }: MessageAreaProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -61,8 +62,8 @@ export function MessageArea({ messages, streamingContent, isLoading, isFetching,
           isStreaming={isLoading}
         />
       )}
-      {/* Loading indicator when waiting for first chunk */}
-      {isLoading && !streamingContent && (
+      {/* Typing indicator when waiting for response */}
+      {(isTyping || (isLoading && !streamingContent)) && (
         <MessageBubble
           role="assistant"
           content=""

@@ -1,0 +1,118 @@
+---
+session: war-room
+date: 2026-02-26
+status: partial
+outcome: PARTIAL_MINUS
+---
+
+goal: Dashboard polish (13 tasks), engine intelligence, and critical burn-stop fixes
+now: Close evaluator feedback loop, native usage tracking, terminal light mode, kill event feed sidebar
+
+test: npm run build && cd ~/Code/shogunate && .venv/bin/python3 -m pytest tests/ -q
+
+done_this_session:
+  - task: "Executed full 13-task plan: Dashboard Polish + Engine Wiring via 13 parallel agents in worktrees"
+    files: [app/dashboard/page.tsx, components/status-ribbon.tsx, app/discoveries/page.tsx, app/missions/page.tsx, components/terminal/terminal-panel.tsx, components/agent-sidebar.tsx, lib/brief-generator.ts, components/event-feed.tsx, app/recaps/page.tsx, app/usage/page.tsx, components/objective-card.tsx, app/objectives/[id]/objective-detail-client.tsx, app/proposals/page.tsx]
+  - task: "Merged all 9 war-room worktrees to feature/dashboard-polish, resolved conflicts, merged to main"
+    files: [lib/queries.ts, lib/types.ts]
+  - task: "Sprint 2 engine intelligence — notification batching, phase automation, Makima bridge, Opus cost control"
+    files: [engine/notifications.py, engine/poller.py, engine/council.py, engine/router.py, engine/awareness.py, engine/mission.py, engine/proposal.py]
+  - task: "SQL migration — projects_to_objectives via supabase db push (applied to production)"
+    files: [supabase/migrations/20260226200000_projects_to_objectives.sql]
+  - task: "Created PRs and merged: war-room PR #14, shogunate PR #7"
+    files: []
+  - task: "CRITICAL FIX: Router reflexive→Opus changed to reflexive→Sonnet (5x cost reduction)"
+    files: [engine/router.py, tests/unit/test_router.py]
+  - task: "CRITICAL FIX: 24h cooldown on stalled objective auto-proposals (prevents spam on poller restart)"
+    files: [engine/evaluator.py, tests/unit/test_evaluator.py]
+  - task: "DB cleanup: deleted 13 'Stalled Goal' junk proposals+missions, deleted dashboard duplicate proposal"
+    files: []
+  - task: "Paused 7 migrated-from-project objectives with garbage criteria, cancelled 43 queued junk missions"
+    files: []
+
+blockers:
+  - "Claude OAuth token expired (Jan 28) — user needs to run `claude login` to refresh. Usage API returns auth error."
+  - "Vercel builds were failing (6 errors in a row) then succeeded — intermittent, needs monitoring"
+
+questions:
+  - "Should non-code objectives (AEon LLC, 1Password) stay in engine or move to Makima-only? User leaning toward code-only for engine."
+  - "Tailscale local-first vs Vercel — user has another session discussing moving to localhost+Tailscale for OpenClaw/Makima chat access."
+  - "The evaluator generates HTML reviews but they're dead-end reports (no proposals created from findings). This is the last major gap in the autonomous loop."
+
+decisions:
+  - reflexive_routing: "Reflexive tasks route to Sonnet, not Opus. Reflexive != retry — first objective missions are reflexive too."
+  - pause_migrated_objectives: "7 objectives migrated from projects had placeholder criteria ('Migrated from project: X'). Paused until real criteria added."
+  - proposal_cooldown: "24h DB-backed cooldown on auto-proposals per objective. In-memory _stalled_alerted set resets on poller restart."
+  - kill_projects_from_ui: "Projects removed from dashboard, header stats, objective detail tabs. Data preserved in table."
+  - phase_pipeline_on_proposals: "patrol/awareness → start at 'build' phase. Manual/discord → start at 'scope'. Phase advances on mission completion."
+  - local_first_deployment: "User wants to move Tenshu to localhost+Tailscale instead of Vercel. OpenClaw/Makima can't run on Vercel (needs local WebSocket)."
+
+findings:
+  - engine_burn_rate: "100 failed missions, 0 completed. Reflexive loop was routing ALL tasks to Opus ($$$). 18 active objectives × auto-proposals = queue growing faster than drain."
+  - evaluator_dead_end: "Evaluator generates HTML reviews with real findings (router bugs, missing transitions, bad criteria) but creates ZERO proposals from them. Reviews → browser popup → nobody acts on them."
+  - html_reviews_too_technical: "User feedback: reviews are full of technical jargon. Need a 'TL;DR for Sensei' section in plain language."
+  - check_stalled_resets_on_restart: "The _stalled_alerted set is in-memory only. Every poller restart = all objectives appear stalled = proposal spam. Fixed with 24h DB cooldown."
+  - codexbar_oauth_flow: "CodexBar reads ~/.claude/.credentials.json → hits api.anthropic.com/api/oauth/usage with Bearer token + anthropic-beta: oauth-2025-04-20 header. Returns five_hour, seven_day, seven_day_opus, extra_usage windows."
+  - missions_never_running: "execute_next() claims tasks but never sets parent mission to 'running'. Dashboard shows 'queued' while tasks actively execute."
+
+worked:
+  - "Parallel worktree agents (9 simultaneous) — all completed, merged successfully"
+  - "supabase db push for migrations (not db execute which doesn't exist in CLI v2.72.7)"
+  - "Merging tasks that touch same file into one agent (S2-T1+T4 both touch notifications.py)"
+
+failed:
+  - "supabase db execute — not a valid subcommand in v2.72.7, use db push instead"
+  - "OAuth token refresh via curl — endpoint not found, needs claude CLI to refresh"
+  - "Direct push to main blocked by pre-push hook — must use feature branch + PR"
+
+next:
+  - "Fix terminal light mode — hardcoded dark bg (bg-[#0a0a0a]) needs Tailwind semantic classes"
+  - "Kill event feed sidebar — terminal panel IS the event feed now, sidebar is redundant"
+  - "Native Claude usage page — replace CodexBar with direct OAuth API call (lib/claude-usage.ts). User needs to run `claude login` first."
+  - "Close evaluator feedback loop — evaluator findings should create proposals automatically, not dead-end HTML reports"
+  - "Add mission→running transition in executor.py (missions stay 'queued' while tasks execute)"
+  - "Add domain inference to create_initial_proposal (currently hardcodes 'engineering')"
+  - "Investigate 100 failed missions — what's actually failing? Timeout? CLI error?"
+  - "Consider: objectives should have a 'type' field (code vs life) — engine only processes code type, Makima handles life type"
+  - "HTML reviews need plain-language TL;DR section for Sensei"
+  - "Vercel integration — engine should know if deploys succeed/fail (webhook or polling)"
+
+files:
+  created:
+    - supabase/migrations/20260226200000_projects_to_objectives.sql
+    - app/recaps/page.tsx
+    - app/api/recaps/route.ts
+    - app/api/recaps/[...path]/route.ts
+    - app/usage/page.tsx
+    - app/api/usage/route.ts
+    - lib/codexbar.ts
+    - app/api/missions/archive/route.ts
+    - app/api/proposals/[id]/advance/route.ts
+    - migrations/008_projects_to_objectives.sql
+    - engine/mission.py (complete_mission function added)
+  modified:
+    - app/dashboard/page.tsx
+    - components/status-ribbon.tsx
+    - app/discoveries/page.tsx
+    - app/api/discoveries/route.ts
+    - app/missions/page.tsx
+    - components/terminal/terminal-panel.tsx
+    - components/terminal/inline-terminal.tsx
+    - components/agent-sidebar.tsx
+    - lib/brief-generator.ts
+    - components/event-feed.tsx
+    - components/objective-card.tsx
+    - app/objectives/[id]/objective-detail-client.tsx
+    - app/objectives/[id]/page.tsx
+    - lib/queries.ts
+    - lib/types.ts
+    - app/proposals/page.tsx
+    - engine/router.py
+    - engine/evaluator.py
+    - engine/notifications.py
+    - engine/poller.py
+    - engine/council.py
+    - engine/awareness.py
+    - engine/proposal.py
+    - tests/unit/test_router.py
+    - tests/unit/test_evaluator.py

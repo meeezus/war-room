@@ -34,6 +34,7 @@ export default function ChatPage() {
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [streamingContent, setStreamingContent] = useState('')
+  const [isTyping, setIsTyping] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isFetchingMessages, setIsFetchingMessages] = useState(false)
   const [isCreatingThread, setIsCreatingThread] = useState(false)
@@ -418,8 +419,10 @@ export default function ChatPage() {
           try {
             const event = JSON.parse(jsonStr)
             if (event.type === 'typing') {
+              setIsTyping(true)
               continue
             } else if (event.type === 'chunk') {
+              setIsTyping(false)
               accumulated += event.content
               if (!pendingFlush) {
                 pendingFlush = true
@@ -566,8 +569,10 @@ export default function ChatPage() {
           try {
             const event = JSON.parse(jsonStr)
             if (event.type === 'typing') {
+              setIsTyping(true)
               continue
             } else if (event.type === 'chunk') {
+              setIsTyping(false)
               accumulated += event.content
               if (!pendingFlush) {
                 pendingFlush = true
@@ -692,15 +697,23 @@ export default function ChatPage() {
   // ---------------------------------------------------------------------------
   const handleCreateChannel = useCallback(
     async (categoryId: string | null) => {
+      console.log('[chat] handleCreateChannel called with categoryId:', categoryId)
+      // Use prompt - might not work in Tauri
       const name = window.prompt('Channel name:')
-      if (!name?.trim()) return
+      console.log('[chat] prompt result:', name)
+      if (!name?.trim()) {
+        console.log('[chat] No name provided, returning')
+        return
+      }
       try {
+        console.log('[chat] Creating channel:', name.trim())
         const res = await fetch('/api/channels', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ type: 'channel', name: name.trim(), categoryId }),
         })
         const channel = await res.json()
+        console.log('[chat] Channel created:', channel)
         setChannels((prev) => [...prev, channel])
       } catch (err) {
         console.error('Failed to create channel:', err)
@@ -850,6 +863,7 @@ export default function ChatPage() {
               messages={messages}
               streamingContent={streamingContent}
               isLoading={isLoading}
+              isTyping={isTyping}
               isFetching={isFetchingMessages}
               agentId={threads.find(t => t.id === activeThreadId)?.agent_id}
             />
