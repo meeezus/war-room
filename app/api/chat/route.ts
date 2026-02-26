@@ -5,6 +5,7 @@ import { saveMessage, getThread, getThreadSessionId, setThreadSessionId, clearTh
 import { getAgentSystemPrompt } from '@/lib/agent-identity'
 import { createRequestContext } from '@/lib/request-context'
 import { sendToOpenClaw } from '@/lib/openclaw-client'
+import { streamAnthropicChat, isAnthropicAvailable } from '@/lib/anthropic-chat'
 import { createServiceClient } from '@/lib/supabase-server'
 import { buildPulseContext } from '@/lib/pulse-context'
 import { parseActions, executeActions, stripActionBlocks, type PulseAction } from '@/lib/pulse-actions'
@@ -163,13 +164,22 @@ export async function POST(req: NextRequest) {
           const messageWithPulse = pulseContext
             ? `[PULSE CONTEXT]\n${pulseContext}\n[/PULSE CONTEXT]\n\nUser: ${content}`
             : content
-          try {
-            sourceStream = sendToOpenClaw(messageWithPulse)
-          } catch {
-            // sendToOpenClaw is synchronous, but catch just in case
-            console.log('[chat/route] OpenClaw unavailable, falling back to claude --print')
-            const fallbackSession: ClaudeSession = { sessionId: randomUUID(), threadId }
-            sourceStream = spawnClaude(messageWithPulse, fallbackSession, { resume: false, systemPrompt: systemPrompt || undefined })
+
+          // Priority: Anthropic API (production) > OpenClaw (local) > Claude CLI (local fallback)
+          if (isAnthropicAvailable()) {
+            console.log('[chat/route] Using Anthropic API for Makima')
+            sourceStream = streamAnthropicChat(messageWithPulse, {
+              systemPrompt: systemPrompt || undefined,
+            })
+          } else {
+            try {
+              sourceStream = sendToOpenClaw(messageWithPulse)
+            } catch {
+              // sendToOpenClaw is synchronous, but catch just in case
+              console.log('[chat/route] OpenClaw unavailable, falling back to claude --print')
+              const fallbackSession: ClaudeSession = { sessionId: randomUUID(), threadId }
+              sourceStream = spawnClaude(messageWithPulse, fallbackSession, { resume: false, systemPrompt: systemPrompt || undefined })
+            }
           }
         } else {
           sourceStream = spawnClaude(content, session!, { resume: isResume, systemPrompt: systemPrompt || undefined })
@@ -190,9 +200,9 @@ export async function POST(req: NextRequest) {
           try {
             readResult = await readWithTimeout()
           } catch (readErr) {
-            // For Makima/OpenClaw: if stream errors before any content, fall back to spawnClaude
-            if (isMakima && !fullResponse) {
-              console.log('[chat/route] OpenClaw stream failed, falling back to claude --print')
+            // For Makima: if stream errors before any content, fall back to spawnClaude (local only)
+            if (isMakima && !fullResponse && !isAnthropicAvailable()) {
+              console.log('[chat/route] Stream failed, falling back to claude --print')
               const fallbackMessage = pulseContext
                 ? `[PULSE CONTEXT]\n${pulseContext}\n[/PULSE CONTEXT]\n\nUser: ${content}`
                 : content
