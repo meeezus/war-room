@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { getAgents, getMissions, getEvents, getProjectsWithMetrics, getDynastyStats, getMissionStats, getPendingDiscoveryCount, getSkillPatchStats, getLastPatrolSummary, getActiveCouncilSessionCount, getAwarenessProposalCount, getObjectivesWithMetrics } from "@/lib/queries";
-import type { AgentStatus, Mission, Event, DynastyStats, ProjectWithMetrics, ObjectiveWithMetrics } from "@/lib/types";
+import { getAgents, getMissions, getEvents, getMissionStats, getPendingDiscoveryCount, getSkillPatchStats, getLastPatrolSummary, getActiveCouncilSessionCount, getAwarenessProposalCount, getObjectivesWithMetrics } from "@/lib/queries";
+import type { AgentStatus, Mission, Event, ObjectiveWithMetrics } from "@/lib/types";
 import Link from "next/link";
 import { StatusRibbon } from "@/components/status-ribbon";
 import { AgentSidebar } from "@/components/agent-sidebar";
@@ -13,37 +13,6 @@ import { ObjectiveOverview } from "@/components/objective-overview";
 import { TerminalPanel } from "@/components/terminal/terminal-panel";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Menu, Radio, X } from "lucide-react";
-
-
-const defaultDynastyStats: DynastyStats = {
-  totalProjects: 0,
-  activeProjects: 0,
-  totalTasks: 0,
-  activeTasks: 0,
-};
-
-function computeSmartPriority(project: ProjectWithMetrics): number {
-  // P0: deadline within 3 days and not done
-  if (project.target_date) {
-    const daysUntil = (new Date(project.target_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
-    if (daysUntil <= 3 && project.status !== "done") return 0;
-  }
-  // P1: in progress
-  if (project.status === "inprogress") return 1;
-  // P2: queued
-  if (project.status === "queue") return 2;
-  // P3: on hold
-  if (project.status === "onhold") return 3;
-  // P4: done
-  if (project.status === "done") return 4;
-  return 2;
-}
-
-function applySmartPriority(projects: ProjectWithMetrics[]): ProjectWithMetrics[] {
-  return projects
-    .map((p) => ({ ...p, priority: computeSmartPriority(p) }))
-    .sort((a, b) => a.priority - b.priority);
-}
 
 function ConnectPrompt() {
   return (
@@ -73,37 +42,26 @@ export default function DashboardPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [skillStats, setSkillStats] = useState({ recentPatches: 0, appliedPatches: 0 });
   const [lastPatrol, setLastPatrol] = useState<{ timestamp: string | null; discoveryCount: number }>({ timestamp: null, discoveryCount: 0 });
-  const [projects, setProjects] = useState<ProjectWithMetrics[]>([]);
   const [objectives, setObjectives] = useState<ObjectiveWithMetrics[]>([]);
-  const [dynastyStats, setDynastyStats] = useState<DynastyStats>(defaultDynastyStats);
   const [missionStats, setMissionStats] = useState({ active: 0, total: 0 });
   const [pendingDiscoveries, setPendingDiscoveries] = useState(0);
   const [councilSessions, setCouncilSessions] = useState(0);
   const [awarenessCount, setAwarenessCount] = useState(0);
+  const [recapCount, setRecapCount] = useState(0);
+  const [usageData, setUsageData] = useState<{ quotaPercent: number; dailyCost: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(typeof window !== 'undefined' ? window.innerWidth >= 768 : true);
   const [feedOpen, setFeedOpen] = useState(typeof window !== 'undefined' ? window.innerWidth >= 768 : true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [mobileFeedOpen, setMobileFeedOpen] = useState(false);
 
-  const refreshProjects = useCallback(async () => {
-    const [projectsData, dynastyData] = await Promise.all([
-      getProjectsWithMetrics(),
-      getDynastyStats(),
-    ]);
-    setProjects(applySmartPriority(projectsData));
-    setDynastyStats(dynastyData);
-  }, []);
-
   useEffect(() => {
     async function fetchData() {
       try {
-        const [agentsData, missionsData, eventsData, projectsData, dynastyData, missionStatsData, discoveryCount, skillStatsData, lastPatrolData, councilSessionCount, awarenessCountData, objectivesData] = await Promise.all([
+        const [agentsData, missionsData, eventsData, missionStatsData, discoveryCount, skillStatsData, lastPatrolData, councilSessionCount, awarenessCountData, objectivesData] = await Promise.all([
           getAgents(),
           getMissions(),
           getEvents(),
-          getProjectsWithMetrics(),
-          getDynastyStats(),
           getMissionStats(),
           getPendingDiscoveryCount(),
           getSkillPatchStats(),
@@ -115,8 +73,6 @@ export default function DashboardPage() {
         setAgents(agentsData);
         setMissions(missionsData);
         setEvents(eventsData);
-        setProjects(applySmartPriority(projectsData));
-        setDynastyStats(dynastyData);
         setMissionStats(missionStatsData);
         setPendingDiscoveries(discoveryCount);
         setSkillStats(skillStatsData);
@@ -124,6 +80,22 @@ export default function DashboardPage() {
         setCouncilSessions(councilSessionCount);
         setAwarenessCount(awarenessCountData);
         setObjectives(objectivesData);
+
+        // Fetch recap count + usage data (non-critical — don't block)
+        fetch('/api/recaps').then(r => r.json()).then(d => {
+          const total = (d.groups ?? []).reduce((sum: number, g: { recaps: unknown[] }) => sum + g.recaps.length, 0);
+          setRecapCount(total);
+        }).catch(() => {});
+        fetch('/api/usage').then(r => r.json()).then(d => {
+          const provider = d.providers?.[0];
+          if (provider) {
+            const today = provider.dailyUsage?.find((u: { date: string }) => u.date === new Date().toISOString().split('T')[0]);
+            setUsageData({
+              quotaPercent: provider.quotaInfo?.percentUsed ?? 0,
+              dailyCost: today?.cost ?? 0,
+            });
+          }
+        }).catch(() => {});
       } catch (err) {
         console.error('Dashboard fetch error:', err);
       } finally {
@@ -181,16 +153,14 @@ export default function DashboardPage() {
           </span>
           <span className="ml-auto hidden md:inline font-[family-name:var(--font-jetbrains-mono)] text-xs tabular-nums text-muted-foreground/75">
             <Link href="/objectives" className="transition-colors hover:text-foreground/60">
-              {objectives.filter(o => o.status === 'active').length}/{objectives.length} objectives
+              {objectives.length} objectives
             </Link>
-            {" \u00B7 "}
-            {dynastyStats.activeProjects}/{dynastyStats.totalProjects} projects
             {" \u00B7 "}
             <Link href="/missions" className="transition-colors hover:text-foreground/60">
-              {missionStats.active}/{missionStats.total} missions
+              {missions.filter(m => m.status === 'running').length} running
             </Link>
             {" \u00B7 "}
-            {dynastyStats.activeTasks}/{dynastyStats.totalTasks} tasks
+            {missions.filter(m => m.status === 'failed').length + pendingDiscoveries} need attention
           </span>
           {/* Mobile event feed toggle */}
           <button
@@ -207,6 +177,8 @@ export default function DashboardPage() {
           skillStats={skillStats}
           councilSessions={councilSessions}
           awarenessCount={awarenessCount}
+          recapCount={recapCount}
+          usageData={usageData}
         />
       </div>
 
@@ -335,7 +307,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Bottom - Terminal Panel */}
-      <TerminalPanel missions={missions} />
+      <TerminalPanel />
     </div>
   );
 }

@@ -2,9 +2,8 @@
 
 import { useState, useCallback } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { Pencil, Check, X, Loader2, Plus, ChevronRight } from 'lucide-react'
-import type { Objective, Project, Mission, Proposal } from '@/lib/types'
+import { Pencil, Check, X, Loader2 } from 'lucide-react'
+import type { Objective, Mission, Proposal } from '@/lib/types'
 import { StealthCard } from '@/components/stealth-card'
 import { Breadcrumb } from '@/components/breadcrumb'
 
@@ -46,14 +45,7 @@ const PROPOSAL_STATUS_COLORS: Record<string, string> = {
   failed: 'bg-red-500/20 text-red-400 border border-red-500/30',
 }
 
-const PROJECT_STATUS_COLORS: Record<string, string> = {
-  inprogress: 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
-  queue: 'bg-zinc-500/20 text-zinc-400 border border-zinc-500/30',
-  done: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
-  onhold: 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
-}
-
-type Tab = 'projects' | 'missions' | 'proposals'
+type Tab = 'proposals' | 'missions'
 
 const inputClasses =
   'border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring/20 transition-colors'
@@ -72,20 +64,12 @@ function formatDate(iso: string): string {
   })
 }
 
-function formatDateShort(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  })
-}
-
 // ---------------------------------------------------------------------------
 // Props
 // ---------------------------------------------------------------------------
 
 interface ObjectiveDetailClientProps {
   objective: Objective
-  projects: Project[]
   missions: Mission[]
   proposals: Proposal[]
 }
@@ -96,14 +80,11 @@ interface ObjectiveDetailClientProps {
 
 export function ObjectiveDetailClient({
   objective: initialObjective,
-  projects,
   missions,
   proposals,
 }: ObjectiveDetailClientProps) {
-  const router = useRouter()
-
   // Tab state
-  const [activeTab, setActiveTab] = useState<Tab>('projects')
+  const [activeTab, setActiveTab] = useState<Tab>('proposals')
 
   // Editing state
   const [isEditing, setIsEditing] = useState(false)
@@ -126,15 +107,10 @@ export function ObjectiveDetailClient({
   const displayDescription = optimistic?.description !== undefined ? optimistic.description : initialObjective.description
   const displayCriteria = optimistic?.success_criteria ?? initialObjective.success_criteria
 
-  // Creating project state
-  const [isCreatingProject, setIsCreatingProject] = useState(false)
-  const [newProjectTitle, setNewProjectTitle] = useState('')
-  const [creatingProject, setCreatingProject] = useState(false)
-
-  // Progress: N of M projects done
-  const totalProjects = projects.length
-  const doneProjects = projects.filter((p) => p.status === 'done').length
-  const projectPct = totalProjects > 0 ? Math.round((doneProjects / totalProjects) * 100) : 0
+  // Mission progress
+  const totalMissions = missions.length
+  const completedMissions = missions.filter((m) => m.status === 'completed' || m.status === 'deployed').length
+  const missionPct = totalMissions > 0 ? Math.round((completedMissions / totalMissions) * 100) : 0
 
   // Iteration progress
   const iterPct = Math.min(100, Math.round((initialObjective.iteration_count / initialObjective.max_iterations) * 100))
@@ -194,33 +170,6 @@ export function ObjectiveDetailClient({
       setIsSaving(false)
     }
   }, [initialObjective, optimistic, editTitle, editStatus, editDescription, editCriteria])
-
-  const handleCreateProject = useCallback(async () => {
-    if (!newProjectTitle.trim()) return
-    setCreatingProject(true)
-    try {
-      const res = await fetch('/api/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: newProjectTitle.trim(),
-          objective_id: initialObjective.id,
-          status: 'queue',
-        }),
-      })
-      if (res.ok) {
-        setNewProjectTitle('')
-        setIsCreatingProject(false)
-        router.refresh()
-      } else {
-        console.error('Failed to create project:', await res.text())
-      }
-    } catch (err) {
-      console.error('Create project error:', err)
-    } finally {
-      setCreatingProject(false)
-    }
-  }, [newProjectTitle, initialObjective.id, router])
 
   // ---------------------------------------------------------------------------
   // Render
@@ -334,25 +283,23 @@ export function ObjectiveDetailClient({
 
           {/* Progress bars */}
           <div className="space-y-3 mb-4">
-            {/* Project completion progress */}
-            {totalProjects > 0 && (
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-[family-name:var(--font-space-grotesk)]">
-                    Project Progress
-                  </span>
-                  <span className="font-[family-name:var(--font-jetbrains-mono)] text-xs text-muted-foreground">
-                    {doneProjects}/{totalProjects} complete ({projectPct}%)
-                  </span>
-                </div>
-                <div className="h-2 rounded-full bg-muted overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-emerald-500 transition-all"
-                    style={{ width: `${projectPct}%` }}
-                  />
-                </div>
+            {/* Mission completion progress */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-[family-name:var(--font-space-grotesk)]">
+                  Mission Progress
+                </span>
+                <span className="font-[family-name:var(--font-jetbrains-mono)] text-xs text-muted-foreground">
+                  {completedMissions}/{totalMissions} complete ({missionPct}%)
+                </span>
               </div>
-            )}
+              <div className="h-2 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-emerald-500 transition-all"
+                  style={{ width: `${missionPct}%` }}
+                />
+              </div>
+            </div>
 
             {/* Iteration progress */}
             <div>
@@ -386,14 +333,6 @@ export function ObjectiveDetailClient({
                 <span className="text-muted-foreground/50">Budget:</span> ${initialObjective.max_cost_usd}
               </div>
             )}
-            {initialObjective.project_id && (
-              <div>
-                <span className="text-muted-foreground/50">Project:</span>{' '}
-                <Link href={`/projects/${initialObjective.project_id}`} className="text-blue-400 hover:text-blue-300">
-                  {initialObjective.project_id.slice(0, 8)}...
-                </Link>
-              </div>
-            )}
             {initialObjective.completed_at && (
               <div>
                 <span className="text-muted-foreground/50">Completed:</span> {formatDate(initialObjective.completed_at)}
@@ -405,8 +344,8 @@ export function ObjectiveDetailClient({
         {/* Tabs */}
         <div className="border-b border-border mb-6">
           <nav className="flex gap-6">
-            {(['projects', 'missions', 'proposals'] as Tab[]).map((tab) => {
-              const count = tab === 'projects' ? projects.length : tab === 'missions' ? missions.length : proposals.length
+            {(['proposals', 'missions'] as Tab[]).map((tab) => {
+              const count = tab === 'missions' ? missions.length : proposals.length
               const isActive = activeTab === tab
               return (
                 <button
@@ -431,94 +370,27 @@ export function ObjectiveDetailClient({
         </div>
 
         {/* Tab Content */}
-        {activeTab === 'projects' && (
-          <div>
-            {/* Create project inline form */}
-            <div className="mb-4">
-              {isCreatingProject ? (
-                <div className="flex items-center gap-2">
-                  <input
-                    className={`${inputClasses} flex-1 rounded-sm`}
-                    value={newProjectTitle}
-                    onChange={(e) => setNewProjectTitle(e.target.value)}
-                    placeholder="New project title..."
-                    autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleCreateProject()
-                      if (e.key === 'Escape') {
-                        setIsCreatingProject(false)
-                        setNewProjectTitle('')
-                      }
-                    }}
-                  />
-                  <button
-                    onClick={handleCreateProject}
-                    disabled={creatingProject || !newProjectTitle.trim()}
-                    className="inline-flex items-center gap-1 rounded-sm bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-500 transition-colors disabled:opacity-50"
-                  >
-                    {creatingProject ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
-                    Create
-                  </button>
-                  <button
-                    onClick={() => { setIsCreatingProject(false); setNewProjectTitle('') }}
-                    className="inline-flex items-center gap-1 rounded-sm border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setIsCreatingProject(true)}
-                  className="inline-flex items-center gap-1.5 rounded-sm border border-dashed border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:border-muted-foreground/50 transition-colors"
-                >
-                  <Plus className="h-3 w-3" /> Create Project
-                </button>
-              )}
-            </div>
-
-            {projects.length === 0 ? (
-              <p className="text-xs text-muted-foreground/60 italic">No projects linked to this objective</p>
-            ) : (
-              <div className="grid gap-3 sm:grid-cols-2">
-                {projects.map((p) => (
-                  <Link
-                    key={p.id}
-                    href={`/projects/${p.id}`}
-                    className="group block"
-                  >
-                    <StealthCard className="p-4">
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <span className="text-sm text-foreground font-medium group-hover:text-emerald-400 transition-colors truncate">
-                          {p.title}
-                        </span>
-                        <span
-                          className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${
-                            PROJECT_STATUS_COLORS[p.status] ?? 'bg-zinc-500/20 text-zinc-400 border border-zinc-500/30'
-                          }`}
-                        >
-                          {p.status}
-                        </span>
-                      </div>
-                      {p.goal && (
-                        <p className="text-xs text-muted-foreground/70 line-clamp-2 mb-2">{p.goal}</p>
-                      )}
-                      <div className="flex items-center justify-between text-[10px] text-muted-foreground/50">
-                        <span>Priority: {p.priority}</span>
-                        <span className="flex items-center gap-0.5">
-                          {formatDateShort(p.updated_at)}
-                          <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </span>
-                      </div>
-                    </StealthCard>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
         {activeTab === 'missions' && (
           <div>
+            {/* Mission progress header */}
+            {totalMissions > 0 && (
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/75">
+                    {completedMissions}/{totalMissions} missions complete
+                  </span>
+                  <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/60">
+                    {missionPct}%
+                  </span>
+                </div>
+                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-emerald-500 transition-all"
+                    style={{ width: `${missionPct}%` }}
+                  />
+                </div>
+              </div>
+            )}
             {missions.length === 0 ? (
               <p className="text-xs text-muted-foreground/60 italic">No missions yet</p>
             ) : (

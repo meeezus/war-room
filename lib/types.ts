@@ -304,8 +304,17 @@ export interface Objective {
 }
 
 export interface ObjectiveWithMetrics extends Objective {
-  projectCount: number
+  totalMissions: number
+  completedMissions: number
   activeMissions: number
   pendingProposals: number
-  completedProjects: number
+}
+
+export interface ActiveWorker {
+  id: number
+  title: string
+  kind: 'research' | 'code' | 'review' | 'test' | 'deploy' | 'write' | 'analyze' | null
+  daimyo: string | null
+  started_at: string | null
+  mission_id: string | null
 }

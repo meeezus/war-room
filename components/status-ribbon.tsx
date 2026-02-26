@@ -14,6 +14,8 @@ interface StatusRibbonProps {
   lastPatrol: { timestamp: string | null; discoveryCount: number };
   skillStats: { recentPatches: number; appliedPatches: number };
   councilSessions: number;
+  recapCount: number;
+  usageData: { quotaPercent: number; dailyCost: number } | null;
 }
 
 function timeAgo(dateStr: string): string {
@@ -58,7 +60,9 @@ function SituationCard({
   warningCount = 0,
   infoCount = 0,
   awarenessCount = 0,
-}: Pick<StatusRibbonProps, "pendingDiscoveries" | "criticalCount" | "warningCount" | "infoCount" | "awarenessCount">) {
+  lastPatrol,
+}: Pick<StatusRibbonProps, "pendingDiscoveries" | "criticalCount" | "warningCount" | "infoCount" | "awarenessCount" | "lastPatrol">) {
+  const recentPatrol = isRecentPatrol(lastPatrol.timestamp);
   return (
     <StealthCard hover={false} className="px-4 py-3 min-w-[200px] flex-shrink-0">
       <CardLabel romaji="Dōjō Hōkoku" english="SitRep" />
@@ -87,6 +91,16 @@ function SituationCard({
           </span>
         </div>
       )}
+      <div className="flex items-center gap-1.5 mt-1.5">
+        {recentPatrol && (
+          <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
+        )}
+        <p className="text-[10px] text-muted-foreground/70 font-[family-name:var(--font-jetbrains-mono)]">
+          {lastPatrol.timestamp
+            ? `Last patrol: ${timeAgo(lastPatrol.timestamp)} · ${lastPatrol.discoveryCount} pending`
+            : "No patrols yet"}
+        </p>
+      </div>
       <Link
         href="/brief"
         className="text-xs text-blue-400 mt-1 block hover:text-blue-300"
@@ -94,72 +108,6 @@ function SituationCard({
         View Brief →
       </Link>
     </StealthCard>
-  );
-}
-
-function PatrolCard({ lastPatrol }: { lastPatrol: StatusRibbonProps["lastPatrol"] }) {
-  const recent = isRecentPatrol(lastPatrol.timestamp);
-  return (
-    <StealthCard hover={false} className="px-4 py-3 min-w-[200px] flex-shrink-0">
-      <div className="flex items-center gap-2">
-        <CardLabel romaji="Junkai" english="Patrol" />
-        {recent && (
-          <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-        )}
-      </div>
-      <CardValue>
-        {lastPatrol.timestamp ? timeAgo(lastPatrol.timestamp) : "No patrols yet"}
-      </CardValue>
-      {lastPatrol.timestamp && (
-        <p className="text-xs text-muted-foreground font-[family-name:var(--font-jetbrains-mono)]">
-          {lastPatrol.discoveryCount} discoveries
-        </p>
-      )}
-      <Link
-        href="/discoveries"
-        className="text-xs text-blue-400 mt-1 block hover:text-blue-300"
-      >
-        View all →
-      </Link>
-    </StealthCard>
-  );
-}
-
-function DiscoveriesCard({
-  pendingDiscoveries,
-  criticalCount = 0,
-  warningCount = 0,
-  infoCount = 0,
-}: Pick<StatusRibbonProps, "pendingDiscoveries" | "criticalCount" | "warningCount" | "infoCount">) {
-  return (
-    <Link href="/discoveries" className="block">
-      <StealthCard hover={false} className="px-4 py-3 min-w-[200px] min-h-[110px] flex-shrink-0 flex flex-col justify-between">
-        <CardLabel romaji="Hakken" english="Discoveries" />
-        <CardValue>
-          <span className="text-amber-400">{pendingDiscoveries}</span>
-        </CardValue>
-        <p className="text-xs text-muted-foreground font-[family-name:var(--font-jetbrains-mono)]">
-          pending review
-        </p>
-        {criticalCount > 0 && (
-          <div className="flex gap-1.5 mt-1 flex-wrap">
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 font-[family-name:var(--font-jetbrains-mono)]">
-              {criticalCount} critical
-            </span>
-            {warningCount > 0 && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 font-[family-name:var(--font-jetbrains-mono)]">
-                {warningCount} warning
-              </span>
-            )}
-            {infoCount > 0 && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 font-[family-name:var(--font-jetbrains-mono)]">
-                {infoCount} info
-              </span>
-            )}
-          </div>
-        )}
-      </StealthCard>
-    </Link>
   );
 }
 
@@ -263,6 +211,45 @@ function ProposalsCard() {
   );
 }
 
+function RecapCard({ recapCount }: { recapCount: number }) {
+  return (
+    <Link href="/recaps" className="block">
+      <StealthCard hover={false} className="px-4 py-3 min-w-[200px] min-h-[110px] flex-shrink-0 flex flex-col justify-between">
+        <CardLabel romaji="Ouroboros" english="Recaps" />
+        <CardValue>{recapCount}</CardValue>
+        <p className="text-xs text-muted-foreground font-[family-name:var(--font-jetbrains-mono)]">
+          last 7 days
+        </p>
+      </StealthCard>
+    </Link>
+  );
+}
+
+function UsageCard({ usageData }: { usageData: StatusRibbonProps["usageData"] }) {
+  return (
+    <Link href="/usage" className="block">
+      <StealthCard hover={false} className="px-4 py-3 min-w-[200px] min-h-[110px] flex-shrink-0 flex flex-col justify-between">
+        <CardLabel romaji="Shiyō" english="Usage" />
+        {usageData ? (
+          <>
+            <CardValue>{usageData.quotaPercent}%</CardValue>
+            <p className="text-xs text-muted-foreground font-[family-name:var(--font-jetbrains-mono)]">
+              quota used
+            </p>
+            <p className="text-xs text-muted-foreground font-[family-name:var(--font-jetbrains-mono)]">
+              ${usageData.dailyCost.toFixed(2)} today
+            </p>
+          </>
+        ) : (
+          <p className="text-xs text-muted-foreground font-[family-name:var(--font-jetbrains-mono)] mt-1">
+            No data
+          </p>
+        )}
+      </StealthCard>
+    </Link>
+  );
+}
+
 function ChatCard() {
   return (
     <Link href="/chat" className="block">
@@ -286,6 +273,8 @@ export function StatusRibbon({
   lastPatrol,
   skillStats,
   councilSessions,
+  recapCount,
+  usageData,
 }: StatusRibbonProps) {
   return (
     <div className="flex gap-2 md:gap-3 overflow-x-auto pb-2">
@@ -295,18 +284,14 @@ export function StatusRibbon({
         warningCount={warningCount}
         infoCount={infoCount}
         awarenessCount={awarenessCount}
-      />
-      <PatrolCard lastPatrol={lastPatrol} />
-      <DiscoveriesCard
-        pendingDiscoveries={pendingDiscoveries}
-        criticalCount={criticalCount}
-        warningCount={warningCount}
-        infoCount={infoCount}
+        lastPatrol={lastPatrol}
       />
       <SkillsCard skillStats={skillStats} />
       <HealthCard />
       <CouncilCard activeSessions={councilSessions} />
       <ProposalsCard />
+      <RecapCard recapCount={recapCount} />
+      <UsageCard usageData={usageData} />
       <ChatCard />
     </div>
   );

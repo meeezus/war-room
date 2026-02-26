@@ -7,27 +7,30 @@ import type { Category, Channel } from '@/components/chat/channel-sidebar'
 const mockThreads: ThreadSummary[] = [
   {
     id: 'thread-1',
-    title: 'First thread',
+    title: 'Makima',
     last_message: 'Hello',
     last_message_at: new Date().toISOString(),
-    agent_id: null,
+    agent_id: 'makima',
   },
   {
     id: 'thread-2',
-    title: 'Second thread',
+    title: 'Research Thread',
     last_message: 'World',
     last_message_at: new Date().toISOString(),
-    agent_id: 'agent-1',
+    agent_id: 'cc',
   },
 ]
 
 const mockCategories: Category[] = [
   { id: 'cat-1', name: 'General', collapsed: false },
+  { id: 'cat-2', name: 'Research', collapsed: true },
 ]
 
 const mockChannels: Channel[] = [
-  { id: 'ch-1', category_id: 'cat-1', name: 'announcements', is_default: true },
-  { id: 'ch-2', category_id: null, name: 'random', is_default: false },
+  { id: 'ch-1', category_id: 'cat-1', name: 'general', is_default: true },
+  { id: 'ch-2', category_id: 'cat-1', name: 'alerts', is_default: false },
+  { id: 'ch-3', category_id: 'cat-2', name: 'papers', is_default: false },
+  { id: 'ch-4', category_id: null, name: 'random', is_default: false },
 ]
 
 const defaultProps = {
@@ -43,121 +46,167 @@ const defaultProps = {
   onSelectChannel: vi.fn(),
 }
 
-describe('UnifiedSidebar', () => {
-  describe('tab rendering', () => {
-    it('renders both tab buttons', () => {
+describe('UnifiedSidebar (Slack-style)', () => {
+  describe('no tabs - single unified list', () => {
+    it('does NOT render DMs/Channels tab buttons', () => {
       render(<UnifiedSidebar {...defaultProps} />)
-      expect(screen.getByRole('button', { name: /direct messages/i })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: /channels/i })).toBeInTheDocument()
+      // There should be no tab buttons for switching between DMs and Channels
+      const dmTabButton = screen.queryByRole('button', { name: /^direct messages$/i })
+      const channelsTabButton = screen.queryByRole('button', { name: /^channels$/i })
+      // These should not exist as clickable tab buttons
+      // Section headers exist as text but not as tab-switching buttons
+      expect(dmTabButton).toBeNull()
+      expect(channelsTabButton).toBeNull()
     })
 
-    it('shows DMs tab as active by default', () => {
+    it('renders both DMs and channels simultaneously', () => {
       render(<UnifiedSidebar {...defaultProps} />)
-      const dmTab = screen.getByRole('button', { name: /direct messages/i })
-      expect(dmTab.className).toContain('text-emerald-400')
-      expect(dmTab.className).toContain('border-emerald-500')
-    })
-
-    it('shows Channels tab as inactive by default', () => {
-      render(<UnifiedSidebar {...defaultProps} />)
-      const channelsTab = screen.getByRole('button', { name: /channels/i })
-      expect(channelsTab.className).not.toContain('text-emerald-400')
-      expect(channelsTab.className).toContain('text-muted-foreground')
+      // DM threads should be visible
+      expect(screen.getByText('Makima')).toBeInTheDocument()
+      expect(screen.getByText('Research Thread')).toBeInTheDocument()
+      // Channel names should also be visible (from expanded category)
+      expect(screen.getByText('general')).toBeInTheDocument()
+      expect(screen.getByText('alerts')).toBeInTheDocument()
     })
   })
 
-  describe('DMs view (default)', () => {
-    it('renders ThreadList content when DMs tab is active', () => {
+  describe('DMs section', () => {
+    it('renders a "Direct Messages" section header', () => {
       render(<UnifiedSidebar {...defaultProps} />)
-      // ThreadList renders thread titles
-      expect(screen.getByText('First thread')).toBeInTheDocument()
-      expect(screen.getByText('Second thread')).toBeInTheDocument()
+      expect(screen.getByText(/direct messages/i)).toBeInTheDocument()
     })
 
-    it('does not render ChannelSidebar content when DMs tab is active', () => {
+    it('renders a new DM button next to the section header', () => {
+      const onNewThread = vi.fn()
+      render(<UnifiedSidebar {...defaultProps} onNewThread={onNewThread} />)
+      const newDmButton = screen.getByTitle('New DM')
+      expect(newDmButton).toBeInTheDocument()
+      fireEvent.click(newDmButton)
+      expect(onNewThread).toHaveBeenCalled()
+    })
+
+    it('renders all DM threads', () => {
       render(<UnifiedSidebar {...defaultProps} />)
-      // Channel names should not be visible
-      expect(screen.queryByText('announcements')).not.toBeInTheDocument()
-    })
-  })
-
-  describe('switching tabs', () => {
-    it('switches to Channels view when Channels tab is clicked', () => {
-      render(<UnifiedSidebar {...defaultProps} />)
-      fireEvent.click(screen.getByRole('button', { name: /channels/i }))
-
-      // Channels tab should now be active
-      const channelsTab = screen.getByRole('button', { name: /channels/i })
-      expect(channelsTab.className).toContain('text-emerald-400')
-      expect(channelsTab.className).toContain('border-emerald-500')
-
-      // DMs tab should be inactive
-      const dmTab = screen.getByRole('button', { name: /direct messages/i })
-      expect(dmTab.className).not.toContain('text-emerald-400')
+      expect(screen.getByText('Makima')).toBeInTheDocument()
+      expect(screen.getByText('Research Thread')).toBeInTheDocument()
     })
 
-    it('renders ChannelSidebar content after switching to Channels', () => {
-      render(<UnifiedSidebar {...defaultProps} />)
-      fireEvent.click(screen.getByRole('button', { name: /channels/i }))
-
-      expect(screen.getByText('announcements')).toBeInTheDocument()
-      expect(screen.getByText('random')).toBeInTheDocument()
-    })
-
-    it('hides ThreadList content after switching to Channels', () => {
-      render(<UnifiedSidebar {...defaultProps} />)
-      fireEvent.click(screen.getByRole('button', { name: /channels/i }))
-
-      expect(screen.queryByText('First thread')).not.toBeInTheDocument()
-    })
-
-    it('switches back to DMs when DMs tab is clicked again', () => {
-      render(<UnifiedSidebar {...defaultProps} />)
-      // Switch to channels
-      fireEvent.click(screen.getByRole('button', { name: /channels/i }))
-      // Switch back to DMs
-      fireEvent.click(screen.getByRole('button', { name: /direct messages/i }))
-
-      expect(screen.getByText('First thread')).toBeInTheDocument()
-      expect(screen.queryByText('announcements')).not.toBeInTheDocument()
-    })
-  })
-
-  describe('prop passthrough', () => {
-    it('passes onSelectThread to ThreadList', () => {
-      const onSelectThread = vi.fn()
-      render(<UnifiedSidebar {...defaultProps} onSelectThread={onSelectThread} />)
-      // Click a thread - ThreadList renders buttons for each thread
-      const threadButton = screen.getByText('First thread').closest('button')
-      if (threadButton) {
-        fireEvent.click(threadButton)
-        expect(onSelectThread).toHaveBeenCalledWith('thread-1')
-      }
-    })
-
-    it('passes onSelectChannel to ChannelSidebar', () => {
-      const onSelectChannel = vi.fn()
-      render(<UnifiedSidebar {...defaultProps} onSelectChannel={onSelectChannel} />)
-      fireEvent.click(screen.getByRole('button', { name: /channels/i }))
-
-      const channelButton = screen.getByRole('button', { name: /announcements/ })
-      fireEvent.click(channelButton)
-      expect(onSelectChannel).toHaveBeenCalledWith('ch-1')
-    })
-
-    it('passes activeThreadId to highlight the active thread', () => {
+    it('highlights the active DM thread', () => {
       render(<UnifiedSidebar {...defaultProps} activeThreadId="thread-1" />)
-      // The active thread should have distinct styling (emerald highlight)
-      const threadButton = screen.getByText('First thread').closest('button')
+      const threadButton = screen.getByText('Makima').closest('button')
       expect(threadButton?.className).toContain('bg-emerald-500/10')
     })
 
-    it('passes activeChannelId to highlight the active channel', () => {
-      render(<UnifiedSidebar {...defaultProps} activeChannelId="ch-1" />)
-      fireEvent.click(screen.getByRole('button', { name: /channels/i }))
+    it('calls onSelectThread when a DM is clicked', () => {
+      const onSelectThread = vi.fn()
+      render(<UnifiedSidebar {...defaultProps} onSelectThread={onSelectThread} />)
+      const threadButton = screen.getByText('Makima').closest('button')
+      if (threadButton) fireEvent.click(threadButton)
+      expect(onSelectThread).toHaveBeenCalledWith('thread-1')
+    })
 
-      const channelButton = screen.getByRole('button', { name: /announcements/ })
+    it('renders agent avatar for agent threads', () => {
+      render(<UnifiedSidebar {...defaultProps} />)
+      const avatar = screen.getByAltText('makima')
+      expect(avatar).toBeInTheDocument()
+      expect(avatar).toHaveAttribute('src', '/avatars/makima.webp')
+    })
+  })
+
+  describe('categories + channels section', () => {
+    it('renders category names as section headers', () => {
+      render(<UnifiedSidebar {...defaultProps} />)
+      expect(screen.getByText('GENERAL')).toBeInTheDocument()
+      expect(screen.getByText('RESEARCH')).toBeInTheDocument()
+    })
+
+    it('renders channels under expanded categories', () => {
+      render(<UnifiedSidebar {...defaultProps} />)
+      // General is expanded
+      expect(screen.getByText('general')).toBeInTheDocument()
+      expect(screen.getByText('alerts')).toBeInTheDocument()
+    })
+
+    it('hides channels under collapsed categories', () => {
+      render(<UnifiedSidebar {...defaultProps} />)
+      // Research is collapsed
+      expect(screen.queryByText('papers')).not.toBeInTheDocument()
+    })
+
+    it('renders uncategorized channels', () => {
+      render(<UnifiedSidebar {...defaultProps} />)
+      expect(screen.getByText('random')).toBeInTheDocument()
+    })
+
+    it('calls onToggleCategory when category header is clicked', () => {
+      const onToggleCategory = vi.fn()
+      render(<UnifiedSidebar {...defaultProps} onToggleCategory={onToggleCategory} />)
+      fireEvent.click(screen.getByText('GENERAL'))
+      expect(onToggleCategory).toHaveBeenCalledWith('cat-1')
+    })
+
+    it('highlights the active channel', () => {
+      render(<UnifiedSidebar {...defaultProps} activeChannelId="ch-1" />)
+      const channelButton = screen.getByRole('button', { name: /general/ })
       expect(channelButton.className).toContain('bg-emerald-500/10')
+    })
+
+    it('calls onSelectChannel when a channel is clicked', () => {
+      const onSelectChannel = vi.fn()
+      render(<UnifiedSidebar {...defaultProps} onSelectChannel={onSelectChannel} />)
+      fireEvent.click(screen.getByRole('button', { name: /general/ }))
+      expect(onSelectChannel).toHaveBeenCalledWith('ch-1')
+    })
+
+    it('renders hash icon for channels', () => {
+      render(<UnifiedSidebar {...defaultProps} />)
+      // Each channel button should exist
+      const channelButtons = screen.getAllByRole('button', { name: /general|alerts|random/ })
+      expect(channelButtons.length).toBe(3)
+    })
+  })
+
+  describe('header', () => {
+    it('renders the Shoin Chat title', () => {
+      render(<UnifiedSidebar {...defaultProps} />)
+      expect(screen.getByText('Shoin Chat')).toBeInTheDocument()
+    })
+
+    it('renders create category button when onCreateCategory is provided', () => {
+      const onCreateCategory = vi.fn()
+      render(<UnifiedSidebar {...defaultProps} onCreateCategory={onCreateCategory} />)
+      const addButton = screen.getByTitle('Add category')
+      expect(addButton).toBeInTheDocument()
+      fireEvent.click(addButton)
+      expect(onCreateCategory).toHaveBeenCalled()
+    })
+  })
+
+  describe('mutual exclusion of selections', () => {
+    it('does not highlight any DM when a channel is active', () => {
+      render(
+        <UnifiedSidebar
+          {...defaultProps}
+          activeThreadId={null}
+          activeChannelId="ch-1"
+        />
+      )
+      // No DM should be highlighted
+      const makimaButton = screen.getByText('Makima').closest('button')
+      expect(makimaButton?.className).not.toContain('bg-emerald-500/10')
+    })
+
+    it('does not highlight any channel when a DM is active', () => {
+      render(
+        <UnifiedSidebar
+          {...defaultProps}
+          activeThreadId="thread-1"
+          activeChannelId={null}
+        />
+      )
+      // No channel should be highlighted
+      const channelButton = screen.getByRole('button', { name: /general/ })
+      expect(channelButton.className).not.toContain('bg-emerald-500/10')
     })
   })
 
@@ -168,6 +217,28 @@ describe('UnifiedSidebar', () => {
       expect(wrapper.className).toContain('bg-background')
       expect(wrapper.className).toContain('border-r')
       expect(wrapper.className).toContain('border-border')
+    })
+  })
+
+  describe('empty states', () => {
+    it('renders with no DM threads', () => {
+      render(<UnifiedSidebar {...defaultProps} threads={[]} />)
+      // Should still show the Direct Messages header
+      expect(screen.getByText(/direct messages/i)).toBeInTheDocument()
+      // Categories should still render
+      expect(screen.getByText('GENERAL')).toBeInTheDocument()
+    })
+
+    it('renders with no categories or channels', () => {
+      render(
+        <UnifiedSidebar
+          {...defaultProps}
+          categories={[]}
+          channels={[]}
+        />
+      )
+      // DMs should still render
+      expect(screen.getByText('Makima')).toBeInTheDocument()
     })
   })
 })

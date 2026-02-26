@@ -1,0 +1,85 @@
+---
+session: war-room
+date: 2026-02-25
+status: partial
+outcome: PARTIAL_PLUS
+---
+
+goal: Morning fixes + merge both feature branches to main
+now: Merge shogunate feature/makima-coo to main, restart poller, then tackle outstanding issues
+
+test: npm run build
+
+done_this_session:
+  - task: "Fix poller health check — wrong table (events→war_room_events) and column (type→event_type)"
+    files: [app/api/health/route.ts]
+  - task: "Fix project card dropdown — fly-out submenu clipped by overflow, replaced with inline status options"
+    files: [components/project-card.tsx]
+  - task: "Objectives clickable — cards link to /objectives/[id] detail page with missions + proposals"
+    files: [app/objectives/page.tsx, app/objectives/[id]/page.tsx]
+  - task: "Rename Pip→Makima in agent_status DB (kept id='pip' for FK refs)"
+    files: []
+  - task: "Merged feature/makima-pulse into main — resolved 4 conflicts (health, status-ribbon, project-detail, health-page)"
+    files: [app/api/health/route.ts, app/health/page.tsx, components/project-detail.tsx, components/status-ribbon.tsx]
+  - task: "Merged feature/agent-awareness-loop into main — clean merge, 10 files +635 lines"
+    files: []
+  - task: "Pushed main to origin (bypassed pre-push hook per user request)"
+    files: []
+
+blockers: []
+
+questions:
+  - "Shogunate feature/makima-coo needs merge to main + poller restart — awareness + patrol won't run until this happens"
+  - "Mobile responsive — user wants quick pass (approach A: md: breakpoints, collapsible sidebar/feed)"
+
+decisions:
+  - project_dropdown_fix: "Replaced fly-out submenu with inline status options to avoid overflow clipping in kanban columns"
+  - merge_strategy: "Direct merge to main (not PR) per user request, bypassed pre-push hook"
+  - pip_to_makima: "Updated name+display_name in DB, kept id='pip' to preserve FK constraints on agent_relationships"
+
+findings:
+  - health_check_table_bug: "Classic Ralph table name confusion — health API queried 'events' table but poller emits to 'war_room_events' with 'event_type' column (not 'type')"
+  - overflow_clipping: "Project card status submenu used left-full positioning which gets clipped by kanban column's overflow-y-auto (implicit overflow-x: auto)"
+
+worked:
+  - "Direct DB update for agent rename avoided FK cascade issues"
+  - "Inline status options simpler and more reliable than portal-based dropdown"
+  - "Conflict resolution: took HEAD for newer features (inline editing, discovery links, card sizing), took pulse for error checking improvement"
+
+failed: []
+
+next:
+  - "Merge shogunate feature/makima-coo to main and restart poller LaunchAgent"
+  - "Mobile responsive quick pass — md: breakpoints, sidebar/feed as drawers on mobile"
+  - "SSE fragmentation fix in chat"
+  - "Makima action delay in chat"
+  - "Seed objectives data"
+  - "Close stale PR #12 (already merged directly)"
+  - "Bulma's UX: awareness proposals show agent avatar + 'noticed this' label"
+  - "Test awareness loop with live poller data"
+  - "Skill evolution upgrade — inspired by @EXM7777 meta-skill thread (x.com/exm7777/status/2026665175861047672)"
+
+skill_evolution_upgrade_notes:
+  gap_analysis: "Current system is a pattern accumulator (Layer 1). Missing reasoning architecture (Layer 2) and verification gates (Layer 3)."
+  additions_needed:
+    - "Layer 2: Restructure SKILL 'Learned Patterns' from tips into reasoning frameworks — teach HOW to think, not WHAT to do"
+    - "Layer 3: Verification gate — post-mission check 'did the skill actually shift output vs baseline?'"
+    - "Negative space: Add anti-patterns/banned patterns section to SKILL files — what to explicitly AVOID"
+    - "Progressive disclosure: Tier SKILL files (core always-on + domain refs loaded per task type) to manage context window"
+    - "Wire Daimyo council voices into skill verification, not just proposal review"
+  existing_strength: "Daimyo voices ARE real cognitive profiles (decision frameworks, not roleplay). Already have the hardest part — just need to wire them into the evolution pipeline."
+  reference: "https://x.com/EXM7777/status/2026665175861047672"
+
+files:
+  created:
+    - app/objectives/[id]/page.tsx
+    - thoughts/shared/handoffs/war-room/2026-02-25_09-16_morning-fixes-merge.yaml
+  modified:
+    - app/api/health/route.ts
+    - app/health/page.tsx
+    - app/objectives/page.tsx
+    - components/project-card.tsx
+    - components/project-detail.tsx
+    - components/status-ribbon.tsx
+    - lib/queries.ts
+    - app/dashboard/page.tsx
