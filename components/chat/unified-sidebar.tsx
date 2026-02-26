@@ -111,31 +111,30 @@ export function UnifiedSidebar({
         {categories.map((category) => (
           <div key={category.id} className="py-1">
             {/* Category header */}
-            <button
-              onClick={() => onToggleCategory?.(category.id)}
-              className="flex items-center gap-1 px-3 py-1.5 w-full hover:bg-muted/30 transition-colors"
-            >
-              {category.collapsed ? (
-                <ChevronRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-              ) : (
-                <ChevronDown className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-              )}
-              <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase truncate">
-                {category.name.toUpperCase()}
-              </span>
+            <div className="flex items-center gap-1 px-3 py-1.5 w-full hover:bg-muted/30 transition-colors group">
+              <button
+                onClick={() => onToggleCategory?.(category.id)}
+                className="flex items-center gap-1 flex-1 min-w-0"
+              >
+                {category.collapsed ? (
+                  <ChevronRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                ) : (
+                  <ChevronDown className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                )}
+                <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase truncate">
+                  {category.name.toUpperCase()}
+                </span>
+              </button>
               {onCreateChannel && (
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onCreateChannel(category.id)
-                  }}
-                  className="ml-auto h-5 w-5 rounded flex items-center justify-center hover:bg-muted transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
+                  onClick={() => onCreateChannel(category.id)}
+                  className="h-5 w-5 rounded flex items-center justify-center hover:bg-muted transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
                   aria-label={`Add channel to ${category.name}`}
                 >
                   <Plus className="h-3 w-3 text-muted-foreground" />
                 </button>
               )}
-            </button>
+            </div>
 
             {/* Channels in this category */}
             {!category.collapsed &&
