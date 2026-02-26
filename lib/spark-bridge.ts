@@ -7,6 +7,7 @@
  */
 
 const SPARKD_URL = process.env.SPARKD_URL || 'http://localhost:8787/ingest'
+const SPARKD_TOKEN = process.env.SPARKD_TOKEN || ''
 
 export interface SparkEventV1 {
   v: 1
@@ -73,9 +74,14 @@ export async function emitDecision(
  */
 async function postToSpark(event: SparkEventV1): Promise<void> {
   try {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (SPARKD_TOKEN) {
+      headers['Authorization'] = `Bearer ${SPARKD_TOKEN}`
+    }
+
     const res = await fetch(SPARKD_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(event),
     })
 
