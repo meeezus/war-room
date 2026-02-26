@@ -3,7 +3,6 @@ import { randomUUID } from 'crypto'
 import { spawnClaude, type ClaudeSession } from '@/lib/claude-cli'
 import { getAgentSystemPrompt } from '@/lib/agent-identity'
 import { sendToOpenClaw } from '@/lib/openclaw-client'
-import { streamAnthropicChat, isAnthropicAvailable } from '@/lib/anthropic-chat'
 import { buildPulseContext } from '@/lib/pulse-context'
 import { saveChannelMessage } from '@/lib/channels'
 import { parseActions, executeActions, stripActionBlocks, type PulseAction } from '@/lib/pulse-actions'
@@ -58,26 +57,17 @@ export async function POST(req: NextRequest) {
           ? `[PULSE CONTEXT]\n${pulseContext}\n[/PULSE CONTEXT]\n\nUser (in channel): ${content}`
           : `User (in channel): ${content}`
 
-        // Priority: Anthropic API (production) > OpenClaw (local) > Claude CLI (local fallback)
+        // Try OpenClaw first, fall back to claude --print
         let sourceStream: ReadableStream<string>
-
-        if (isAnthropicAvailable()) {
-          console.log('[channel-reply] Using Anthropic API')
-          sourceStream = streamAnthropicChat(messageWithPulse, {
+        try {
+          sourceStream = sendToOpenClaw(messageWithPulse)
+        } catch {
+          console.log('[channel-reply] OpenClaw unavailable, falling back to claude --print')
+          const session: ClaudeSession = { sessionId: randomUUID(), threadId: `channel-${channelId}` }
+          sourceStream = spawnClaude(messageWithPulse, session, {
+            resume: false,
             systemPrompt: systemPrompt || undefined,
           })
-        } else {
-          try {
-            console.log('[channel-reply] Trying OpenClaw')
-            sourceStream = sendToOpenClaw(messageWithPulse)
-          } catch {
-            console.log('[channel-reply] OpenClaw unavailable, falling back to claude --print')
-            const session: ClaudeSession = { sessionId: randomUUID(), threadId: `channel-${channelId}` }
-            sourceStream = spawnClaude(messageWithPulse, session, {
-              resume: false,
-              systemPrompt: systemPrompt || undefined,
-            })
-          }
         }
 
         const reader = sourceStream.getReader()
@@ -99,8 +89,8 @@ export async function POST(req: NextRequest) {
           try {
             readResult = await readWithTimeout()
           } catch (readErr) {
-            // Fall back to claude --print only if not in production and no content yet
-            if (!fullResponse && !isAnthropicAvailable()) {
+            // Fall back to claude --print if OpenClaw stream fails before any content
+            if (!fullResponse) {
               console.log('[channel-reply] Stream failed, falling back to claude --print')
               const fallbackSession: ClaudeSession = {
                 sessionId: randomUUID(),
