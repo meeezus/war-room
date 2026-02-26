@@ -48,8 +48,8 @@ export function ChatInput({ threadId, disabled, onSend, isLoading, agentName }: 
           value={input}
           onChange={handleInput}
           onKeyDown={handleKeyDown}
-          placeholder={isLoading ? `${agentName || 'Agent'} is responding...` : 'Send a message...'}
-          disabled={disabled || isLoading}
+          placeholder={isLoading ? `${agentName || 'Agent'} is typing... (you can still type)` : 'Send a message...'}
+          disabled={disabled}
           rows={1}
           className="flex-1 resize-none bg-muted border border-border rounded-lg px-4 py-3 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
         />
