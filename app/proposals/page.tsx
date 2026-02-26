@@ -12,6 +12,17 @@ import { approveProposal, rejectProposal, DOMAIN_TO_DAIMYO } from '@/lib/queries
 
 const PHASE_STEPS = ['scope', 'research', 'brd', 'prd', 'trd', 'build', 'review', 'ship'] as const
 
+const PHASE_COLORS: Record<string, string> = {
+  scope:    'text-slate-400 bg-slate-500/15',
+  research: 'text-blue-400 bg-blue-500/15',
+  brd:      'text-purple-400 bg-purple-500/15',
+  prd:      'text-purple-400 bg-purple-500/15',
+  trd:      'text-purple-400 bg-purple-500/15',
+  build:    'text-amber-400 bg-amber-500/15',
+  review:   'text-orange-400 bg-orange-500/15',
+  ship:     'text-emerald-400 bg-emerald-500/15',
+}
+
 const STATUS_CONFIG = {
   pending: { bg: 'bg-amber-500/15', text: 'text-amber-400', dot: 'bg-amber-500', label: 'Pending' },
   approved: { bg: 'bg-emerald-500/15', text: 'text-emerald-400', dot: 'bg-emerald-500', label: 'Approved' },
@@ -120,6 +131,7 @@ export default function ProposalsPage() {
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [acting, setActing] = useState<string | null>(null)
+  const [advancing, setAdvancing] = useState<string | null>(null)
 
   // Fetch proposals from API
   const fetchProposals = useCallback(async () => {
@@ -154,6 +166,23 @@ export default function ProposalsPage() {
       ))
     }
     setActing(null)
+  }
+
+  async function handleAdvancePhase(proposalId: string) {
+    setAdvancing(proposalId)
+    try {
+      const res = await fetch(`/api/proposals/${proposalId}/advance`, { method: 'POST' })
+      if (res.ok) {
+        const data = await res.json()
+        setProposals(prev => prev.map(p =>
+          p.id === proposalId ? { ...p, phase: data.proposal.phase } : p
+        ))
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setAdvancing(null)
+    }
   }
 
   async function handleReject(proposalId: string) {
@@ -303,6 +332,7 @@ export default function ProposalsPage() {
               const statusCfg = STATUS_CONFIG[proposal.status] ?? STATUS_CONFIG.pending
               const isExpanded = expandedId === proposal.id
               const isActing = acting === proposal.id
+              const isAdvancing = advancing === proposal.id
 
               return (
                 <StealthCard key={proposal.id} className="p-0 overflow-hidden">
@@ -470,6 +500,30 @@ export default function ProposalsPage() {
                           </div>
                         </div>
                       )}
+
+                      {/* Advance Phase action */}
+                      <div className="mt-3 flex items-center gap-2">
+                        {proposal.phase && (
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${PHASE_COLORS[proposal.phase] || 'text-muted-foreground bg-muted'}`}>
+                            {proposal.phase}
+                          </span>
+                        )}
+                        <button
+                          onClick={() => handleAdvancePhase(proposal.id)}
+                          disabled={isAdvancing || proposal.phase === 'ship'}
+                          className="px-2.5 py-1 rounded-sm border border-amber-500/30 bg-amber-500/10 text-amber-400 text-xs font-medium hover:bg-amber-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          {isAdvancing
+                            ? 'Advancing...'
+                            : proposal.phase === 'ship'
+                              ? 'Final phase'
+                              : `\u2192 ${
+                                  proposal.phase
+                                    ? PHASE_STEPS[PHASE_STEPS.indexOf(proposal.phase) + 1]
+                                    : 'scope'
+                                }`}
+                        </button>
+                      </div>
 
                       {/* Metadata: time_estimate, auto_approved */}
                       <div className="mt-3 flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground/75">
