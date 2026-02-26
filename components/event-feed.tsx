@@ -35,6 +35,8 @@ const EVENT_TYPE_COLORS: Record<string, string> = {
   discovery_approved: "#10b981",
   discovery_dismissed: "#6b7280",
   cross_pollination: "#a855f7",
+  task_routed: "#6b7280",
+  task_escalated: "#f59e0b",
 };
 
 type FilterCategory = "all" | "proposals" | "missions" | "tasks" | "system";
@@ -45,6 +47,7 @@ const FILTER_TYPES: Record<FilterCategory, string[] | null> = {
   missions: ["mission_started", "mission_completed", "mission_failed"],
   tasks: [
     "task_started", "task_completed", "task_failed", "task_updated", "task_created",
+    "task_routed", "task_escalated",
     "step_started", "step_completed", "step_failed", "step_stale",
   ],
   system: ["heartbeat", "user_request", "agent_action", "council_reviewed", "skill_patch_extracted", "skill_applied", "skill_sunset", "cross_pollination"],
@@ -55,7 +58,7 @@ const NEEDS_YOU_TYPES = new Set([
 ]);
 const ACTIVE_TYPES = new Set([
   "mission_started", "step_started", "task_started", "task_updated", "task_created", "agent_action",
-  "patrol_started", "discovery_created",
+  "patrol_started", "discovery_created", "task_routed", "task_escalated",
 ]);
 const COMPLETE_TYPES = new Set([
   "mission_completed", "step_completed", "task_completed",
@@ -158,8 +161,25 @@ function PatrolCompleteRow({ event, color }: { event: Event; color: string }) {
 
 function EventRow({ event }: { event: Event }) {
   const [expanded, setExpanded] = useState(false);
+  const [actionState, setActionState] = useState<"idle" | "loading" | "done" | "error">("idle");
   const color = EVENT_TYPE_COLORS[event.type] ?? "#6b7280";
   const label = event.type.replace(/_/g, " ");
+
+  const proposalId = event.source_id ?? (event.metadata?.proposal_id as string | undefined);
+
+  async function handleProposalAction(action: "approve" | "reject", e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!proposalId || actionState !== "idle") return;
+    setActionState("loading");
+    try {
+      const res = await fetch(`/api/proposals/${proposalId}/${action}`, { method: "POST" });
+      if (!res.ok) throw new Error("Failed");
+      setActionState("done");
+    } catch {
+      setActionState("error");
+      setTimeout(() => setActionState("idle"), 2000);
+    }
+  }
 
   if (event.type === "patrol_complete") {
     return <PatrolCompleteRow event={event} color={color} />;
@@ -200,7 +220,7 @@ function EventRow({ event }: { event: Event }) {
         className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full"
         style={{ backgroundColor: color, boxShadow: `0 0 4px ${color}` }}
       />
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 overflow-hidden">
         <span
           className="mr-1.5 rounded-sm px-1 py-0.5 text-[10px] font-medium uppercase"
           style={{ backgroundColor: `${color}20`, color }}
@@ -208,16 +228,44 @@ function EventRow({ event }: { event: Event }) {
           {label}
         </span>
         {expanded ? (
-          <>
+          <div className="mt-0.5">
             {event.agent && (
               <span className="mr-1.5 text-xs font-medium text-foreground">
                 {event.agent}
               </span>
             )}
             <span className="text-xs text-muted-foreground">{event.message}</span>
-          </>
+            {event.type === "proposal_created" && proposalId && (
+              <div className="mt-1.5 flex gap-2" onClick={(e) => e.stopPropagation()}>
+                {actionState === "done" ? (
+                  <span className="text-[10px] text-muted-foreground/60">Done</span>
+                ) : actionState === "error" ? (
+                  <span className="text-[10px] text-red-400">Failed — retry?</span>
+                ) : (
+                  <>
+                    <button
+                      disabled={actionState === "loading"}
+                      onClick={(e) => handleProposalAction("approve", e)}
+                      className="rounded px-2 py-0.5 text-[10px] font-medium transition-opacity disabled:opacity-50"
+                      style={{ backgroundColor: "#10b98120", color: "#10b981" }}
+                    >
+                      Approve
+                    </button>
+                    <button
+                      disabled={actionState === "loading"}
+                      onClick={(e) => handleProposalAction("reject", e)}
+                      className="rounded px-2 py-0.5 text-[10px] font-medium transition-opacity disabled:opacity-50"
+                      style={{ backgroundColor: "#ef444420", color: "#ef4444" }}
+                    >
+                      Reject
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         ) : (
-          <span className="text-xs text-muted-foreground/75 truncate">
+          <span className="inline-block max-w-full truncate align-bottom text-xs text-muted-foreground/75">
             {event.agent ? `${event.agent} — ` : ""}{richMessage}
           </span>
         )}
@@ -266,6 +314,7 @@ export function EventFeed({ events }: { events: Event[] }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
   const [filter, setFilter] = useState<FilterCategory>("all");
+  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
   const [clearedAt, setClearedAt] = useState<number>(0);
   const [collapsedZones, setCollapsedZones] = useState<Record<ZoneKey, boolean>>({
     needs_you: false,
@@ -280,11 +329,16 @@ export function EventFeed({ events }: { events: Event[] }) {
   });
 
   // Apply filter
-  const filteredEvents = visibleEvents.filter((e) => {
-    if (filter === "all") return e.type !== "heartbeat";
-    if (filter === "system") return FILTER_TYPES.system!.includes(e.type);
-    return FILTER_TYPES[filter]!.includes(e.type);
-  });
+  const filteredEvents = visibleEvents
+    .filter((e) => {
+      if (filter === "all") return e.type !== "heartbeat";
+      if (filter === "system") return FILTER_TYPES.system!.includes(e.type);
+      return FILTER_TYPES[filter]!.includes(e.type);
+    })
+    .sort((a, b) => {
+      const diff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      return sortOrder === "desc" ? -diff : diff;
+    });
 
   // Group into zones
   const grouped: Record<ZoneKey, Event[]> = {
@@ -322,17 +376,26 @@ export function EventFeed({ events }: { events: Event[] }) {
       <StealthCard hover={false} className="flex-1 overflow-hidden">
         {/* Header row */}
         <div className="flex items-center justify-between border-b border-border px-3 py-2">
-          <select
-            value={filter}
-            onChange={(e) => setFilter(e.target.value as FilterCategory)}
-            className="appearance-none rounded bg-muted px-2 py-1 font-[family-name:var(--font-space-grotesk)] text-xs text-foreground/60 outline-none ring-1 ring-border transition-colors hover:bg-muted focus:ring-border"
-          >
-            <option value="all">All</option>
-            <option value="proposals">Proposals</option>
-            <option value="missions">Missions</option>
-            <option value="tasks">Tasks</option>
-            <option value="system">System</option>
-          </select>
+          <div className="flex items-center gap-2">
+            <select
+              value={filter}
+              onChange={(e) => setFilter(e.target.value as FilterCategory)}
+              className="appearance-none rounded bg-muted px-2 py-1 font-[family-name:var(--font-space-grotesk)] text-xs text-foreground/60 outline-none ring-1 ring-border transition-colors hover:bg-muted focus:ring-border"
+            >
+              <option value="all">All</option>
+              <option value="proposals">Proposals</option>
+              <option value="missions">Missions</option>
+              <option value="tasks">Tasks</option>
+              <option value="system">System</option>
+            </select>
+            <button
+              onClick={() => setSortOrder((s) => (s === "desc" ? "asc" : "desc"))}
+              title={sortOrder === "desc" ? "Newest first" : "Oldest first"}
+              className="rounded px-1.5 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-xs text-muted-foreground/60 transition-colors hover:bg-muted hover:text-muted-foreground"
+            >
+              {sortOrder === "desc" ? "↓" : "↑"}
+            </button>
+          </div>
           <div className="flex items-center gap-3">
             <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/60">
               {totalVisible} events

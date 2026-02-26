@@ -292,6 +292,20 @@ export async function getProjectProposals(projectId: string): Promise<Proposal[]
   return (data as Proposal[]) ?? []
 }
 
+export async function getProposals(status?: string): Promise<Proposal[]> {
+  if (!supabase) return []
+  let query = supabase
+    .from('proposals')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (status) {
+    query = query.eq('status', status)
+  }
+  const { data, error } = await query
+  if (error) { console.error('getProposals error:', error); return [] }
+  return (data as Proposal[]) ?? []
+}
+
 export async function getAllPendingProposals(): Promise<Proposal[]> {
   if (!supabase) return []
   const { data, error } = await supabase

@@ -18,7 +18,7 @@ export async function GET() {
     const [discoveriesRes, missionsRes, eventsRes] = await Promise.all([
       sb.from('discoveries').select('*').in('status', ['pending', 'dismissed']).order('created_at', { ascending: false }).limit(500),
       sb.from('missions').select('*').gte('created_at', cutoff),
-      sb.from('events').select('*').gte('created_at', cutoff).order('created_at', { ascending: false }).limit(200),
+      sb.from('war_room_events').select('*').gte('created_at', cutoff).order('created_at', { ascending: false }).limit(200),
     ])
 
     if (discoveriesRes.error) throw discoveriesRes.error
@@ -27,7 +27,11 @@ export async function GET() {
 
     const discoveries = (discoveriesRes.data ?? []) as Discovery[]
     const missions = (missionsRes.data ?? []) as Mission[]
-    const events = (eventsRes.data ?? []) as Event[]
+    // war_room_events uses event_type column; remap to type for Event interface
+    const events = (eventsRes.data ?? []).map((r: Record<string, unknown>) => ({
+      ...r,
+      type: r.event_type,
+    })) as Event[]
 
     const generatedAt = new Date().toISOString()
     const pendingCount = discoveries.filter(d => d.status === 'pending').length

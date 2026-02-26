@@ -4,7 +4,7 @@ export interface Proposal {
   id: string
   title: string
   description: string | null
-  source: 'discord' | 'cron' | 'trigger' | 'manual' | 'patrol' | 'awareness' | 'reflexive'
+  source: 'discord' | 'cron' | 'trigger' | 'manual' | 'patrol' | 'awareness' | 'reflexive' | 'shoin_chat'
   requested_by: string
   domain: 'engineering' | 'product' | 'commerce' | 'influence' | 'operations' | 'coordination' | null
   cost_estimate: number | null
@@ -17,6 +17,8 @@ export interface Proposal {
   approved_by: string | null
   project_id: string | null
   discovery_id: string | null
+  phase: 'scope' | 'research' | 'brd' | 'prd' | 'trd' | 'build' | 'review' | 'ship' | null
+  phase_artifacts: Record<string, unknown> | null
   status: 'pending' | 'approved' | 'rejected' | 'completed' | 'failed'
   created_at: string
   updated_at: string
@@ -65,6 +67,7 @@ export interface Event {
     | 'patrol_started' | 'patrol_complete'
     | 'discovery_created' | 'discovery_approved' | 'discovery_dismissed'
     | 'skill_patch_extracted' | 'skill_applied' | 'skill_sunset' | 'cross_pollination'
+    | 'daily_briefing'
   source_id: string | null
   agent: string | null
   message: string

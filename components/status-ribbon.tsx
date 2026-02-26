@@ -249,6 +249,20 @@ function CouncilCard({ activeSessions }: { activeSessions: number }) {
   );
 }
 
+function ProposalsCard() {
+  return (
+    <Link href="/proposals" className="block">
+      <StealthCard hover={false} className="px-4 py-3 min-w-[200px] min-h-[110px] flex-shrink-0 flex flex-col justify-between">
+        <CardLabel romaji="Teian" english="Proposals" />
+        <CardValue>&rarr;</CardValue>
+        <p className="text-xs text-muted-foreground font-[family-name:var(--font-jetbrains-mono)]">
+          Review proposals
+        </p>
+      </StealthCard>
+    </Link>
+  );
+}
+
 function ChatCard() {
   return (
     <Link href="/chat" className="block">
@@ -292,6 +306,7 @@ export function StatusRibbon({
       <SkillsCard skillStats={skillStats} />
       <HealthCard />
       <CouncilCard activeSessions={councilSessions} />
+      <ProposalsCard />
       <ChatCard />
     </div>
   );
