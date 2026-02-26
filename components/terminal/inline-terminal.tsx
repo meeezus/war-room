@@ -284,8 +284,8 @@ export function InlineTerminal({ streamUrl, inputUrl: inputUrlProp, onComplete }
         <div ref={bottomRef} />
       </div>
 
-      {/* Input bar — shown when we can derive a mission ID */}
-      {inputUrl && (
+      {/* Input bar — only shown while the session is active */}
+      {inputUrl && active && (
         <div className="flex items-center gap-2 px-3 py-2 border-t border-border bg-muted/50">
           <span className="text-xs text-muted-foreground/75 select-none">{'>'}</span>
           <input
@@ -295,7 +295,7 @@ export function InlineTerminal({ streamUrl, inputUrl: inputUrlProp, onComplete }
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={inputState !== 'idle'}
-            placeholder={active ? 'Send message to agent…' : 'Follow-up message…'}
+            placeholder="Send message to agent…"
             className="flex-1 bg-transparent text-xs text-foreground/70 placeholder:text-muted-foreground/50 outline-none disabled:opacity-40"
           />
           <button
