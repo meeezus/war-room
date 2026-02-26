@@ -127,8 +127,14 @@ export function UnifiedSidebar({
               </button>
               {onCreateChannel && (
                 <button
-                  onClick={() => onCreateChannel(category.id)}
-                  className="h-5 w-5 rounded flex items-center justify-center hover:bg-muted transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    console.log('[sidebar] Plus button clicked for category:', category.id)
+                    onCreateChannel(category.id)
+                  }}
+                  className="h-5 w-5 rounded flex items-center justify-center hover:bg-muted transition-colors flex-shrink-0"
                   aria-label={`Add channel to ${category.name}`}
                 >
                   <Plus className="h-3 w-3 text-muted-foreground" />

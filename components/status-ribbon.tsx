@@ -255,9 +255,16 @@ function ChatCard() {
     <Link href="/chat" className="block">
       <StealthCard hover={false} className="px-4 py-3 min-w-[200px] min-h-[110px] flex-shrink-0 flex flex-col justify-between">
         <CardLabel romaji="Taiwa" english="Chat" />
-        <CardValue>⚡</CardValue>
+        <div className="flex items-center gap-2">
+          <img
+            src="/avatars/makima.webp"
+            alt="Makima"
+            className="h-8 w-8 rounded-full object-cover"
+          />
+          <span className="text-sm text-muted-foreground">Makima</span>
+        </div>
         <p className="text-xs text-muted-foreground font-[family-name:var(--font-jetbrains-mono)]">
-          Talk to Makima
+          Shoin Chat
         </p>
       </StealthCard>
     </Link>
