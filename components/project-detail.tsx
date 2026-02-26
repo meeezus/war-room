@@ -361,7 +361,7 @@ export function ProjectDetail({ project, boards, proposals, tasks, missions, onU
         onCreated={() => onUpdate?.()}
       />
     </motion.div>
-    <TerminalPanel missions={missions} />
+    <TerminalPanel />
     </div>
   );
 }

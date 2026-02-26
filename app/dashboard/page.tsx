@@ -287,7 +287,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Bottom - Terminal Panel */}
-      <TerminalPanel missions={missions} />
+      <TerminalPanel />
     </div>
   );
 }
