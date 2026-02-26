@@ -247,16 +247,14 @@ function EventRow({ event }: { event: Event }) {
                     <button
                       disabled={actionState === "loading"}
                       onClick={(e) => handleProposalAction("approve", e)}
-                      className="rounded px-2 py-0.5 text-[10px] font-medium transition-opacity disabled:opacity-50"
-                      style={{ backgroundColor: "#10b98120", color: "#10b981" }}
+                      className="rounded px-2 py-0.5 text-[10px] font-medium transition-opacity disabled:opacity-50 bg-emerald-500/10 text-emerald-500"
                     >
                       Approve
                     </button>
                     <button
                       disabled={actionState === "loading"}
                       onClick={(e) => handleProposalAction("reject", e)}
-                      className="rounded px-2 py-0.5 text-[10px] font-medium transition-opacity disabled:opacity-50"
-                      style={{ backgroundColor: "#ef444420", color: "#ef4444" }}
+                      className="rounded px-2 py-0.5 text-[10px] font-medium transition-opacity disabled:opacity-50 bg-red-500/10 text-red-500"
                     >
                       Reject
                     </button>

@@ -137,13 +137,16 @@ export default function MissionsPage() {
               <button
                 key={option}
                 onClick={() => setFilter(option)}
-                className="flex items-center gap-1.5 rounded-full px-3 py-1 font-[family-name:var(--font-jetbrains-mono)] text-xs transition-all"
-                style={{
-                  backgroundColor: isActive ? `${accent}20` : "rgba(255,255,255,0.04)",
-                  color: isActive ? accent : "rgba(255,255,255,0.4)",
-                  borderWidth: 1,
-                  borderColor: isActive ? `${accent}30` : "rgba(255,255,255,0.08)",
-                }}
+                className={`flex items-center gap-1.5 rounded-full px-3 py-1 font-[family-name:var(--font-jetbrains-mono)] text-xs transition-all border ${
+                  isActive
+                    ? "text-foreground"
+                    : "bg-muted/30 text-muted-foreground border-border hover:bg-muted/50"
+                }`}
+                style={isActive ? {
+                  backgroundColor: `${accent}20`,
+                  color: accent,
+                  borderColor: `${accent}30`,
+                } : undefined}
               >
                 {option !== "all" && (
                   <span
