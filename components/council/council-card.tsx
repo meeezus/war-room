@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { getRoleCard } from "@/lib/role-cards";
+import { getReviewName, getReviewText } from "@/lib/types";
 import type { CouncilReview } from "@/lib/types";
 
 interface CouncilCardProps {
@@ -27,9 +28,10 @@ export function CouncilCard({ review }: CouncilCardProps) {
       // Check if text overflows 3 lines (line-clamp-3)
       setClamped(el.scrollHeight > el.clientHeight);
     }
-  }, [review.voice_text, review.text]);
+  }, [review]);
 
-  const roleCard = getRoleCard(review.name.toLowerCase());
+  const reviewName = getReviewName(review);
+  const roleCard = getRoleCard(reviewName.toLowerCase());
   const verdict = VERDICT_STYLES[review.verdict] ?? VERDICT_STYLES.abstain;
   const color = roleCard.color ?? "#6b7280";
 
@@ -97,7 +99,7 @@ export function CouncilCard({ review }: CouncilCardProps) {
         ref={textRef}
         className={`text-xs text-foreground/60 leading-relaxed ${expanded ? "" : "line-clamp-3"}`}
       >
-        {review.voice_text || review.text}
+        {getReviewText(review)}
       </p>
 
       {/* Show more / Show less */}

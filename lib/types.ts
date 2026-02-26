@@ -186,11 +186,26 @@ export interface DynastyStats {
 }
 
 export interface CouncilReview {
-  name: string
+  name?: string
+  voice?: string
+  daimyo?: string
+  agent?: string
   verdict: 'approve' | 'concern' | 'reject' | 'abstain'
   voice_text?: string
   text?: string
+  content?: string
+  comment?: string
   role?: string
+}
+
+/** Normalize the display name from a council review (handles voice/name/daimyo/agent variants) */
+export function getReviewName(review: CouncilReview): string {
+  return review.name ?? review.voice ?? review.daimyo ?? review.agent ?? 'Unknown'
+}
+
+/** Normalize the body text from a council review (handles voice_text/text/content/comment variants) */
+export function getReviewText(review: CouncilReview): string {
+  return review.voice_text ?? review.text ?? review.content ?? review.comment ?? ''
 }
 
 export interface CouncilSession {

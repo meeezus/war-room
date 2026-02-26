@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase-server'
+import { captureError } from '@/lib/sentry'
 
 export async function POST() {
   const sb = createServiceClient()
@@ -14,7 +15,7 @@ export async function POST() {
     .eq('status', 'failed')
 
   if (fetchError) {
-    console.error('[missions/archive] fetch failed missions error:', fetchError)
+    captureError(fetchError, 'missions/archive.fetchFailed')
     return NextResponse.json({ error: 'Failed to fetch failed missions' }, { status: 500 })
   }
 
@@ -35,7 +36,7 @@ export async function POST() {
   const results = await Promise.all(cleanups)
   for (const { error: cleanupErr } of results) {
     if (cleanupErr) {
-      console.error('[missions/archive] cleanup error:', cleanupErr)
+      captureError(cleanupErr, 'missions/archive.cleanup')
       // Continue — best effort cleanup, mission delete may still succeed
     }
   }
@@ -47,7 +48,7 @@ export async function POST() {
     .in('id', ids)
 
   if (deleteError) {
-    console.error('[missions/archive] delete error:', deleteError)
+    captureError(deleteError, 'missions/archive.delete')
     return NextResponse.json({ error: 'Failed to delete failed missions' }, { status: 500 })
   }
 

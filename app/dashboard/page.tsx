@@ -190,29 +190,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Mobile Event Feed Drawer */}
-      {mobileFeedOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileFeedOpen(false)} />
-          <div className="absolute inset-y-0 right-0 w-80 max-w-[90vw] bg-background border-l border-border p-4 flex flex-col overflow-hidden">
-            <div className="mb-3 flex items-center justify-between flex-shrink-0">
-              <span className="font-[family-name:var(--font-space-grotesk)] text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Event Feed
-              </span>
-              <button
-                onClick={() => setMobileFeedOpen(false)}
-                className="h-8 w-8 rounded-md hover:bg-muted flex items-center justify-center"
-              >
-                <X className="h-4 w-4 text-muted-foreground" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <EventFeed events={events} />
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Main Content */}
       <div className="flex flex-1 gap-4 overflow-hidden">
         {/* Left - Agent Sidebar (desktop only) */}
@@ -262,35 +239,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Right - Event Feed (desktop only) */}
-        <div className={`hidden md:block transition-all duration-150 flex-shrink-0 overflow-hidden ${feedOpen ? "w-80" : "w-10"}`}>
-          {feedOpen ? (
-            <div className="flex h-full flex-col">
-              <div className="mb-2 flex h-6 items-center justify-between">
-                <span className="font-[family-name:var(--font-space-grotesk)] text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Event Feed
-                </span>
-                <button
-                  onClick={() => setFeedOpen(false)}
-                  className="text-muted-foreground font-[family-name:var(--font-space-grotesk)] text-xs hover:text-foreground/60"
-                >
-                  &raquo;
-                </button>
-              </div>
-              <div className="flex-1 overflow-hidden">
-                <EventFeed events={events} />
-              </div>
-            </div>
-          ) : (
-            <button
-              onClick={() => setFeedOpen(true)}
-              className="flex h-full w-10 flex-col items-center pt-2 text-muted-foreground hover:text-foreground/60"
-            >
-              <span className="font-[family-name:var(--font-space-grotesk)] text-xs [writing-mode:vertical-rl]">EF</span>
-              <span className="mt-2 font-[family-name:var(--font-space-grotesk)] text-xs">&laquo;</span>
-            </button>
-          )}
-        </div>
       </div>
 
       {/* Bottom - Terminal Panel */}

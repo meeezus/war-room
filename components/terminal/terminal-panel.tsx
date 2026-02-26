@@ -129,7 +129,7 @@ export function TerminalPanel() {
 
   if (collapsed) {
     return (
-      <div className="flex-shrink-0 border-t border-border" style={{ background: '#0a0a0a' }}>
+      <div className="flex-shrink-0 border-t border-border bg-muted/50">
         <div className="flex items-center gap-3 px-4 py-1.5">
           <button
             onClick={() => setCollapsed(false)}
@@ -150,8 +150,7 @@ export function TerminalPanel() {
             </span>
           </button>
           <span
-            className="ml-auto text-xs"
-            className="text-muted-foreground"
+            className="ml-auto text-xs text-muted-foreground"
             style={{ fontFamily: 'var(--font-jetbrains-mono, monospace)' }}
           >
             {events.length} events
@@ -168,8 +167,7 @@ export function TerminalPanel() {
     >
       {/* Header */}
       <div
-        className="flex items-center gap-3 px-4 py-1.5 border-b border-border flex-shrink-0"
-        style={{ background: '#111111' }}
+        className="flex items-center gap-3 px-4 py-1.5 border-b border-border flex-shrink-0 bg-muted/50"
       >
         {/* Collapse toggle */}
         <button
@@ -211,10 +209,9 @@ export function TerminalPanel() {
 
         {/* Event count */}
         <span
-          className="text-xs"
+          className="text-xs text-muted-foreground"
           style={{
             fontFamily: 'var(--font-jetbrains-mono, monospace)',
-            color: '#4b5563',
           }}
         >
           {events.length}/{MAX_EVENTS}
@@ -226,10 +223,10 @@ export function TerminalPanel() {
           className="ml-auto text-xs px-2 py-0.5 rounded transition-colors"
           style={{
             fontFamily: 'var(--font-jetbrains-mono, monospace)',
-            background: paused ? '#1f2937' : 'transparent',
-            color: paused ? '#f59e0b' : '#4b5563',
+            background: paused ? 'var(--muted)' : 'transparent',
+            color: paused ? '#f59e0b' : 'var(--muted-foreground)',
             border: '1px solid',
-            borderColor: paused ? '#374151' : '#1f2937',
+            borderColor: 'var(--border)',
           }}
           aria-label={paused ? 'Resume auto-scroll' : 'Pause auto-scroll'}
         >

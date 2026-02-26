@@ -63,14 +63,35 @@ export async function GET() {
     ...scanDirectory(plansDir, 'plans'),
   ]
 
-  // Deduplicate by filename — when the same file exists in both directories,
-  // keep only the one with the newer modification time
+  // Deduplicate: exact name match OR same size+mtime from different sources
+  // (vault sync copies have identical bytes but prefixed names like project--date-slug)
   const deduped = new Map<string, RecapItem>()
+  const sizeMtimeIndex = new Map<string, RecapItem>()
+
   for (const recap of rawRecaps) {
-    const existing = deduped.get(recap.name)
-    if (!existing || new Date(recap.modified).getTime() > new Date(existing.modified).getTime()) {
-      deduped.set(recap.name, recap)
+    const byName = deduped.get(recap.name)
+    if (byName) {
+      if (new Date(recap.modified).getTime() > new Date(byName.modified).getTime()) {
+        deduped.set(recap.name, recap)
+      }
+      continue
     }
+
+    // Cross-source dedup: vault sync copies have identical size, same minute
+    const mtimeMin = Math.floor(new Date(recap.modified).getTime() / 60000)
+    const sizeKey = `${recap.size}:${mtimeMin}`
+    const bySize = sizeMtimeIndex.get(sizeKey)
+    if (bySize && bySize.source !== recap.source) {
+      if (recap.source === 'diagrams') {
+        deduped.delete(bySize.name)
+        deduped.set(recap.name, recap)
+        sizeMtimeIndex.set(sizeKey, recap)
+      }
+      continue
+    }
+
+    deduped.set(recap.name, recap)
+    sizeMtimeIndex.set(sizeKey, recap)
   }
   const allRecaps = Array.from(deduped.values())
 

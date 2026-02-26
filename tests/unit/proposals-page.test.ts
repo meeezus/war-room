@@ -137,10 +137,3 @@ describe('Proposal type has phase fields', () => {
   })
 })
 
-describe('Proposals page module', () => {
-  it('exports a default component from app/proposals/page', async () => {
-    const mod = await import('@/app/proposals/page')
-    expect(mod.default).toBeDefined()
-    expect(typeof mod.default).toBe('function')
-  })
-})

@@ -3,6 +3,7 @@ import { CouncilCard } from '@/components/council/council-card'
 import { CouncilSessionClient } from './council-session-client'
 import { Breadcrumb } from '@/components/breadcrumb'
 import { notFound } from 'next/navigation'
+import { getReviewName } from '@/lib/types'
 import type { CouncilSession } from '@/lib/types'
 
 async function getSession(id: string): Promise<CouncilSession | null> {
@@ -88,7 +89,7 @@ export default async function CouncilSessionPage({
         {session.reviews.length > 0 && (() => {
           const MAKIMA_KEYS = new Set(['makima', 'power']);
           const voiceReviews = session.reviews.filter(
-            (r) => !MAKIMA_KEYS.has(r.name.toLowerCase())
+            (r) => !MAKIMA_KEYS.has(getReviewName(r).toLowerCase())
           );
           return voiceReviews.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
