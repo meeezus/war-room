@@ -69,9 +69,11 @@ export function ChannelMessage({
           className="flex-shrink-0 h-8 w-8 rounded-full object-cover mt-0.5"
         />
       ) : isUser ? (
-        <div className="flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center bg-emerald-500/20 mt-0.5">
-          <span className="text-xs font-medium text-emerald-400">M</span>
-        </div>
+        <img
+          src="/avatars/user.png"
+          alt="You"
+          className="flex-shrink-0 h-8 w-8 rounded-full object-cover mt-0.5"
+        />
       ) : (
         <div className="flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center bg-muted mt-0.5">
           <span className="text-xs font-medium text-muted-foreground">

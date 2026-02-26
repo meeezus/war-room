@@ -4,7 +4,7 @@ import ReactMarkdown, { type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
 import 'highlight.js/styles/github-dark.css'
-import { Bot, User, Code2 } from 'lucide-react'
+import { Bot, Code2 } from 'lucide-react'
 import { useState } from 'react'
 
 function isHtmlContent(content: string): boolean {
@@ -139,9 +139,11 @@ export function MessageBubble({ role, content, agentId, timestamp, isStreaming }
     <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
       {/* Avatar */}
       {isUser ? (
-        <div className="flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center bg-emerald-500/20">
-          <User className="h-4 w-4 text-emerald-400" />
-        </div>
+        <img
+          src="/avatars/user.png"
+          alt="You"
+          className="flex-shrink-0 h-8 w-8 rounded-full object-cover"
+        />
       ) : agentId && agentId !== 'cc' ? (
         <img
           src={`/avatars/${agentId}.webp`}

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { RealtimeChannel } from '@supabase/supabase-js'
+import { captureError, captureWarning } from '@/lib/sentry'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -80,9 +81,7 @@ export function useRealtimeChannel(
 
     // Enforce max channel limit — only block if this is a NEW channel name
     if (!_registry.has(channelName) && _registry.size >= MAX_CHANNELS) {
-      console.warn(
-        `[realtime] Max channels (${MAX_CHANNELS}) reached. Skipping subscription: ${channelName}`,
-      )
+      captureWarning(`[realtime] Max channels (${MAX_CHANNELS}) reached. Skipping subscription: ${channelName}`, { operation: 'useRealtimeChannel.maxChannels' })
       return
     }
 
@@ -114,9 +113,7 @@ export function useRealtimeChannel(
           _registry.delete(channelName!)
 
           if (retries >= MAX_RETRIES) {
-            console.error(
-              `[realtime] ${channelName}: max retries (${MAX_RETRIES}) exceeded — giving up`,
-            )
+            captureError(new Error(`[realtime] ${channelName}: max retries (${MAX_RETRIES}) exceeded — giving up`), 'realtime.maxRetries')
             return
           }
 
@@ -124,9 +121,7 @@ export function useRealtimeChannel(
           const backoff = BASE_BACKOFF_MS * Math.pow(2, retries) + Math.random() * 500
           retries++
 
-          console.warn(
-            `[realtime] ${channelName}: ${status} — retry ${retries}/${MAX_RETRIES} in ${Math.round(backoff)}ms`,
-          )
+          captureWarning(`[realtime] ${channelName}: ${status} — retry ${retries}/${MAX_RETRIES}`, { operation: 'useRealtimeChannel.retry' })
 
           retryTimer = setTimeout(connect, backoff)
         }

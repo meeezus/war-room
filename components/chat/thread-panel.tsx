@@ -15,6 +15,8 @@ interface ThreadPanelProps {
   onClose: () => void
   onSendReply: (content: string) => void
   isLoading?: boolean
+  streamingContent?: string
+  isTyping?: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -27,16 +29,18 @@ export function ThreadPanel({
   onClose,
   onSendReply,
   isLoading = false,
+  streamingContent = '',
+  isTyping = false,
 }: ThreadPanelProps) {
   const [input, setInput] = useState('')
   const repliesEndRef = useRef<HTMLDivElement>(null)
 
-  // Auto-scroll to bottom when new replies arrive
+  // Auto-scroll to bottom when new replies arrive or streaming
   useEffect(() => {
     if (typeof repliesEndRef.current?.scrollIntoView === 'function') {
       repliesEndRef.current.scrollIntoView({ behavior: 'smooth' })
     }
-  }, [replies.length])
+  }, [replies.length, streamingContent])
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -82,6 +86,38 @@ export function ThreadPanel({
         {replies.map((reply) => (
           <ChannelMessageBubble key={reply.id} message={reply} />
         ))}
+
+        {/* Typing indicator */}
+        {isTyping && !streamingContent && (
+          <div className="px-4 py-2">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="flex gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+              <span>Makima is typing...</span>
+            </div>
+          </div>
+        )}
+
+        {/* Streaming response */}
+        {streamingContent && (
+          <ChannelMessageBubble
+            message={{
+              id: 'streaming',
+              channel_id: parentMessage.channel_id,
+              role: 'assistant',
+              content: streamingContent,
+              agent_id: 'makima',
+              reply_to_id: null,
+              thread_id: parentMessage.id,
+              thread_count: 0,
+              forwarded_from: null,
+              created_at: new Date().toISOString(),
+            }}
+          />
+        )}
 
         {/* Scroll anchor */}
         <div ref={repliesEndRef} />

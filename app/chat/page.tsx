@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useRealtimeChannel } from '@/lib/use-realtime-channel'
 import { UnifiedSidebar } from '@/components/chat/unified-sidebar'
 import type { ThreadSummary } from '@/components/chat/thread-list'
 import type { Category, Channel } from '@/components/chat/channel-sidebar'
@@ -16,7 +17,6 @@ import type { ChatMessage } from '@/lib/chat'
 import type { ChannelMessage as ChannelMessageType } from '@/lib/channels'
 import { ArrowLeft, ChevronLeft, Hash, Menu, X, Zap } from 'lucide-react'
 import Link from 'next/link'
-import type { RealtimeChannel } from '@supabase/supabase-js'
 
 // ---------------------------------------------------------------------------
 // View mode: either viewing a DM thread or a channel
@@ -41,8 +41,6 @@ export default function ChatPage() {
   const [error, setError] = useState<string | null>(null)
   const [showArchived, setShowArchived] = useState(false)
   const [agentSelectorOpen, setAgentSelectorOpen] = useState(false)
-  const channelRef = useRef<RealtimeChannel | null>(null)
-
   // ---------------------------------------------------------------------------
   // Channel state
   // ---------------------------------------------------------------------------
@@ -57,6 +55,9 @@ export default function ChatPage() {
   // Thread panel (for channel threads)
   const [threadParent, setThreadParent] = useState<ChannelMessageType | null>(null)
   const [threadReplies, setThreadReplies] = useState<ChannelMessageType[]>([])
+  const [threadStreamingContent, setThreadStreamingContent] = useState('')
+  const [isThreadLoading, setIsThreadLoading] = useState(false)
+  const [isThreadTyping, setIsThreadTyping] = useState(false)
 
   // Forward modal
   const [forwardingMessage, setForwardingMessage] = useState<ChannelMessageType | null>(null)
@@ -91,16 +92,10 @@ export default function ChatPage() {
   }, [])
 
   // Subscribe to Realtime for active thread messages
-  useEffect(() => {
-    if (!activeThreadId || !supabase) return
-
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current)
-    }
-
-    const channel = supabase
-      .channel(`chat-messages-${activeThreadId}`)
-      .on(
+  useRealtimeChannel(
+    activeThreadId ? `chat-messages-${activeThreadId}` : null,
+    (ch) =>
+      ch.on(
         'postgres_changes',
         {
           event: 'INSERT',
@@ -123,36 +118,21 @@ export default function ChatPage() {
             return [...prev, newMsg]
           })
         }
-      )
-      .subscribe()
-
-    channelRef.current = channel
-
-    return () => {
-      supabase?.removeChannel(channel)
-      channelRef.current = null
-    }
-  }, [activeThreadId])
+      ),
+  )
 
   // Subscribe to thread list updates
-  useEffect(() => {
-    if (!supabase) return
-
-    const channel = supabase
-      .channel('chat-threads-updates')
-      .on(
+  useRealtimeChannel(
+    'chat-threads-updates',
+    (ch) =>
+      ch.on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'chat_threads' },
         () => {
           fetchThreads()
         }
-      )
-      .subscribe()
-
-    return () => {
-      supabase?.removeChannel(channel)
-    }
-  }, [])
+      ),
+  )
 
   // ---------------------------------------------------------------------------
   // Effects: Channels
@@ -643,10 +623,30 @@ export default function ChatPage() {
   // ---------------------------------------------------------------------------
   const handleThreadReply = useCallback(
     async (content: string) => {
-      if (!activeChannelId || !threadParent) return
+      if (!activeChannelId || !threadParent || isThreadLoading) return
+
+      setIsThreadLoading(true)
+      setThreadStreamingContent('')
+      setIsThreadTyping(false)
+
+      // Optimistic user message
+      const optimistic: ChannelMessageType = {
+        id: `temp-${Date.now()}`,
+        channel_id: activeChannelId,
+        role: 'user',
+        content,
+        agent_id: null,
+        reply_to_id: null,
+        thread_id: threadParent.id,
+        thread_count: 0,
+        forwarded_from: null,
+        created_at: new Date().toISOString(),
+      }
+      setThreadReplies((prev) => [...prev, optimistic])
 
       try {
-        const res = await fetch(`/api/channels/${activeChannelId}/messages`, {
+        // Save user message to channel thread
+        const saveRes = await fetch(`/api/channels/${activeChannelId}/messages`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -655,8 +655,11 @@ export default function ChatPage() {
             threadId: threadParent.id,
           }),
         })
-        const saved = await res.json()
-        setThreadReplies((prev) => [...prev, saved])
+        const savedUserMsg = await saveRes.json()
+        // Replace optimistic with real
+        setThreadReplies((prev) =>
+          prev.map((m) => (m.id === optimistic.id ? savedUserMsg : m))
+        )
         setChannelMessages((prev) =>
           prev.map((m) =>
             m.id === threadParent.id
@@ -664,11 +667,99 @@ export default function ChatPage() {
               : m
           )
         )
+
+        // Trigger Makima's response via channel-reply with threadId
+        const res = await fetch('/api/chat/channel-reply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            channelId: activeChannelId,
+            content,
+            threadId: threadParent.id,
+          }),
+        })
+
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+        }
+
+        const reader = res.body?.getReader()
+        if (!reader) throw new Error('No response stream')
+
+        const decoder = new TextDecoder()
+        let accumulated = ''
+        let sseBuffer = ''
+        let pendingFlush = false
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          sseBuffer += decoder.decode(value, { stream: true })
+          const lines = sseBuffer.split('\n')
+          sseBuffer = lines.pop() || ''
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue
+            const jsonStr = line.slice(6)
+            if (!jsonStr.trim()) continue
+
+            try {
+              const event = JSON.parse(jsonStr)
+              if (event.type === 'typing') {
+                setIsThreadTyping(true)
+                continue
+              } else if (event.type === 'chunk') {
+                setIsThreadTyping(false)
+                accumulated += event.content
+                if (!pendingFlush) {
+                  pendingFlush = true
+                  requestAnimationFrame(() => {
+                    setThreadStreamingContent(accumulated)
+                    pendingFlush = false
+                  })
+                }
+              } else if (event.type === 'done') {
+                pendingFlush = false
+                const assistantMsg: ChannelMessageType = {
+                  id: event.messageId || `done-${Date.now()}`,
+                  channel_id: activeChannelId!,
+                  role: 'assistant',
+                  content: accumulated,
+                  agent_id: event.agentId || 'makima',
+                  reply_to_id: null,
+                  thread_id: threadParent.id,
+                  thread_count: 0,
+                  forwarded_from: null,
+                  created_at: new Date().toISOString(),
+                }
+                setThreadReplies((prev) => [...prev, assistantMsg])
+                setThreadStreamingContent('')
+                // Update parent thread count
+                setChannelMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === threadParent.id
+                      ? { ...m, thread_count: m.thread_count + 1 }
+                      : m
+                  )
+                )
+              } else if (event.type === 'error') {
+                console.error('Thread reply error:', event.message)
+              }
+            } catch (parseErr) {
+              // Skip invalid JSON
+            }
+          }
+        }
       } catch (err) {
         console.error('Failed to send thread reply:', err)
+      } finally {
+        setIsThreadLoading(false)
+        setIsThreadTyping(false)
+        setThreadStreamingContent('')
       }
     },
-    [activeChannelId, threadParent]
+    [activeChannelId, threadParent, isThreadLoading]
   )
 
   const handleForward = useCallback(
@@ -1001,6 +1092,9 @@ export default function ChatPage() {
           replies={threadReplies}
           onClose={() => setThreadParent(null)}
           onSendReply={handleThreadReply}
+          isLoading={isThreadLoading}
+          streamingContent={threadStreamingContent}
+          isTyping={isThreadTyping}
         />
       )}
 
