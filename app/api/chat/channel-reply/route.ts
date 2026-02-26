@@ -6,6 +6,7 @@ import { sendToOpenClaw } from '@/lib/openclaw-client'
 import { buildPulseContext } from '@/lib/pulse-context'
 import { saveChannelMessage } from '@/lib/channels'
 import { parseActions, executeActions, stripActionBlocks, type PulseAction } from '@/lib/pulse-actions'
+import { emitMessage } from '@/lib/spark-bridge'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -32,6 +33,9 @@ export async function POST(req: NextRequest) {
 
   const agentId = 'makima'
   const systemPrompt = getAgentSystemPrompt(agentId)
+
+  // Emit user message to Spark
+  emitMessage(channelId, 'user', content).catch(() => {})
 
   const encoder = new TextEncoder()
   const stream = new ReadableStream({
@@ -136,6 +140,9 @@ export async function POST(req: NextRequest) {
           })
           const doneData = JSON.stringify({ type: 'done', messageId: msg.id, agentId })
           controller.enqueue(encoder.encode(`data: ${doneData}\n\n`))
+
+          // Emit assistant message to Spark
+          emitMessage(channelId, 'assistant', displayResponse, 'makima').catch(() => {})
         }
 
         // Execute actions fire-and-forget
