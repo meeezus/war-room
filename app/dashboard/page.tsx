@@ -47,6 +47,8 @@ export default function DashboardPage() {
   const [pendingDiscoveries, setPendingDiscoveries] = useState(0);
   const [councilSessions, setCouncilSessions] = useState(0);
   const [awarenessCount, setAwarenessCount] = useState(0);
+  const [recapCount, setRecapCount] = useState(0);
+  const [usageData, setUsageData] = useState<{ quotaPercent: number; dailyCost: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(typeof window !== 'undefined' ? window.innerWidth >= 768 : true);
   const [feedOpen, setFeedOpen] = useState(typeof window !== 'undefined' ? window.innerWidth >= 768 : true);
@@ -78,6 +80,22 @@ export default function DashboardPage() {
         setCouncilSessions(councilSessionCount);
         setAwarenessCount(awarenessCountData);
         setObjectives(objectivesData);
+
+        // Fetch recap count + usage data (non-critical — don't block)
+        fetch('/api/recaps').then(r => r.json()).then(d => {
+          const total = (d.groups ?? []).reduce((sum: number, g: { recaps: unknown[] }) => sum + g.recaps.length, 0);
+          setRecapCount(total);
+        }).catch(() => {});
+        fetch('/api/usage').then(r => r.json()).then(d => {
+          const provider = d.providers?.[0];
+          if (provider) {
+            const today = provider.dailyUsage?.find((u: { date: string }) => u.date === new Date().toISOString().split('T')[0]);
+            setUsageData({
+              quotaPercent: provider.quotaInfo?.percentUsed ?? 0,
+              dailyCost: today?.cost ?? 0,
+            });
+          }
+        }).catch(() => {});
       } catch (err) {
         console.error('Dashboard fetch error:', err);
       } finally {
@@ -159,6 +177,8 @@ export default function DashboardPage() {
           skillStats={skillStats}
           councilSessions={councilSessions}
           awarenessCount={awarenessCount}
+          recapCount={recapCount}
+          usageData={usageData}
         />
       </div>
 
