@@ -53,31 +53,31 @@ function renderDiscoveryCard(d: Discovery, actionUrl: string): string {
   const approveBtn = isDismissed ? '' : `
     <button
       onclick="handleAction('${esc(d.id)}', 'approve')"
-      style="background:#22c55e;color:#0a0a0a;border:none;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:0.05em;">
+      style="background:#22c55e;color:var(--bg);border:none;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:0.05em;">
       ✓ Approve
     </button>`
 
   const dismissBtn = isDismissed ? '' : `
     <button
       onclick="handleAction('${esc(d.id)}', 'dismiss')"
-      style="background:#1a1a1a;color:#888;border:1px solid #2a2a2a;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">
+      style="background:var(--surface-2);color:var(--text-muted);border:1px solid var(--border);padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">
       ✕ Dismiss
     </button>`
 
   const suggestedAction = d.suggested_action ? `
-    <p style="margin:8px 0 0;font-size:12px;color:#888;font-style:italic;">
+    <p style="margin:8px 0 0;font-size:12px;color:var(--text-muted);font-style:italic;">
       → ${esc(d.suggested_action)}
     </p>` : ''
 
   const repoTag = d.repo ? `
-    <span style="font-size:11px;color:#888;background:#1a1a1a;padding:2px 8px;border-radius:4px;margin-left:8px;">
+    <span style="font-size:11px;color:var(--text-muted);background:var(--surface-2);padding:2px 8px;border-radius:4px;margin-left:8px;">
       ${esc(d.repo)}
     </span>` : ''
 
   return `
   <div id="card-${esc(d.id)}" style="
-    background:#141414;
-    border:1px solid ${isDismissed ? '#1a1a1a' : '#2a2a2a'};
+    background:var(--surface);
+    border:1px solid ${isDismissed ? 'var(--surface-2)' : 'var(--border)'};
     border-radius:10px;
     padding:16px;
     margin-bottom:10px;
@@ -100,15 +100,15 @@ function renderDiscoveryCard(d: Discovery, actionUrl: string): string {
             font-size:10px;font-weight:700;letter-spacing:0.08em;
             padding:2px 8px;border-radius:4px;
           ">${badge.label}</span>
-          <span style="font-size:13px;color:#fafafa;font-weight:600;">${esc(d.title)}</span>
+          <span style="font-size:13px;color:var(--text);font-weight:600;">${esc(d.title)}</span>
           ${repoTag}
         </div>
-        <p style="margin:0 0 8px;font-size:13px;color:#aaa;line-height:1.5;">${esc(d.description)}</p>
+        <p style="margin:0 0 8px;font-size:13px;color:var(--text-dim);line-height:1.5;">${esc(d.description)}</p>
         ${suggestedAction}
         <div style="display:flex;align-items:center;gap:8px;margin-top:12px;">
           ${approveBtn}
           ${dismissBtn}
-          <span style="font-size:11px;color:#555;margin-left:auto;">${agent.name} · ${esc(d.category.replace('_', ' '))}</span>
+          <span style="font-size:11px;color:var(--text-faint);margin-left:auto;">${agent.name} · ${esc(d.category.replace('_', ' '))}</span>
         </div>
       </div>
     </div>
@@ -139,13 +139,13 @@ function renderSection(
     <summary style="
       display:flex;align-items:center;gap:10px;
       cursor:pointer;padding:12px 16px;
-      background:#141414;border:1px solid #2a2a2a;border-radius:10px;
+      background:var(--surface);border:1px solid var(--border);border-radius:10px;
       list-style:none;user-select:none;
     ">
       <span style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0;"></span>
-      <span style="font-size:14px;font-weight:700;color:#fafafa;">${esc(title)}</span>
-      <span style="font-size:12px;color:#555;">${esc(subtitle)}</span>
-      <span style="margin-left:auto;font-size:12px;color:#555;">${discoveries.length} item${discoveries.length !== 1 ? 's' : ''} ▾</span>
+      <span style="font-size:14px;font-weight:700;color:var(--text);">${esc(title)}</span>
+      <span style="font-size:12px;color:var(--text-faint);">${esc(subtitle)}</span>
+      <span style="margin-left:auto;font-size:12px;color:var(--text-faint);">${discoveries.length} item${discoveries.length !== 1 ? 's' : ''} ▾</span>
     </summary>
     <div style="margin-top:8px;">${cards}</div>
   </details>`
@@ -155,8 +155,8 @@ function renderSection(
   <div style="margin-bottom:28px;" id="${sectionId}">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
       <span style="width:8px;height:8px;border-radius:50%;background:${color};"></span>
-      <h2 style="margin:0;font-size:15px;font-weight:700;color:#fafafa;">${esc(title)}</h2>
-      <span style="font-size:12px;color:#555;">${esc(subtitle)}</span>
+      <h2 style="margin:0;font-size:15px;font-weight:700;color:var(--text);">${esc(title)}</h2>
+      <span style="font-size:12px;color:var(--text-faint);">${esc(subtitle)}</span>
       <span style="margin-left:auto;
         background:${color}22;color:${color};
         font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;
@@ -189,19 +189,19 @@ function renderActivityBar(activity: OvernightActivity): string {
     : `<span style="background:#ef444422;color:#ef4444;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;border:1px solid #ef444444;">⚠ No patrol</span>`
 
   const statItems = stats.map(s => `
-    <div style="text-align:center;padding:0 16px;border-right:1px solid #2a2a2a;">
+    <div style="text-align:center;padding:0 16px;border-right:1px solid var(--border);">
       <div style="font-size:22px;font-weight:700;color:${s.color};">${s.value}</div>
-      <div style="font-size:11px;color:#555;margin-top:2px;">${s.label}</div>
+      <div style="font-size:11px;color:var(--text-faint);margin-top:2px;">${s.label}</div>
     </div>`).join('')
 
   return `
   <div style="
-    background:#141414;border:1px solid #2a2a2a;border-radius:10px;
+    background:var(--surface);border:1px solid var(--border);border-radius:10px;
     padding:16px 20px;margin-bottom:28px;
     display:flex;align-items:center;gap:0;
   ">
     <div style="flex:1;">
-      <div style="font-size:11px;color:#555;margin-bottom:4px;letter-spacing:0.08em;text-transform:uppercase;">Overnight Activity (12h)</div>
+      <div style="font-size:11px;color:var(--text-faint);margin-bottom:4px;letter-spacing:0.08em;text-transform:uppercase;">Overnight Activity (12h)</div>
       <div style="display:flex;align-items:stretch;">${statItems}
         <div style="padding-left:16px;display:flex;align-items:center;">${patrolBadge}</div>
       </div>
@@ -258,16 +258,40 @@ export function generateBriefHtml(data: BriefData): string {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Morning Brief — War Room</title>
 <style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --surface-2: #1a1a1a;
+    --border: #2a2a2a;
+    --text: #fafafa;
+    --text-dim: #aaa;
+    --text-muted: #888;
+    --text-faint: #555;
+    --link: #3b82f6;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f5f5f5;
+      --surface: #ffffff;
+      --surface-2: #f0f0f0;
+      --border: #e0e0e0;
+      --text: #0a0a0a;
+      --text-dim: #444;
+      --text-muted: #666;
+      --text-faint: #999;
+      --link: #2563eb;
+    }
+  }
   * { box-sizing: border-box; }
   body {
     margin: 0; padding: 0;
-    background: #0a0a0a;
-    color: #fafafa;
+    background: var(--bg);
+    color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     -webkit-font-smoothing: antialiased;
   }
   details > summary::-webkit-details-marker { display: none; }
-  a { color: #3b82f6; text-decoration: none; }
+  a { color: var(--link); text-decoration: none; }
   a:hover { text-decoration: underline; }
 </style>
 </head>
@@ -279,19 +303,19 @@ export function generateBriefHtml(data: BriefData): string {
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
       <div style="width:40px;height:40px;border-radius:10px;background:#a855f722;border:1.5px solid #a855f744;display:flex;align-items:center;justify-content:center;font-size:18px;">⛩️</div>
       <div>
-        <h1 style="margin:0;font-size:20px;font-weight:700;color:#fafafa;">Morning Brief</h1>
-        <p style="margin:2px 0 0;font-size:12px;color:#555;">${esc(dateLabel)}</p>
+        <h1 style="margin:0;font-size:20px;font-weight:700;color:var(--text);">Morning Brief</h1>
+        <p style="margin:2px 0 0;font-size:12px;color:var(--text-faint);">${esc(dateLabel)}</p>
       </div>
       <div style="margin-left:auto;text-align:right;">
         ${totalPending > 0
           ? `<div style="font-size:28px;font-weight:700;color:#ef4444;">${totalPending}</div>
-             <div style="font-size:11px;color:#555;">pending review</div>`
+             <div style="font-size:11px;color:var(--text-faint);">pending review</div>`
           : `<div style="font-size:24px;">✓</div>
              <div style="font-size:11px;color:#22c55e;">all clear</div>`
         }
       </div>
     </div>
-    <div style="height:1px;background:linear-gradient(90deg,#2a2a2a,transparent);margin-top:16px;"></div>
+    <div style="height:1px;background:linear-gradient(90deg,var(--border),transparent);margin-top:16px;"></div>
   </div>
 
   <!-- Overnight Activity -->
@@ -301,12 +325,12 @@ export function generateBriefHtml(data: BriefData): string {
   ${actOn.length === 0 && worthKnowing.length === 0
     ? `<div style="
         text-align:center;padding:40px;
-        background:#141414;border:1px solid #2a2a2a;border-radius:10px;
+        background:var(--surface);border:1px solid var(--border);border-radius:10px;
         margin-bottom:24px;
       ">
         <div style="font-size:32px;margin-bottom:8px;">🌅</div>
-        <div style="font-size:15px;color:#888;">No discoveries pending review</div>
-        <div style="font-size:12px;color:#555;margin-top:4px;">The Daimyo found nothing that needs your attention.</div>
+        <div style="font-size:15px;color:var(--text-muted);">No discoveries pending review</div>
+        <div style="font-size:12px;color:var(--text-faint);margin-top:4px;">The Daimyo found nothing that needs your attention.</div>
       </div>`
     : `${renderSection('Act on these', 'critical — needs action', '#ef4444', actOn, actionUrl)}
        ${renderSection('Worth knowing', 'informational discoveries', '#3b82f6', worthKnowing, actionUrl)}`
@@ -328,8 +352,8 @@ export function generateBriefHtml(data: BriefData): string {
     card.querySelectorAll('button').forEach(b => { b.disabled = true; b.style.opacity = '0.5'; });
 
     statusEl.style.display = 'block';
-    statusEl.style.background = '#1a1a1a';
-    statusEl.style.color = '#888';
+    statusEl.style.background = 'var(--surface-2)';
+    statusEl.style.color = 'var(--text-muted)';
     statusEl.textContent = action === 'approve' ? 'Approving…' : 'Dismissing…';
 
     try {
