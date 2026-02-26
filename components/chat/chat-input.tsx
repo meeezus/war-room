@@ -8,9 +8,10 @@ interface ChatInputProps {
   disabled?: boolean
   onSend: (content: string) => void
   isLoading?: boolean
+  agentName?: string
 }
 
-export function ChatInput({ threadId, disabled, onSend, isLoading }: ChatInputProps) {
+export function ChatInput({ threadId, disabled, onSend, isLoading, agentName }: ChatInputProps) {
   const [input, setInput] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -47,7 +48,7 @@ export function ChatInput({ threadId, disabled, onSend, isLoading }: ChatInputPr
           value={input}
           onChange={handleInput}
           onKeyDown={handleKeyDown}
-          placeholder={isLoading ? 'Claude is responding...' : 'Send a message...'}
+          placeholder={isLoading ? `${agentName || 'Agent'} is responding...` : 'Send a message...'}
           disabled={disabled || isLoading}
           rows={1}
           className="flex-1 resize-none bg-muted border border-border rounded-lg px-4 py-3 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50 disabled:opacity-50 disabled:cursor-not-allowed"

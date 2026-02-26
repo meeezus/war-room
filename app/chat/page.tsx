@@ -988,6 +988,7 @@ export default function ChatPage() {
               threadId={activeThreadId!}
               onSend={sendMessage}
               isLoading={isLoading}
+              agentName={activeAgent === 'makima' ? 'Makima' : activeAgent === 'cc' ? 'Claude Code' : activeAgent ? activeAgent.charAt(0).toUpperCase() + activeAgent.slice(1) : 'Agent'}
             />
           </>
         )}
