@@ -322,11 +322,16 @@ export default function ChatPage() {
 
   const createThread = async (agentId?: string) => {
     setIsCreatingThread(true)
+    // Use agent display name as thread title (Slack-style)
+    const agentName = agentId === 'cc' ? 'Claude Code'
+      : agentId === 'makima' ? 'Makima'
+      : agentId ? agentId.charAt(0).toUpperCase() + agentId.slice(1)
+      : 'Claude Code'
     try {
       const res = await fetch('/api/chat/threads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'New Thread', agentId: agentId || 'cc' }),
+        body: JSON.stringify({ title: agentName, agentId: agentId || 'cc' }),
       })
       const data = await res.json()
       if (data.thread) {

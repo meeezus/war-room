@@ -111,7 +111,12 @@ export function UnifiedSidebar({
                 ) : (
                   <MessageSquare className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                 )}
-                <span className="text-sm truncate pr-6">{thread.title}</span>
+                <span className="text-sm truncate pr-6">
+                  {thread.agent_id === 'cc' ? 'Claude Code'
+                    : thread.agent_id === 'makima' ? 'Makima'
+                    : thread.agent_id ? thread.agent_id.charAt(0).toUpperCase() + thread.agent_id.slice(1)
+                    : thread.title}
+                </span>
               </button>
               {hoveredThreadId === thread.id && onDelete && (
                 <button
