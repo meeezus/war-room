@@ -304,8 +304,8 @@ export interface Objective {
 }
 
 export interface ObjectiveWithMetrics extends Objective {
-  projectCount: number
+  totalMissions: number
+  completedMissions: number
   activeMissions: number
   pendingProposals: number
-  completedProjects: number
 }

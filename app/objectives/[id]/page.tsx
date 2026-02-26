@@ -1,6 +1,6 @@
 import { createServiceClient } from '@/lib/supabase-server'
 import { notFound } from 'next/navigation'
-import type { Objective, Project, Mission, Proposal } from '@/lib/types'
+import type { Objective, Mission, Proposal } from '@/lib/types'
 import { ObjectiveDetailClient } from './objective-detail-client'
 
 export default async function ObjectiveDetailPage({
@@ -13,9 +13,8 @@ export default async function ObjectiveDetailPage({
   if (!sb) return notFound()
 
   // Fetch objective + related entities in parallel
-  const [objectiveRes, projectsRes, missionsRes, proposalsRes] = await Promise.all([
+  const [objectiveRes, missionsRes, proposalsRes] = await Promise.all([
     sb.from('objectives').select('*').eq('id', id).single(),
-    sb.from('projects').select('*').eq('objective_id', id).order('priority', { ascending: true }),
     sb.from('missions').select('*').eq('objective_id', id).order('created_at', { ascending: false }).limit(50),
     sb.from('proposals').select('*').eq('objective_id', id).order('created_at', { ascending: false }).limit(50),
   ])
@@ -23,14 +22,12 @@ export default async function ObjectiveDetailPage({
   if (objectiveRes.error || !objectiveRes.data) return notFound()
 
   const objective = objectiveRes.data as Objective
-  const projects = (projectsRes.data ?? []) as Project[]
   const missions = (missionsRes.data ?? []) as Mission[]
   const proposals = (proposalsRes.data ?? []) as Proposal[]
 
   return (
     <ObjectiveDetailClient
       objective={objective}
-      projects={projects}
       missions={missions}
       proposals={proposals}
     />

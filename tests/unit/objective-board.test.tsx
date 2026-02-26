@@ -20,10 +20,10 @@ function makeObjective(overrides: Partial<ObjectiveWithMetrics> = {}): Objective
     created_at: '2026-02-20T10:00:00Z',
     updated_at: '2026-02-24T14:00:00Z',
     completed_at: null,
-    projectCount: 3,
+    totalMissions: 3,
+    completedMissions: 1,
     activeMissions: 2,
     pendingProposals: 1,
-    completedProjects: 1,
     ...overrides,
   }
 }
@@ -60,27 +60,25 @@ describe('ObjectiveCard', () => {
     expect(screen.getByText('Get the product out the door')).toBeInTheDocument()
   })
 
-  it('renders progress bar with correct text', async () => {
+  it('renders mission progress bar with correct text', async () => {
     const { ObjectiveCard } = await import('@/components/objective-card')
-    render(<ObjectiveCard objective={makeObjective({ completedProjects: 2, projectCount: 4 })} />)
+    render(<ObjectiveCard objective={makeObjective({ completedMissions: 2, totalMissions: 4 })} />)
 
-    expect(screen.getByText('2 of 4 projects complete')).toBeInTheDocument()
+    expect(screen.getByText('2/4 missions')).toBeInTheDocument()
   })
 
-  it('renders project count badge', async () => {
+  it('renders mission progress bar with zero missions', async () => {
     const { ObjectiveCard } = await import('@/components/objective-card')
-    render(<ObjectiveCard objective={makeObjective({ projectCount: 5 })} />)
+    render(<ObjectiveCard objective={makeObjective({ completedMissions: 0, totalMissions: 0 })} />)
 
-    // Multiple elements may contain "5 projects" (progress bar + metrics row)
-    const matches = screen.getAllByText(/5 projects/i)
-    expect(matches.length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText('0/0 missions')).toBeInTheDocument()
   })
 
   it('renders active mission count', async () => {
     const { ObjectiveCard } = await import('@/components/objective-card')
     render(<ObjectiveCard objective={makeObjective({ activeMissions: 3 })} />)
 
-    expect(screen.getByText(/3 missions/i)).toBeInTheDocument()
+    expect(screen.getByText(/3 active/i)).toBeInTheDocument()
   })
 
   it('renders pending proposal count when > 0', async () => {
@@ -224,12 +222,10 @@ describe('getObjectivesWithMetrics', () => {
     const mockObjectives = [
       { id: 'obj-1', title: 'Test', status: 'active', created_by: 'sensei', created_at: '2026-02-20', updated_at: '2026-02-24' },
     ]
-    const mockProjects = [
-      { id: 'p1', objective_id: 'obj-1', status: 'inprogress' },
-      { id: 'p2', objective_id: 'obj-1', status: 'done' },
-    ]
     const mockMissions = [
       { id: 'm1', objective_id: 'obj-1', status: 'running' },
+      { id: 'm2', objective_id: 'obj-1', status: 'completed' },
+      { id: 'm3', objective_id: 'obj-1', status: 'deployed' },
     ]
     const mockProposals = [
       { id: 'pr1', objective_id: 'obj-1', status: 'pending' },
@@ -240,17 +236,13 @@ describe('getObjectivesWithMetrics', () => {
       const chain = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        in: vi.fn().mockReturnThis(),
         order: vi.fn().mockReturnThis(),
       }
       if (table === 'objectives') {
         chain.order = vi.fn().mockResolvedValue({ data: mockObjectives, error: null })
-        // chain for select->order
         chain.select = vi.fn().mockReturnValue({ order: chain.order })
-      } else if (table === 'projects') {
-        chain.select = vi.fn().mockResolvedValue({ data: mockProjects, error: null })
       } else if (table === 'missions') {
-        chain.select = vi.fn().mockReturnValue({ in: vi.fn().mockResolvedValue({ data: mockMissions, error: null }) })
+        chain.select = vi.fn().mockResolvedValue({ data: mockMissions, error: null })
       } else if (table === 'proposals') {
         chain.select = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ data: mockProposals, error: null }) })
       }
@@ -265,8 +257,8 @@ describe('getObjectivesWithMetrics', () => {
     const result = await getObjectivesWithMetrics()
 
     expect(result).toHaveLength(1)
-    expect(result[0].projectCount).toBe(2)
-    expect(result[0].completedProjects).toBe(1)
+    expect(result[0].totalMissions).toBe(3)
+    expect(result[0].completedMissions).toBe(2)
     expect(result[0].activeMissions).toBe(1)
     expect(result[0].pendingProposals).toBe(2)
   })

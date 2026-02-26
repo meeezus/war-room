@@ -31,8 +31,8 @@ interface ObjectiveCardProps {
 export function ObjectiveCard({ objective }: ObjectiveCardProps) {
   const prefersReducedMotion = useReducedMotion();
   const accent = OBJECTIVE_STATUS_COLORS[objective.status] ?? "#6b7280";
-  const progressPct = objective.projectCount > 0
-    ? (objective.completedProjects / objective.projectCount) * 100
+  const progressPct = objective.totalMissions > 0
+    ? (objective.completedMissions / objective.totalMissions) * 100
     : 0;
 
   const cardContent = (
@@ -59,28 +59,23 @@ export function ObjectiveCard({ objective }: ObjectiveCardProps) {
         </p>
       )}
 
-      {/* Progress bar */}
-      {objective.projectCount > 0 && (
-        <div className="mt-2">
-          <div className="mb-1 font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/75">
-            {objective.completedProjects} of {objective.projectCount} projects complete
-          </div>
-          <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full bg-emerald-500 transition-all"
-              style={{ width: `${progressPct}%` }}
-            />
-          </div>
+      {/* Mission progress bar */}
+      <div className="mt-2">
+        <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full rounded-full bg-emerald-500 transition-all"
+            style={{ width: `${progressPct}%` }}
+          />
         </div>
-      )}
+        <div className="mt-1 font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/75">
+          {objective.completedMissions}/{objective.totalMissions} missions
+        </div>
+      </div>
 
       {/* Metrics row */}
       <div className="mt-2 flex items-center gap-2">
         <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/75">
-          {objective.projectCount} projects
-        </span>
-        <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/75">
-          {objective.activeMissions} missions
+          {objective.activeMissions} active
         </span>
         {objective.pendingProposals > 0 && (
           <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-medium text-amber-400">

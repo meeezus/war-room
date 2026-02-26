@@ -782,26 +782,24 @@ export async function getActiveObjectiveCount(): Promise<number> {
 export async function getObjectivesWithMetrics(): Promise<ObjectiveWithMetrics[]> {
   if (!supabase) return []
 
-  // Fetch objectives, projects (with objective_id), active missions, and pending proposals in parallel
-  const [objectivesRes, projectsRes, missionsRes, proposalsRes] = await Promise.all([
+  // Fetch objectives, all missions (for progress), and pending proposals in parallel
+  const [objectivesRes, missionsRes, proposalsRes] = await Promise.all([
     supabase.from('objectives').select('*').order('created_at', { ascending: false }),
-    supabase.from('projects').select('id, objective_id, status'),
-    supabase.from('missions').select('id, objective_id, status').in('status', ['queued', 'running']),
+    supabase.from('missions').select('id, objective_id, status'),
     supabase.from('proposals').select('id, objective_id').eq('status', 'pending'),
   ])
 
   const objectives = (objectivesRes.data as Objective[]) ?? []
-  const projects = (projectsRes.data ?? []) as { id: string; objective_id: string | null; status: string }[]
   const missions = (missionsRes.data ?? []) as { id: string; objective_id: string | null; status: string }[]
   const proposals = (proposalsRes.data ?? []) as { id: string; objective_id: string | null }[]
 
   return objectives.map(obj => {
-    const objProjects = projects.filter(p => p.objective_id === obj.id)
+    const objMissions = missions.filter(m => m.objective_id === obj.id)
     return {
       ...obj,
-      projectCount: objProjects.length,
-      completedProjects: objProjects.filter(p => p.status === 'done').length,
-      activeMissions: missions.filter(m => m.objective_id === obj.id).length,
+      totalMissions: objMissions.length,
+      completedMissions: objMissions.filter(m => m.status === 'completed' || m.status === 'deployed').length,
+      activeMissions: objMissions.filter(m => m.status === 'queued' || m.status === 'running').length,
       pendingProposals: proposals.filter(p => p.objective_id === obj.id).length,
     }
   })
