@@ -238,10 +238,10 @@ export function generateBriefHtml(data: BriefData): string {
   const cutoff = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString()
   const missionsCompleted = missions.filter(m => m.status === 'completed' && m.completed_at && m.completed_at > cutoff).length
   const eventsCount = events.filter(e => e.created_at > cutoff).length
-  const patrolRan = events.some(e => e.type === 'patrol_complete' && e.created_at > cutoff)
+  const patrolRan = events.some(e => e.event_type === 'patrol_complete' && e.created_at > cutoff)
 
   // Task count from events metadata
-  const tasksCompleted = events.filter(e => (e.type === 'task_completed' || e.type === 'step_completed') && e.created_at > cutoff).length
+  const tasksCompleted = events.filter(e => (e.event_type === 'task_completed' || e.event_type === 'step_completed') && e.created_at > cutoff).length
 
   const activity: OvernightActivity = { missionsCompleted, tasksCompleted, eventsCount, patrolRan }
 

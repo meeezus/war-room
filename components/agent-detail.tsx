@@ -86,8 +86,8 @@ function StatusBadge({
 }
 
 function EventRow({ event }: { event: Event }) {
-  const color = EVENT_TYPE_COLORS[event.type] ?? "#6b7280";
-  const label = event.type.replace(/_/g, " ");
+  const color = EVENT_TYPE_COLORS[event.event_type] ?? "#6b7280";
+  const label = event.event_type.replace(/_/g, " ");
 
   return (
     <div className="flex gap-3 px-3 py-2 transition-colors duration-150 hover:bg-muted/50">
@@ -106,7 +106,7 @@ function EventRow({ event }: { event: Event }) {
           {label}
         </span>
         <span className="text-xs text-muted-foreground">
-          {event.message}
+          {event.title}
         </span>
       </div>
     </div>

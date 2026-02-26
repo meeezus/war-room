@@ -27,7 +27,7 @@ export function useRealtimeEvents(initialEvents: Event[]): Event[] {
       .channel("events-realtime")
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "events" },
+        { event: "INSERT", schema: "public", table: "war_room_events" },
         (payload) => {
           const newEvent = payload.new as Event
           setEvents((prev) => [newEvent, ...prev])

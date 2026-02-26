@@ -72,8 +72,8 @@ function PatrolStatus() {
     async function checkPatrol() {
       const events = await getEvents(20);
       // Find the latest patrol event
-      const lastStarted = events.find(e => e.type === "patrol_started");
-      const lastComplete = events.find(e => e.type === "patrol_complete");
+      const lastStarted = events.find(e => e.event_type === "patrol_started");
+      const lastComplete = events.find(e => e.event_type === "patrol_complete");
 
       if (lastStarted && (!lastComplete || new Date(lastStarted.created_at) > new Date(lastComplete.created_at))) {
         const agents = (lastStarted.metadata?.agents as string[]) ?? [];

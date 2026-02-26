@@ -85,10 +85,10 @@ export async function POST(req: NextRequest) {
       if (updateError) throw updateError
 
       // Emit event
-      await sb.from('events').insert({
-        type: 'discovery_approved',
-        agent: 'makima',
-        message: `Discovery approved: "${discovery.title}"`,
+      await sb.from('war_room_events').insert({
+        event_type: 'discovery_approved',
+        agent_id: 'makima',
+        title: `Discovery approved: "${discovery.title}"`,
         metadata: {
           discovery_id,
           title: discovery.title,
@@ -116,10 +116,10 @@ export async function POST(req: NextRequest) {
     if (updateError) throw updateError
 
     // Emit event
-    await sb.from('events').insert({
-      type: 'discovery_dismissed',
-      agent: 'makima',
-      message: `Discovery dismissed: "${discovery.title}"`,
+    await sb.from('war_room_events').insert({
+      event_type: 'discovery_dismissed',
+      agent_id: 'makima',
+      title: `Discovery dismissed: "${discovery.title}"`,
       metadata: {
         discovery_id,
         title: discovery.title,

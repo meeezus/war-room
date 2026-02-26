@@ -48,9 +48,9 @@ export async function generateAlerts(): Promise<PulseAlert[]> {
         .select('*')
         .in('status', ['inprogress', 'queue']),
       // Any activity in last 24h (to detect silence)
-      sb.from('events')
+      sb.from('war_room_events')
         .select('id', { count: 'exact', head: true })
-        .neq('type', 'heartbeat')
+        .neq('event_type', 'heartbeat')
         .gte('created_at', oneDayAgo),
       // Pending discoveries
       sb.from('discoveries')

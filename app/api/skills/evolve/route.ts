@@ -84,10 +84,10 @@ export async function POST(_req: NextRequest) {
 
   // Emit cross_pollination event
   if (fleetPatterns.length > 0) {
-    await sb.from('events').insert({
-      type: 'cross_pollination',
-      agent: 'makima',
-      message: `Makima identified ${fleetPatterns.length} fleet-wide pattern(s) across agents`,
+    await sb.from('war_room_events').insert({
+      event_type: 'cross_pollination',
+      agent_id: 'makima',
+      title: `Makima identified ${fleetPatterns.length} fleet-wide pattern(s) across agents`,
       metadata: {
         pattern_count: fleetPatterns.length,
         patterns: fleetPatterns,

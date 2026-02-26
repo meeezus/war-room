@@ -60,9 +60,9 @@ export async function buildPulseContext(): Promise<string> {
         .limit(5),
 
       // Recent events (exclude heartbeat)
-      sb.from('events')
+      sb.from('war_room_events')
         .select('*')
-        .neq('type', 'heartbeat')
+        .neq('event_type', 'heartbeat')
         .order('created_at', { ascending: false })
         .limit(10),
 
@@ -175,8 +175,8 @@ export async function buildPulseContext(): Promise<string> {
       lines.push('_None._')
     } else {
       for (const e of events) {
-        const agent = e.agent ? ` ${e.agent}` : ''
-        lines.push(`- [${e.type}]${agent} ${e.message} — ${timeAgo(e.created_at)}`)
+        const agent = e.agent_id ? ` ${e.agent_id}` : ''
+        lines.push(`- [${e.event_type}]${agent} ${e.title} — ${timeAgo(e.created_at)}`)
       }
     }
     lines.push('')

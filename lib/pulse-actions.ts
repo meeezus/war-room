@@ -177,11 +177,11 @@ export async function executeActions(actions: PulseAction[]): Promise<ActionResu
 
         case 'flag_attention': {
           const { data, error } = await sb
-            .from('events')
+            .from('war_room_events')
             .insert({
-              type: 'user_request',
-              agent: 'makima',
-              message: action.message,
+              event_type: 'user_request',
+              agent_id: 'makima',
+              title: action.message,
               metadata: { source: 'pulse_action' },
             })
             .select('id')
@@ -232,10 +232,10 @@ export async function executeActions(actions: PulseAction[]): Promise<ActionResu
 
           if (updateErr) throw updateErr
 
-          await sb.from('events').insert({
-            type: 'discovery_approved',
-            agent: 'makima',
-            message: `Discovery approved: "${discovery.title}"`,
+          await sb.from('war_room_events').insert({
+            event_type: 'discovery_approved',
+            agent_id: 'makima',
+            title: `Discovery approved: "${discovery.title}"`,
             metadata: { discovery_id: action.discovery_id, title: discovery.title, proposal_id: proposal.id },
           })
 
@@ -264,10 +264,10 @@ export async function executeActions(actions: PulseAction[]): Promise<ActionResu
 
           if (updateErr) throw updateErr
 
-          await sb.from('events').insert({
-            type: 'discovery_dismissed',
-            agent: 'makima',
-            message: `Discovery dismissed: "${discovery.title}"`,
+          await sb.from('war_room_events').insert({
+            event_type: 'discovery_dismissed',
+            agent_id: 'makima',
+            title: `Discovery dismissed: "${discovery.title}"`,
             metadata: { discovery_id: action.discovery_id, title: discovery.title, reason: action.reason },
           })
 

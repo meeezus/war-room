@@ -84,10 +84,10 @@ const ZONES: ZoneConfig[] = [
 ];
 
 function classifyEvent(event: Event): ZoneKey | null {
-  if (NEEDS_YOU_TYPES.has(event.type)) return "needs_you";
-  if (ACTIVE_TYPES.has(event.type)) return "active";
-  if (COMPLETE_TYPES.has(event.type)) return "complete";
-  if (SYSTEM_TYPES.has(event.type)) return null; // hidden by default unless "system" filter
+  if (NEEDS_YOU_TYPES.has(event.event_type)) return "needs_you";
+  if (ACTIVE_TYPES.has(event.event_type)) return "active";
+  if (COMPLETE_TYPES.has(event.event_type)) return "complete";
+  if (SYSTEM_TYPES.has(event.event_type)) return null; // hidden by default unless "system" filter
   return "active"; // fallback for unknown types
 }
 
@@ -162,10 +162,10 @@ function PatrolCompleteRow({ event, color }: { event: Event; color: string }) {
 function EventRow({ event }: { event: Event }) {
   const [expanded, setExpanded] = useState(false);
   const [actionState, setActionState] = useState<"idle" | "loading" | "done" | "error">("idle");
-  const color = EVENT_TYPE_COLORS[event.type] ?? "#6b7280";
-  const label = event.type.replace(/_/g, " ");
+  const color = EVENT_TYPE_COLORS[event.event_type] ?? "#6b7280";
+  const label = event.event_type.replace(/_/g, " ");
 
-  const proposalId = event.source_id ?? (event.metadata?.proposal_id as string | undefined);
+  const proposalId = event.metadata?.source_id as string | undefined ?? (event.metadata?.proposal_id as string | undefined);
 
   async function handleProposalAction(action: "approve" | "reject", e: React.MouseEvent) {
     e.stopPropagation();
@@ -181,31 +181,31 @@ function EventRow({ event }: { event: Event }) {
     }
   }
 
-  if (event.type === "patrol_complete") {
+  if (event.event_type === "patrol_complete") {
     return <PatrolCompleteRow event={event} color={color} />;
   }
 
   // Rich labels for patrol/discovery/skill events
-  let richMessage = event.message;
-  if (event.type === "patrol_started") {
+  let richMessage = event.title;
+  if (event.event_type === "patrol_started") {
     const agents = (event.metadata?.agents as string[]) ?? [];
     richMessage = agents.length > 0
       ? `Patrol started: ${agents.join(", ")} scanning`
-      : event.message;
-  } else if (event.type === "discovery_approved") {
+      : event.title;
+  } else if (event.event_type === "discovery_approved") {
     const title = event.metadata?.title as string;
-    richMessage = title ? `Discovery approved: ${title}` : event.message;
-  } else if (event.type === "discovery_dismissed") {
+    richMessage = title ? `Discovery approved: ${title}` : event.title;
+  } else if (event.event_type === "discovery_dismissed") {
     const title = event.metadata?.title as string;
-    richMessage = title ? `Discovery dismissed: ${title}` : event.message;
-  } else if (event.type === "skill_patch_extracted") {
+    richMessage = title ? `Discovery dismissed: ${title}` : event.title;
+  } else if (event.event_type === "skill_patch_extracted") {
     const preview = event.metadata?.content_preview as string;
-    richMessage = preview ? `learned: ${preview}` : event.message;
-  } else if (event.type === "skill_applied") {
+    richMessage = preview ? `learned: ${preview}` : event.title;
+  } else if (event.event_type === "skill_applied") {
     const count = event.metadata?.patch_count as number;
     richMessage = count != null
       ? `promoted ${count} pattern${count === 1 ? "" : "s"} to SKILL file`
-      : event.message;
+      : event.title;
   }
 
   return (
@@ -229,13 +229,13 @@ function EventRow({ event }: { event: Event }) {
         </span>
         {expanded ? (
           <div className="mt-0.5">
-            {event.agent && (
+            {event.agent_id && (
               <span className="mr-1.5 text-xs font-medium text-foreground">
-                {event.agent}
+                {event.agent_id}
               </span>
             )}
-            <span className="text-xs text-muted-foreground">{event.message}</span>
-            {event.type === "proposal_created" && proposalId && (
+            <span className="text-xs text-muted-foreground">{event.title}</span>
+            {event.event_type === "proposal_created" && proposalId && (
               <div className="mt-1.5 flex gap-2" onClick={(e) => e.stopPropagation()}>
                 {actionState === "done" ? (
                   <span className="text-[10px] text-muted-foreground/60">Done</span>
@@ -266,7 +266,7 @@ function EventRow({ event }: { event: Event }) {
           </div>
         ) : (
           <span className="inline-block max-w-full truncate align-bottom text-xs text-muted-foreground/75">
-            {event.agent ? `${event.agent} — ` : ""}{richMessage}
+            {event.agent_id ? `${event.agent_id} — ` : ""}{richMessage}
           </span>
         )}
       </div>
@@ -331,9 +331,9 @@ export function EventFeed({ events }: { events: Event[] }) {
   // Apply filter
   const filteredEvents = visibleEvents
     .filter((e) => {
-      if (filter === "all") return e.type !== "heartbeat";
-      if (filter === "system") return FILTER_TYPES.system!.includes(e.type);
-      return FILTER_TYPES[filter]!.includes(e.type);
+      if (filter === "all") return e.event_type !== "heartbeat";
+      if (filter === "system") return FILTER_TYPES.system!.includes(e.event_type);
+      return FILTER_TYPES[filter]!.includes(e.event_type);
     })
     .sort((a, b) => {
       const diff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();

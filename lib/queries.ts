@@ -70,8 +70,9 @@ export async function getEvents(limit = 50): Promise<Event[]> {
   if (!supabase) return []
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
   const { data, error } = await supabase
-    .from('events')
+    .from('war_room_events')
     .select('*')
+    .neq('event_type', 'heartbeat')
     .gte('created_at', threeDaysAgo)
     .order('created_at', { ascending: false })
     .limit(limit)
@@ -89,7 +90,7 @@ export async function getAgentWithHistory(id: string): Promise<{
   const [agentRes, missionsRes, eventsRes] = await Promise.all([
     supabase.from('agent_status').select('*').eq('id', id).single(),
     supabase.from('missions').select('*').eq('assigned_to', id).order('created_at', { ascending: false }),
-    supabase.from('events').select('*').eq('agent', id).order('created_at', { ascending: false }),
+    supabase.from('war_room_events').select('*').eq('agent_id', id).order('created_at', { ascending: false }),
   ])
 
   if (agentRes.error) { console.error('getAgentWithHistory agent error:', agentRes.error) }
@@ -595,9 +596,9 @@ export async function getPendingDiscoveriesWithSeverity(): Promise<{ total: numb
 export async function getLastPatrolEvent(): Promise<Event | null> {
   if (!supabase) return null
   const { data, error } = await supabase
-    .from('events')
+    .from('war_room_events')
     .select('*')
-    .eq('type', 'patrol_complete')
+    .eq('event_type', 'patrol_complete')
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()
@@ -751,9 +752,9 @@ export async function getSkillPatchStats(): Promise<{ recentPatches: number; app
 export async function getLastPatrolSummary(): Promise<{ timestamp: string | null; discoveryCount: number }> {
   if (!supabase) return { timestamp: null, discoveryCount: 0 }
   const { data } = await supabase
-    .from('events')
+    .from('war_room_events')
     .select('created_at, metadata')
-    .eq('type', 'patrol_complete')
+    .eq('event_type', 'patrol_complete')
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()

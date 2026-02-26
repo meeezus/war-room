@@ -15,7 +15,7 @@ export async function GET() {
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
 
   const { data, error } = await supabase
-    .from('events')
+    .from('war_room_events')
     .select('*')
     .gte('created_at', threeDaysAgo)
     .order('created_at', { ascending: false })
@@ -32,16 +32,23 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { type, source_id, agent, message, metadata } = body as {
-      type: string
+    const { type, event_type, source_id, agent, agent_id, message, title: eventTitle, metadata } = body as {
+      type?: string
+      event_type?: string
       source_id?: string
       agent?: string
-      message: string
+      agent_id?: string
+      message?: string
+      title?: string
       metadata?: Record<string, unknown>
     }
 
-    if (!type || !message) {
-      return Response.json({ error: 'type and message are required' }, { status: 400 })
+    const resolvedType = event_type ?? type
+    const resolvedTitle = eventTitle ?? message
+    const resolvedAgent = agent_id ?? agent
+
+    if (!resolvedType || !resolvedTitle) {
+      return Response.json({ error: 'event_type and title are required' }, { status: 400 })
     }
 
     const sb = createServiceClient()
@@ -50,13 +57,12 @@ export async function POST(req: NextRequest) {
     }
 
     const { data, error } = await sb
-      .from('events')
+      .from('war_room_events')
       .insert({
-        type,
-        source_id: source_id ?? null,
-        agent: agent ?? 'cc',
-        message,
-        metadata: metadata ?? null,
+        event_type: resolvedType,
+        agent_id: resolvedAgent ?? 'cc',
+        title: resolvedTitle,
+        metadata: source_id ? { ...metadata, source_id } : (metadata ?? null),
       })
       .select()
       .single()

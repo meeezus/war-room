@@ -57,20 +57,22 @@ export interface Step {
 
 export interface Event {
   id: string
-  type:
+  event_type:
     | 'proposal_created' | 'proposal_approved' | 'proposal_rejected'
     | 'mission_started' | 'mission_completed' | 'mission_failed'
     | 'step_started' | 'step_completed' | 'step_failed' | 'step_stale'
     | 'council_reviewed'
     | 'task_started' | 'task_completed' | 'task_failed'
+    | 'task_routed' | 'task_escalated'
     | 'heartbeat' | 'agent_action' | 'user_request'
     | 'patrol_started' | 'patrol_complete'
     | 'discovery_created' | 'discovery_approved' | 'discovery_dismissed'
     | 'skill_patch_extracted' | 'skill_applied' | 'skill_sunset' | 'cross_pollination'
     | 'daily_briefing'
-  source_id: string | null
-  agent: string | null
-  message: string
+    | 'awareness_cycle_complete' | 'health_check_failed'
+  agent_id: string | null
+  title: string
+  description: string | null
   metadata: Record<string, unknown> | null
   created_at: string
 }

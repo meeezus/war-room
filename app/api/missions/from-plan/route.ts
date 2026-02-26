@@ -80,12 +80,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Create event for the mission creation
-    await sb.from('events').insert({
-      type: 'mission_started',
-      source_id: mission.id,
-      agent: 'cc',
-      message: `Mission created from plan: ${title}`,
-      metadata: { source: source ?? 'claude-code', taskCount: tasks.length },
+    await sb.from('war_room_events').insert({
+      event_type: 'mission_started',
+      agent_id: 'cc',
+      title: `Mission created from plan: ${title}`,
+      metadata: { source: source ?? 'claude-code', taskCount: tasks.length, mission_id: mission.id },
     })
 
     return Response.json({

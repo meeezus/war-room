@@ -27,11 +27,7 @@ export async function GET() {
 
     const discoveries = (discoveriesRes.data ?? []) as Discovery[]
     const missions = (missionsRes.data ?? []) as Mission[]
-    // war_room_events uses event_type column; remap to type for Event interface
-    const events = (eventsRes.data ?? []).map((r: Record<string, unknown>) => ({
-      ...r,
-      type: r.event_type,
-    })) as Event[]
+    const events = (eventsRes.data ?? []) as Event[]
 
     const generatedAt = new Date().toISOString()
     const pendingCount = discoveries.filter(d => d.status === 'pending').length
