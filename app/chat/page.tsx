@@ -1,7 +1,11 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { ThreadList, type ThreadSummary } from '@/components/chat/thread-list'
+import { type ThreadSummary } from '@/components/chat/thread-list'
+import { UnifiedSidebar } from '@/components/chat/unified-sidebar'
+import { ChannelMessage } from '@/components/chat/channel-message'
+import type { Category, Channel } from '@/components/chat/channel-sidebar'
+import type { ChannelMessage as ChannelMessageType } from '@/lib/channels'
 import { MessageArea } from '@/components/chat/message-area'
 import { ChatInput } from '@/components/chat/chat-input'
 import { AgentSelector } from '@/components/chat/agent-selector'
@@ -25,6 +29,12 @@ export default function ChatPage() {
   const [showArchived, setShowArchived] = useState(false)
   const [agentSelectorOpen, setAgentSelectorOpen] = useState(false)
   const channelRef = useRef<RealtimeChannel | null>(null)
+
+  // Channel state
+  const [categories, setCategories] = useState<Category[]>([])
+  const [channels, setChannels] = useState<Channel[]>([])
+  const [activeChannelId, setActiveChannelId] = useState<string | null>(null)
+  const [channelMessages, setChannelMessages] = useState<ChannelMessageType[]>([])
 
   // Fetch threads on mount
   useEffect(() => {
@@ -98,6 +108,43 @@ export default function ChatPage() {
       supabase?.removeChannel(channel)
     }
   }, [])
+
+  // Fetch channels on mount
+  useEffect(() => {
+    async function fetchChannels() {
+      try {
+        const res = await fetch('/api/channels')
+        if (res.ok) {
+          const data = await res.json()
+          setCategories(data.categories)
+          setChannels(data.channels)
+        }
+      } catch (err) {
+        console.error('Failed to fetch channels:', err)
+      }
+    }
+    fetchChannels()
+  }, [])
+
+  // Fetch channel messages when activeChannelId changes
+  useEffect(() => {
+    if (!activeChannelId) {
+      setChannelMessages([])
+      return
+    }
+    async function fetchChannelMessages() {
+      try {
+        const res = await fetch(`/api/channels/${activeChannelId}/messages`)
+        if (res.ok) {
+          const data = await res.json()
+          setChannelMessages(data)
+        }
+      } catch (err) {
+        console.error('Failed to fetch channel messages:', err)
+      }
+    }
+    fetchChannelMessages()
+  }, [activeChannelId])
 
   const fetchThreads = async (archived = showArchived) => {
     try {
@@ -181,6 +228,7 @@ export default function ChatPage() {
 
   const selectThread = (threadId: string) => {
     setActiveThreadId(threadId)
+    setActiveChannelId(null) // Clear channel selection when selecting DM
     setMessages([])
     setStreamingContent('')
     setError(null)
@@ -349,6 +397,51 @@ export default function ChatPage() {
     }
   }, [activeThreadId, isLoading])
 
+  const handleSelectChannel = useCallback((id: string) => {
+    setActiveChannelId(id)
+    setActiveThreadId(null) // Clear DM selection when selecting channel
+  }, [])
+
+  const handleCreateChannel = useCallback(async (categoryId: string | null) => {
+    const name = prompt('Channel name:')
+    if (!name) return
+    try {
+      const res = await fetch('/api/channels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'channel', name, categoryId, createdBy: 'user' }),
+      })
+      if (res.ok) {
+        const channel = await res.json()
+        setChannels(prev => [...prev, channel])
+      }
+    } catch (err) {
+      console.error('Failed to create channel:', err)
+    }
+  }, [])
+
+  const handleCreateCategory = useCallback(async () => {
+    const name = prompt('Category name:')
+    if (!name) return
+    try {
+      const res = await fetch('/api/channels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'category', name }),
+      })
+      if (res.ok) {
+        const category = await res.json()
+        setCategories(prev => [...prev, category])
+      }
+    } catch (err) {
+      console.error('Failed to create category:', err)
+    }
+  }, [])
+
+  const handleToggleCategory = useCallback((id: string) => {
+    setCategories(prev => prev.map(c => c.id === id ? { ...c, collapsed: !c.collapsed } : c))
+  }, [])
+
   const activeAgent = threads.find(t => t.id === activeThreadId)?.agent_id
   const isMakima = activeAgent === 'makima'
 
@@ -364,7 +457,8 @@ export default function ChatPage() {
 
       {/* Thread sidebar */}
       <div className={`${sidebarOpen ? 'w-72 fixed inset-y-0 left-0 z-40 md:relative md:z-auto' : 'w-0'} flex-shrink-0 border-r border-border bg-background transition-all duration-200 overflow-hidden`}>
-        <ThreadList
+        <UnifiedSidebar
+          // DM props
           threads={threads}
           activeThreadId={activeThreadId}
           onSelectThread={(id) => {
@@ -379,6 +473,14 @@ export default function ChatPage() {
           onRename={handleRenameThread}
           showArchived={showArchived}
           onToggleArchived={handleToggleArchived}
+          // Channel props
+          categories={categories}
+          channels={channels}
+          activeChannelId={activeChannelId}
+          onSelectChannel={handleSelectChannel}
+          onCreateChannel={handleCreateChannel}
+          onCreateCategory={handleCreateCategory}
+          onToggleCategory={handleToggleCategory}
         />
       </div>
 
@@ -424,7 +526,24 @@ export default function ChatPage() {
         </div>
 
         {/* Messages */}
-        {activeThreadId ? (
+        {activeChannelId ? (
+          // Channel view (read-only)
+          <div className="flex-1 flex flex-col">
+            <div className="h-14 border-b border-border flex items-center px-4">
+              <span className="text-lg font-medium">
+                #{channels.find(c => c.id === activeChannelId)?.name}
+              </span>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-1">
+              {channelMessages.map(msg => (
+                <ChannelMessage key={msg.id} message={msg} />
+              ))}
+            </div>
+            <div className="p-4 border-t border-border text-center text-muted-foreground text-sm">
+              Channel messages are read-only. Chat with Makima in Direct Messages.
+            </div>
+          </div>
+        ) : activeThreadId ? (
           <>
             <MessageArea
               messages={messages}
