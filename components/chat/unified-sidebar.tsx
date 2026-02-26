@@ -134,7 +134,7 @@ export function UnifiedSidebar({
                     console.log('[sidebar] Plus button clicked for category:', category.id)
                     onCreateChannel(category.id)
                   }}
-                  className="h-5 w-5 rounded flex items-center justify-center hover:bg-muted transition-colors flex-shrink-0"
+                  className="relative z-10 h-5 w-5 min-w-[20px] rounded flex items-center justify-center hover:bg-muted transition-colors flex-shrink-0"
                   aria-label={`Add channel to ${category.name}`}
                 >
                   <Plus className="h-3 w-3 text-muted-foreground" />
