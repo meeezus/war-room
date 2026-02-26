@@ -1,463 +1,52 @@
-# Sentry Error Tracking Implementation Plan
+# Sentry Error Tracking — Wire captureError Everywhere
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Integrate Sentry into war-room to capture all production errors with structured context, replacing silent console.error calls that disappear into logs.
+**Goal:** Wire the existing `captureError`/`captureWarning` wrappers (already in `lib/sentry.ts`) into every error site so production errors carry structured context (agentId, threadId, missionId, etc.) instead of being untagged noise.
 
-**Architecture:** Install `@sentry/nextjs`, initialize via `instrumentation.ts` + `instrumentation-client.ts` (Next.js 15/16 modern pattern). The `consoleLoggingIntegration` automatically captures all 144 existing `console.error` calls on day one. A query error helper adds structured context to lib/queries.ts. API routes get explicit Sentry scope with entity IDs.
+**Architecture:** Sentry SDK (`@sentry/nextjs@10.40.0`) is already installed and configured. Three config files exist (`instrumentation-client.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts`), `instrumentation.ts` has `onRequestError`, `next.config.ts` has conditional `withSentryConfig`. The `captureError` wrapper in `lib/sentry.ts` is complete but never called. `consoleLoggingIntegration` auto-captures all `console.error` calls today — but with zero structured context. This plan adds context tags (operation, agentId, threadId, missionId) so errors are filterable in Sentry.
 
-**Tech Stack:** `@sentry/nextjs ^10.39.0`, Next.js instrumentation API, `withSentryConfig` wrapping existing `withSerwist`
-
----
-
-## Scope
-
-- **144 console.error calls across 40 files** — captured automatically by `consoleLoggingIntegration`
-- **51 in lib/queries.ts** — enhanced with structured context via helper (Sprint 2)
-- **Top API routes** — explicit Sentry scope with entity IDs (Sprint 2)
-- **No global error boundary exists** — add app/error.tsx (Sprint 3)
+**Tech Stack:** `@sentry/nextjs@10.40.0`, `lib/sentry.ts` (captureError, captureWarning — already implemented)
 
 ---
 
-## Sprint 1: Foundation
+## Current State (What Already Works)
 
-Auto-capture all existing errors with zero per-file changes.
+- ✅ `@sentry/nextjs` installed
+- ✅ `instrumentation-client.ts` — client Sentry init with `consoleLoggingIntegration`
+- ✅ `sentry.server.config.ts` — server Sentry init with `consoleLoggingIntegration`
+- ✅ `sentry.edge.config.ts` — edge Sentry init (no consoleLoggingIntegration — intentional, not supported in edge)
+- ✅ `instrumentation.ts` — `onRequestError` captures unhandled server errors
+- ✅ `next.config.ts` — `withSentryConfig` conditional on `SENTRY_AUTH_TOKEN`
+- ✅ `lib/sentry.ts` — `captureError(error, operation, ctx)` and `captureWarning(message, ctx)` ready
+- ⚠️ `NEXT_PUBLIC_SENTRY_DSN` must be set in Vercel env vars for production capture
 
-### Task 1: Install @sentry/nextjs
+## What's Missing
 
-**Files:**
-- Modify: `package.json`
-
-**Step 1: Install the package**
-
-```bash
-cd /Users/michaelenriquez/Code/war-room
-npm install @sentry/nextjs@^10.39.0
-```
-
-**Step 2: Verify installation**
-
-```bash
-node -e "require('@sentry/nextjs'); console.log('OK')"
-```
-Expected: `OK`
-
-**Step 3: Commit**
-
-```bash
-git add package.json package-lock.json
-git commit -m "deps: add @sentry/nextjs"
-```
+- ❌ `captureError` is called **zero times** anywhere — all errors go through raw `console.error`
+- ❌ No `app/error.tsx` — client render crashes show blank screen, no Sentry capture
+- ❌ No `app/global-error.tsx` — root layout crashes go uncaught
+- ❌ Silent swallows in `status-ribbon.tsx` (`.catch(() => setHealth(null))` — no log, no capture)
 
 ---
 
-### Task 2: Create Sentry Config Files
+## Sprint 1: Error Boundaries
 
-**Files:**
-- Create: `sentry.server.config.ts`
-- Create: `sentry.edge.config.ts`
-- Create: `instrumentation-client.ts`
-
-**Step 1: Create `sentry.server.config.ts`**
-
-```typescript
-// sentry.server.config.ts
-import * as Sentry from '@sentry/nextjs'
-
-Sentry.init({
-  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-  environment: process.env.NODE_ENV,
-  tracesSampleRate: 0.1,
-  enableLogs: true,
-  integrations: [
-    Sentry.consoleLoggingIntegration({ levels: ['warn', 'error'] }),
-  ],
-})
-```
-
-**Step 2: Create `sentry.edge.config.ts`**
-
-```typescript
-// sentry.edge.config.ts
-import * as Sentry from '@sentry/nextjs'
-
-// Note: consoleLoggingIntegration not supported in edge runtime
-Sentry.init({
-  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-  environment: process.env.NODE_ENV,
-  tracesSampleRate: 0.1,
-})
-```
-
-**Step 3: Create `instrumentation-client.ts`**
-
-```typescript
-// instrumentation-client.ts
-import * as Sentry from '@sentry/nextjs'
-
-Sentry.init({
-  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-  environment: process.env.NODE_ENV,
-  tracesSampleRate: 0.1,
-  enableLogs: true,
-  integrations: [
-    Sentry.consoleLoggingIntegration({ levels: ['warn', 'error'] }),
-  ],
-})
-```
-
----
-
-### Task 3: Create instrumentation.ts
-
-**Files:**
-- Create: `instrumentation.ts`
-
-**Step 1: Create the file**
-
-```typescript
-// instrumentation.ts
-export async function register() {
-  if (process.env.NEXT_RUNTIME === 'nodejs') {
-    await import('./sentry.server.config')
-  }
-  if (process.env.NEXT_RUNTIME === 'edge') {
-    await import('./sentry.edge.config')
-  }
-}
-
-export const onRequestError = async (
-  err: unknown,
-  request: { method: string; url: string },
-  context: { routePath: string }
-) => {
-  const { captureRequestError } = await import('@sentry/nextjs')
-  captureRequestError(err, request, context)
-}
-```
-
-**Step 2: Verify TypeScript compiles**
-
-```bash
-npx tsc --noEmit
-```
-Expected: No errors on the new files.
-
----
-
-### Task 4: Update next.config.ts with withSentryConfig
-
-**Files:**
-- Modify: `next.config.ts`
-
-**Step 1: Read current content**
-
-Current:
-```typescript
-import type { NextConfig } from "next";
-import withSerwistInit from "@serwist/next";
-
-const withSerwist = withSerwistInit({
-  swSrc: "app/sw.ts",
-  swDest: "public/sw.js",
-  disable: process.env.NODE_ENV === "development",
-});
-
-const nextConfig: NextConfig = {
-  turbopack: {},
-};
-
-export default withSerwist(nextConfig);
-```
-
-**Step 2: Update to compose withSentryConfig**
-
-```typescript
-import type { NextConfig } from "next";
-import withSerwistInit from "@serwist/next";
-import { withSentryConfig } from "@sentry/nextjs";
-
-const withSerwist = withSerwistInit({
-  swSrc: "app/sw.ts",
-  swDest: "public/sw.js",
-  disable: process.env.NODE_ENV === "development",
-});
-
-const nextConfig: NextConfig = {
-  turbopack: {},
-};
-
-const sentryConfig = {
-  org: "shogunate",
-  project: "war-room",
-  silent: !process.env.CI,
-  widenClientFileUpload: true,
-  disableLogger: true,
-};
-
-// Guard: skip Sentry build plugin if no auth token (local dev, no-secret environments)
-const wrappedConfig = withSerwist(nextConfig);
-
-export default process.env.SENTRY_AUTH_TOKEN
-  ? withSentryConfig(wrappedConfig, sentryConfig)
-  : wrappedConfig;
-```
-
-**Step 3: Verify build compiles**
-
-```bash
-npm run build
-```
-Expected: Successful build (Sentry plugin disabled locally since no SENTRY_AUTH_TOKEN).
-
----
-
-### Task 5: Update Environment Variables
-
-**Files:**
-- Modify: `.env.local.example` (if exists) or create `.env.local.example`
-
-**Step 1: Add Sentry vars**
-
-Append to `.env.local.example`:
-```
-# Sentry Error Tracking
-NEXT_PUBLIC_SENTRY_DSN=          # From sentry.io project settings → Client Keys (DSN)
-SENTRY_AUTH_TOKEN=               # From sentry.io Account → API Tokens (scope: project:write)
-```
-
-**Step 2: Add actual values to .env.local**
-
-```bash
-# Create a Sentry project at https://sentry.io if one doesn't exist for war-room
-# Copy DSN from: Project Settings → Client Keys → DSN
-# Copy auth token from: Account → API Tokens → Create Token (project:releases scope)
-echo "NEXT_PUBLIC_SENTRY_DSN=<your-dsn-here>" >> .env.local
-echo "SENTRY_AUTH_TOKEN=<your-token-here>" >> .env.local
-```
-
-**Step 3: Commit config files (no secrets)**
-
-```bash
-git add sentry.server.config.ts sentry.edge.config.ts instrumentation-client.ts instrumentation.ts next.config.ts .env.local.example
-git commit -m "feat: add Sentry foundation - auto-capture all console.error calls"
-```
-
-**Acceptance:**
-- Given: war-room is running
-- When: `console.error('test', new Error('test'))` fires in any route
-- Then: Error appears in Sentry dashboard within 30 seconds
-
----
-
-## Sprint 2: Structured Context
-
-Add entity IDs and operation names to the highest-value error sites.
-
-### Task 6: Create Query Error Helper
-
-lib/queries.ts has 51 inline `console.error` calls with no context beyond the error object. A helper adds structured Sentry tags while keeping the console.error for local visibility.
-
-**Files:**
-- Create: `lib/sentry-helpers.ts`
-
-**Step 1: Create the helper**
-
-```typescript
-// lib/sentry-helpers.ts
-import * as Sentry from '@sentry/nextjs'
-
-type QueryContext = {
-  operation: string
-  table: string
-  entityId?: string
-  extra?: Record<string, unknown>
-}
-
-/**
- * Captures a Supabase query error with structured context.
- * Keeps the console.error for local dev visibility.
- */
-export function captureQueryError(
-  error: unknown,
-  context: QueryContext
-): void {
-  const { operation, table, entityId, extra } = context
-
-  console.error(`${operation} error:`, error)
-
-  Sentry.withScope((scope) => {
-    scope.setTag('layer', 'data')
-    scope.setTag('operation', operation)
-    scope.setTag('table', table)
-    if (entityId) scope.setTag('entityId', entityId)
-    if (extra) {
-      Object.entries(extra).forEach(([k, v]) => scope.setExtra(k, v))
-    }
-    Sentry.captureException(error)
-  })
-}
-```
-
-**Step 2: Verify TypeScript**
-
-```bash
-npx tsc --noEmit
-```
-Expected: No errors.
-
----
-
-### Task 7: Update lib/queries.ts — Top 10 Functions
-
-Update the 10 most critical query functions to use `captureQueryError`. These cover mission/agent/event data — the core operational data.
-
-**Files:**
-- Modify: `lib/queries.ts`
-
-**Step 1: Add import at top of lib/queries.ts**
-
-Add after the existing imports:
-```typescript
-import { captureQueryError } from '@/lib/sentry-helpers'
-```
-
-**Step 2: Update getAgents**
-
-Before:
-```typescript
-if (error) { console.error('getAgents error:', error); return [] }
-```
-After:
-```typescript
-if (error) { captureQueryError(error, { operation: 'getAgents', table: 'agent_status' }); return [] }
-```
-
-**Step 3: Update getMissions**
-
-Before:
-```typescript
-if (error) { console.error('getMissions error:', error); return [] }
-```
-After:
-```typescript
-if (error) { captureQueryError(error, { operation: 'getMissions', table: 'missions' }); return [] }
-```
-
-**Step 4: Update getMissionWithTasks**
-
-Before:
-```typescript
-if (missionRes.error) { console.error('getMissionWithTasks mission error:', missionRes.error) }
-if (tasksRes.error) { console.error('getMissionWithTasks tasks error:', tasksRes.error) }
-```
-After:
-```typescript
-if (missionRes.error) { captureQueryError(missionRes.error, { operation: 'getMissionWithTasks.mission', table: 'missions', entityId: id }) }
-if (tasksRes.error) { captureQueryError(tasksRes.error, { operation: 'getMissionWithTasks.tasks', table: 'tasks', entityId: id }) }
-```
-
-**Step 5: Update getEvents, getMissionTasks, getAgentWithHistory**
-
-Apply same pattern — replace `console.error('fnName error:', error)` with:
-```typescript
-captureQueryError(error, { operation: 'functionName', table: 'table_name', entityId: relevantId })
-```
-
-Continue for: `getEvents`, `getMissionTasks`, `getAgentWithHistory` (3 calls), `getStats`.
-
-**Step 6: Verify TypeScript + build**
-
-```bash
-npx tsc --noEmit && npm run build
-```
-Expected: No errors.
-
-**Step 7: Commit**
-
-```bash
-git add lib/sentry-helpers.ts lib/queries.ts
-git commit -m "feat: add structured Sentry context to Supabase query errors"
-```
-
----
-
-### Task 8: Instrument Top API Routes
-
-Add Sentry scope to the 4 highest-traffic API routes. These have try/catch blocks where console.error fires — upgrade them to include request context.
-
-**Files:**
-- Modify: `app/api/chat/route.ts`
-- Modify: `app/api/chat/council/route.ts`
-- Modify: `app/api/events/route.ts`
-- Modify: `app/api/missions/from-plan/route.ts`
-
-**Pattern to apply to each route's catch block:**
-
-Before (example from app/api/chat/route.ts):
-```typescript
-} catch (error) {
-  console.error('[chat] Error:', error)
-  return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-}
-```
-
-After:
-```typescript
-} catch (error) {
-  console.error('[chat] Error:', error)
-  Sentry.withScope((scope) => {
-    scope.setTag('route', '/api/chat')
-    scope.setTag('layer', 'api')
-    // Add entity IDs from the request body if available (missionId, agentId, etc.)
-    Sentry.captureException(error)
-  })
-  return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-}
-```
-
-Apply the same pattern to council, events, and from-plan routes.
-
-**Add import to each file:**
-```typescript
-import * as Sentry from '@sentry/nextjs'
-```
-
-**Step after each route:** Run `npx tsc --noEmit` to verify no type errors.
-
-**Step: Commit**
-
-```bash
-git add app/api/chat/route.ts app/api/chat/council/route.ts app/api/events/route.ts app/api/missions/from-plan/route.ts
-git commit -m "feat: add Sentry context to top API route error handlers"
-```
-
-**Acceptance:**
-- Given: an API route throws
-- When: Sentry receives the error
-- Then: error includes `route` and `layer` tags, visible in Sentry filter sidebar
-
----
-
-## Sprint 3: Error Boundary
-
-### Task 9: Add Global Error Boundary
-
-No `app/error.tsx` exists. Next.js App Router requires this to show a recovery UI instead of a crash screen. Sentry's `ErrorBoundary` logs the client-side render error.
+### Task 1: Create app/error.tsx
 
 **Files:**
 - Create: `app/error.tsx`
 
-**Step 1: Create app/error.tsx**
+**Step 1: Create the file**
 
-```typescript
+```tsx
 // app/error.tsx
 'use client'
 
 import { useEffect } from 'react'
 import * as Sentry from '@sentry/nextjs'
 
-export default function GlobalError({
+export default function Error({
   error,
   reset,
 }: {
@@ -486,66 +75,524 @@ export default function GlobalError({
 }
 ```
 
-**Step 2: Verify build**
+**Step 2: Verify TypeScript compiles**
 
 ```bash
-npm run build
+cd /Users/michaelenriquez/Code/war-room
+npx tsc --noEmit
 ```
-Expected: Successful. No type errors.
+Expected: No errors on `app/error.tsx`.
 
 **Step 3: Commit**
 
 ```bash
 git add app/error.tsx
-git commit -m "feat: add global error boundary with Sentry reporting"
+git commit -m "feat: add route-level error boundary with Sentry capture"
 ```
 
-**Acceptance:**
-- Given: a React component throws during render
-- When: error boundary catches it
-- Then: Sentry receives the exception + a recovery UI is shown (not a blank page)
+---
+
+### Task 2: Create app/global-error.tsx
+
+**Files:**
+- Create: `app/global-error.tsx`
+
+Note: `global-error.tsx` replaces the root layout when the root throws. It must provide its own `<html>` and `<body>`.
+
+**Step 1: Create the file**
+
+```tsx
+// app/global-error.tsx
+'use client'
+
+import { useEffect } from 'react'
+import * as Sentry from '@sentry/nextjs'
+
+export default function GlobalError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string }
+  reset: () => void
+}) {
+  useEffect(() => {
+    Sentry.captureException(error)
+  }, [error])
+
+  return (
+    <html>
+      <body
+        style={{
+          background: '#0a0a0a',
+          color: '#fafafa',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+          margin: 0,
+          fontFamily: 'system-ui, sans-serif',
+          flexDirection: 'column',
+          gap: '16px',
+        }}
+      >
+        <p style={{ fontSize: '14px', color: '#888', fontFamily: 'monospace' }}>
+          {error.digest ?? 'fatal error'}
+        </p>
+        <button
+          onClick={reset}
+          style={{
+            padding: '6px 14px',
+            border: '1px solid #333',
+            borderRadius: '6px',
+            background: 'transparent',
+            color: '#fafafa',
+            cursor: 'pointer',
+            fontSize: '12px',
+          }}
+        >
+          retry
+        </button>
+      </body>
+    </html>
+  )
+}
+```
+
+**Step 2: Verify TypeScript**
+
+```bash
+npx tsc --noEmit
+```
+Expected: No errors.
+
+**Step 3: Commit**
+
+```bash
+git add app/global-error.tsx
+git commit -m "feat: add global error boundary for root layout crashes"
+```
 
 ---
 
-## Setup Checklist (Pre-Deploy)
+## Sprint 2: lib/queries.ts — Wire captureError
 
-Before merging, confirm:
+51 `console.error` calls. Pattern is identical across all: replace bare `console.error` with `captureError` from `lib/sentry.ts`. Entity IDs (missionId, agentId, etc.) should be passed as context where available.
 
-- [ ] Sentry project created at sentry.io (org: `shogunate`, project: `war-room`)
-- [ ] `NEXT_PUBLIC_SENTRY_DSN` in Vercel/Render env vars
-- [ ] `SENTRY_AUTH_TOKEN` in Vercel/Render env vars (for source map upload)
-- [ ] Local test: trigger an error, confirm it appears in Sentry dashboard
-- [ ] `npm run build` passes clean
+### Task 3: Wire captureError into lib/queries.ts
+
+**Files:**
+- Modify: `lib/queries.ts`
+
+**Step 1: Add import at top (after existing imports)**
+
+```typescript
+import { captureError } from '@/lib/sentry'
+```
+
+**Step 2: Replace all console.error calls**
+
+Apply this pattern across the entire file:
+
+| Before | After |
+|--------|-------|
+| `console.error('getAgents error:', error)` | `captureError(error, 'getAgents')` |
+| `console.error('getMissions error:', error)` | `captureError(error, 'getMissions')` |
+| `console.error('getMissionTasks error:', error)` | `captureError(error, 'getMissionTasks', { missionId })` |
+| `console.error('getMissionWithTasks mission error:', missionRes.error)` | `captureError(missionRes.error, 'getMissionWithTasks.mission', { missionId: id })` |
+| `console.error('getMissionWithTasks tasks error:', tasksRes.error)` | `captureError(tasksRes.error, 'getMissionWithTasks.tasks', { missionId: id })` |
+| `console.error('getAgentWithHistory agent error:', agentRes.error)` | `captureError(agentRes.error, 'getAgentWithHistory.agent', { agentId: id })` |
+| `console.error('getAgentWithHistory missions error:', missionsRes.error)` | `captureError(missionsRes.error, 'getAgentWithHistory.missions', { agentId: id })` |
+| `console.error('getAgentWithHistory events error:', eventsRes.error)` | `captureError(eventsRes.error, 'getAgentWithHistory.events', { agentId: id })` |
+| `console.error('getEvents error:', error)` | `captureError(error, 'getEvents')` |
+| `console.error('getProjects error:', error)` | `captureError(error, 'getProjects')` |
+
+For functions without entity IDs in scope, just use `captureError(error, 'functionName')`.
+
+For functions with entity IDs in scope, pass them: `captureError(error, 'functionName', { missionId, agentId, proposalId, projectId, objectiveId })` — only include the IDs that exist as variables.
+
+Key functions with entity IDs in scope:
+- `getMissionWithTasks(id)` → `missionId: id`
+- `getMissionTasks(missionId)` → `{ missionId }`
+- `getAgentWithHistory(id)` → `agentId: id`
+- `getProjectWithBoards(id)` → `projectId: id`
+- `getBoardWithTasks(id)` → `projectId: id` (the id is the board/project id)
+- `approveProposal(id)` → `proposalId: id`
+- `rejectProposal(id)` → `proposalId: id`
+- `startMission(id)` → `missionId: id`
+- `getMissionByProposal(proposalId)` → `{ proposalId }`
+- `getProjectMissions(projectId)` → `{ projectId }`
+
+**Step 3: Verify TypeScript compiles**
+
+```bash
+npx tsc --noEmit
+```
+Expected: No type errors. `captureError` accepts `unknown` for the error argument so Supabase errors pass through cleanly.
+
+**Step 4: Verify build**
+
+```bash
+npm run build
+```
+Expected: Successful build.
+
+**Step 5: Commit**
+
+```bash
+git add lib/queries.ts
+git commit -m "feat: wire captureError into all lib/queries.ts error handlers"
+```
 
 ---
 
-## What This Does NOT Cover
+## Sprint 3: lib/ Support Files
 
-- **Remaining 90+ console.error calls** in non-query files — these ARE captured by `consoleLoggingIntegration` automatically. Manual context wrapping deferred until Sentry data reveals which ones actually fire in production.
-- **Performance monitoring** — `tracesSampleRate: 0.1` captures 10% of transactions. Tune once baseline is established.
-- **User identification** — war-room has no auth. If auth is added later, call `Sentry.setUser({ id, email })` in middleware.
+### Task 4: Wire captureError/captureWarning into lib/pulse-context.ts
+
+**Files:**
+- Modify: `lib/pulse-context.ts`
+
+**Step 1: Add import**
+
+```typescript
+import { captureError } from '@/lib/sentry'
+```
+
+**Step 2: Replace console.error calls**
+
+Pattern around line 102–109:
+```typescript
+// Before:
+console.error('[pulse] buildPulseContext error:', err)
+
+// After:
+captureError(err, 'pulse.buildPulseContext')
+```
+
+For the 8 parallel query errors (lines ~102–109), each call knows which table failed — add table context:
+```typescript
+// Before pattern (repeated for each parallel query):
+console.error('[pulse] agents error:', agentsError)
+
+// After pattern:
+captureError(agentsError, 'pulse.fetchAgents')
+```
+
+**Step 3: Verify + commit**
+
+```bash
+npx tsc --noEmit
+git add lib/pulse-context.ts
+git commit -m "feat: wire captureError into pulse-context.ts"
+```
+
+---
+
+### Task 5: Wire captureWarning into lib/use-realtime-channel.ts + lib/pulse-actions.ts + lib/spark-bridge.ts
+
+**Files:**
+- Modify: `lib/use-realtime-channel.ts`
+- Modify: `lib/pulse-actions.ts`
+- Modify: `lib/spark-bridge.ts`
+
+**lib/use-realtime-channel.ts** (add import, replace 3 calls):
+
+```typescript
+import { captureError, captureWarning } from '@/lib/sentry'
+
+// Line ~83 — max channels warning:
+// Before: console.warn('[realtime] Max channels reached. Skipping: <channelName>')
+// After: captureWarning(`Max channels reached. Skipping: ${channelName}`)
+
+// Line ~117 — max retries exceeded:
+// Before: console.error('[realtime] <channelName>: max retries exceeded')
+// After: captureError(new Error(`Max retries exceeded: ${channelName}`), 'realtime.maxRetries')
+
+// Line ~127 — CHANNEL_ERROR retry:
+// Before: console.warn('[realtime] <channelName>: CHANNEL_ERROR — retry N/MAX in Xms')
+// After: captureWarning(`CHANNEL_ERROR on ${channelName}: retry ${retryCount}/${MAX_RETRIES}`)
+```
+
+**lib/pulse-actions.ts** (add import, replace 2 calls):
+
+```typescript
+import { captureWarning } from '@/lib/sentry'
+
+// Line ~49:
+// Before: console.warn('[pulse-actions] Skipping unknown action type')
+// After: captureWarning('pulse-actions: unknown action type skipped')
+
+// Line ~52:
+// Before: console.warn('[pulse-actions] Malformed JSON in ACTION block')
+// After: captureWarning('pulse-actions: malformed JSON in ACTION block')
+```
+
+**lib/spark-bridge.ts** (add import, replace 2 calls):
+
+```typescript
+import { captureWarning } from '@/lib/sentry'
+
+// Line ~89:
+// Before: console.warn('[spark-bridge] POST failed:', status)
+// After: captureWarning(`spark-bridge: POST failed with status ${status}`)
+
+// Line ~93:
+// Before: console.warn('[spark-bridge] Connection failed:', err.message)
+// After: captureWarning(`spark-bridge: connection failed — ${err.message}`)
+```
+
+**Step: Verify + commit**
+
+```bash
+npx tsc --noEmit
+git add lib/use-realtime-channel.ts lib/pulse-actions.ts lib/spark-bridge.ts
+git commit -m "feat: wire captureWarning into realtime/pulse/spark lib files"
+```
+
+---
+
+## Sprint 4: API Routes
+
+### Task 6: Wire captureError into app/api/chat/route.ts
+
+This is the most critical route — handles all chat streaming. Multiple catch blocks.
+
+**Files:**
+- Modify: `app/api/chat/route.ts`
+
+**Step 1: Add import at top**
+
+```typescript
+import { captureError } from '@/lib/sentry'
+```
+
+**Step 2: Replace console.error calls**
+
+The route has access to `threadId` and `agentId` at the catch sites. Pass them as context:
+
+```typescript
+// Before:
+console.error('[chat/route] Pulse context failed, proceeding without:', err)
+
+// After:
+captureError(err, 'chat.pulseContext', { threadId, agentId })
+```
+
+```typescript
+// Before (streaming catch):
+console.error('[chat/route] Error:', errMsg)
+
+// After:
+captureError(err instanceof Error ? err : new Error(errMsg), 'chat.stream', { threadId, agentId })
+```
+
+**Step 3: Verify TypeScript + build**
+
+```bash
+npx tsc --noEmit && npm run build
+```
+
+**Step 4: Commit**
+
+```bash
+git add app/api/chat/route.ts
+git commit -m "feat: wire captureError into chat API route"
+```
+
+---
+
+### Task 7: Wire captureError into remaining API routes
+
+**Files:**
+- Modify: `app/api/chat/channel-reply/route.ts`
+- Modify: `app/api/chat/threads/route.ts`
+- Modify: `app/api/chat/threads/[id]/route.ts`
+- Modify: `app/api/chat/council/route.ts`
+- Modify: `app/api/missions/route.ts`
+- Modify: `app/api/missions/[id]/stream/route.ts`
+- Modify: `app/api/missions/from-plan/route.ts`
+- Modify: `app/api/missions/archive/route.ts`
+- Modify: `app/api/proposals/route.ts`
+- Modify: `app/api/proposals/[id]/route.ts`
+- Modify: `app/api/events/route.ts`
+- Modify: `app/api/objectives/route.ts`
+- Modify: `app/api/projects/[id]/route.ts`
+- Modify: `app/api/discoveries/route.ts`
+- Modify: `app/api/agents/stats/route.ts`
+
+**Pattern (apply to every route):**
+
+1. Add import: `import { captureError } from '@/lib/sentry'`
+2. Replace each `console.error('[route-name] error:', error)` with:
+   ```typescript
+   captureError(error, 'routeName.operation', { /* entity IDs from route params */ })
+   ```
+
+**Entity IDs available by route:**
+
+| Route | IDs in scope |
+|-------|-------------|
+| `api/chat/channel-reply` | `channelId`, `agentId` |
+| `api/chat/threads/[id]` | `params.id` (threadId) |
+| `api/chat/council` | `threadId`, `agentId` |
+| `api/missions/[id]/stream` | `params.id` (missionId) |
+| `api/missions/from-plan` | none available at catch site |
+| `api/missions/archive` | none available at catch site |
+| `api/proposals/[id]` | `params.id` (proposalId) |
+| `api/projects/[id]` | `params.id` (projectId) |
+| `api/objectives` | none |
+| `api/discoveries` | none |
+| `api/events` | none |
+
+**Step: After all routes updated, verify TypeScript + build**
+
+```bash
+npx tsc --noEmit && npm run build
+```
+Expected: No errors.
+
+**Step: Commit**
+
+```bash
+git add app/api/
+git commit -m "feat: wire captureError into all API route error handlers"
+```
+
+---
+
+## Sprint 5: Components + Silent Swallows
+
+### Task 8: Wire captureError into components
+
+**Files:**
+- Modify: `components/mission-queue.tsx`
+- Modify: `components/mission-detail.tsx`
+- Modify: `components/mission-kanban-card.tsx`
+- Modify: `components/project-card.tsx`
+- Modify: `components/chat/chat-actions.tsx`
+
+**Pattern:**
+
+1. Add import: `import { captureError } from '@/lib/sentry'`
+2. Replace `console.error` with `captureError(error, 'componentName.action', { missionId, projectId, threadId })` using whatever entity ID is in scope
+
+**Key replacements:**
+
+```typescript
+// components/mission-queue.tsx (line ~33) — missionId in scope:
+captureError(error, 'MissionQueue.updateStatus', { missionId })
+
+// components/mission-detail.tsx (lines ~82, 85, 100) — missionId in scope:
+captureError(error, 'MissionDetail.fetchData', { missionId })
+captureError(error, 'MissionDetail.updateStatus', { missionId })
+captureError(error, 'MissionDetail.startMission', { missionId })
+
+// components/mission-kanban-card.tsx (line ~66) — missionId in scope:
+captureError(error, 'MissionKanbanCard.dragDrop', { missionId })
+
+// components/project-card.tsx (lines ~86, 99) — projectId in scope:
+captureError(error, 'ProjectCard.action', { projectId })
+
+// components/chat/chat-actions.tsx (line ~40) — threadId in scope:
+captureError(error, 'ChatActions.submit', { threadId })
+```
+
+**Step: Verify + commit**
+
+```bash
+npx tsc --noEmit
+git add components/
+git commit -m "feat: wire captureError into component error handlers"
+```
+
+---
+
+### Task 9: Fix Silent Swallows in status-ribbon.tsx
+
+The health check silently swallows fetch failures. Add a warning so they show up in Sentry.
+
+**Files:**
+- Modify: `components/status-ribbon.tsx`
+
+**Step 1: Add import**
+
+```typescript
+import { captureWarning } from '@/lib/sentry'
+```
+
+**Step 2: Fix the silent catch (line ~148)**
+
+Before:
+```typescript
+.catch(() => setHealth(null))
+```
+
+After:
+```typescript
+.catch((err) => {
+  captureWarning('status-ribbon: health check failed')
+  setHealth(null)
+})
+```
+
+**Step 3: Verify + commit**
+
+```bash
+npx tsc --noEmit
+git add components/status-ribbon.tsx
+git commit -m "fix: capture silent health check failures in status-ribbon"
+```
 
 ---
 
 ## Verification
 
-After deploying:
+**After all tasks complete:**
 
-1. Open war-room in browser
-2. Check Sentry dashboard — you should see the app connecting (SDK init event)
-3. Manually trigger an error: navigate to a page that loads data, check if any Supabase errors appear
-4. Confirm error tags: `operation`, `table`, `layer` are searchable in Sentry
+```bash
+npm run build
+```
+Expected: Clean build.
+
+**Smoke test in production (requires NEXT_PUBLIC_SENTRY_DSN set in Vercel):**
+
+1. Deploy to Vercel preview
+2. Trigger a known error path (e.g., disconnect from DB, make a bad API call)
+3. Open Sentry dashboard → Issues
+4. Confirm error has tags: `operation`, and entity IDs like `missionId`, `threadId`, `agentId`
+5. Confirm you can filter by `operation:getAgents` in Sentry search
+
+---
+
+## Env Vars Checklist (Vercel Dashboard)
+
+Before merging to main, ensure these are set in Vercel:
+
+- [ ] `NEXT_PUBLIC_SENTRY_DSN` — from Sentry project → Settings → Client Keys → DSN
+- [ ] `SENTRY_AUTH_TOKEN` — from Sentry → Account → API Tokens (scope: `project:releases`)
+- [ ] `SENTRY_ORG` — `shogunate` (or override in next.config.ts)
+- [ ] `SENTRY_PROJECT` — `war-room` (or override in next.config.ts)
+
+Note: `SENTRY_AUTH_TOKEN` is only needed for source map upload during build. `NEXT_PUBLIC_SENTRY_DSN` is required for runtime error capture.
+
+---
+
+## What This Deliberately Does NOT Change
+
+- **`instrumentation-client.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts`** — already correct, no changes needed
+- **`next.config.ts`** — already correctly conditionally wraps with `withSentryConfig`
+- **`instrumentation.ts`** — already has `onRequestError`, no changes needed
+- **`lib/sentry.ts`** — wrapper is complete, just gets called now
+- **Console.error calls are kept** — `captureError` calls `console.error` internally. No log visibility lost.
 
 ---
 
 ## Rollback
 
+All changes are additive (import + replace console.error with captureError). To rollback any task:
+
 ```bash
-# Remove Sentry entirely
-npm uninstall @sentry/nextjs
-git rm sentry.server.config.ts sentry.edge.config.ts instrumentation-client.ts instrumentation.ts
-# Revert next.config.ts and lib/queries.ts
-git revert HEAD~<N>
+git revert <commit-hash>
 ```
 
-The rollback path is clean — Sentry is additive only. No existing console.error calls are removed, just supplemented.
+The app continues to work without Sentry — `captureError` gracefully falls back if DSN is unset.

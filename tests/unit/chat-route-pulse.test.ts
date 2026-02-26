@@ -203,10 +203,11 @@ describe('POST /api/chat — pulse context injection', () => {
 
     await readSSEStream(res)
 
-    // Should have logged the error
+    // Should have logged the error via captureError (format: '[operation]', error, ctx)
     expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('[chat/route] Pulse context failed'),
+      '[chat/route.pulseContext]',
       expect.any(Error),
+      expect.objectContaining({ threadId: 'thread-4' }),
     )
 
     // Should still send to OpenClaw with raw content (no pulse wrapper)
