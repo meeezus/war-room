@@ -1,13 +1,12 @@
 "use client"
 
-import { useState } from 'react'
-import { ThreadList, ThreadSummary } from './thread-list'
-import { ChannelSidebar, Category, Channel } from './channel-sidebar'
-
-type ViewMode = 'dms' | 'channels'
+import { ChevronDown, ChevronRight, Hash, Plus, MessageSquare } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import type { ThreadSummary } from './thread-list'
+import type { Category, Channel } from './channel-sidebar'
 
 export interface UnifiedSidebarProps {
-  // DM props (pass through to ThreadList)
+  // DM props
   threads: ThreadSummary[]
   activeThreadId: string | null
   onSelectThread: (id: string) => void
@@ -19,7 +18,7 @@ export interface UnifiedSidebarProps {
   showArchived?: boolean
   onToggleArchived?: () => void
 
-  // Channel props (pass through to ChannelSidebar)
+  // Channel props
   categories: Category[]
   channels: Channel[]
   activeChannelId: string | null
@@ -35,12 +34,6 @@ export function UnifiedSidebar({
   activeThreadId,
   onSelectThread,
   onNewThread,
-  isCreating,
-  onArchive,
-  onDelete,
-  onRename,
-  showArchived,
-  onToggleArchived,
   // Channel props
   categories,
   channels,
@@ -50,59 +43,141 @@ export function UnifiedSidebar({
   onCreateCategory,
   onToggleCategory,
 }: UnifiedSidebarProps) {
-  const [viewMode, setViewMode] = useState<ViewMode>('dms')
+  const channelsByCategory = (categoryId: string) =>
+    channels.filter((ch) => ch.category_id === categoryId)
+
+  const uncategorizedChannels = channels.filter((ch) => ch.category_id === null)
 
   return (
     <div className="flex flex-col h-full bg-background border-r border-border">
-      {/* Tab bar */}
-      <div className="flex border-b border-border">
-        <button
-          onClick={() => setViewMode('dms')}
-          className={`flex-1 py-3 text-xs font-medium transition-colors ${
-            viewMode === 'dms'
-              ? 'text-emerald-400 border-b-2 border-emerald-500'
-              : 'text-muted-foreground hover:text-foreground/80'
-          }`}
-        >
-          Direct Messages
-        </button>
-        <button
-          onClick={() => setViewMode('channels')}
-          className={`flex-1 py-3 text-xs font-medium transition-colors ${
-            viewMode === 'channels'
-              ? 'text-emerald-400 border-b-2 border-emerald-500'
-              : 'text-muted-foreground hover:text-foreground/80'
-          }`}
-        >
-          Channels
-        </button>
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-border">
+        <h2 className="font-[family-name:var(--font-space-grotesk)] text-sm font-medium">
+          Shoin Chat
+        </h2>
+        {onCreateCategory && (
+          <button
+            onClick={onCreateCategory}
+            className="h-7 w-7 rounded-md bg-muted hover:bg-muted flex items-center justify-center transition-colors"
+            title="Add category"
+          >
+            <Plus className="h-3.5 w-3.5 text-foreground/80" />
+          </button>
+        )}
       </div>
 
-      {/* Content area */}
-      <div className="flex-1 overflow-hidden">
-        {viewMode === 'dms' ? (
-          <ThreadList
-            threads={threads}
-            activeThreadId={activeThreadId}
-            onSelectThread={onSelectThread}
-            onNewThread={onNewThread}
-            isCreating={isCreating}
-            onArchive={onArchive}
-            onDelete={onDelete}
-            onRename={onRename}
-            showArchived={showArchived}
-            onToggleArchived={onToggleArchived}
-          />
-        ) : (
-          <ChannelSidebar
-            categories={categories}
-            channels={channels}
-            activeChannelId={activeChannelId}
-            onSelectChannel={onSelectChannel}
-            onCreateChannel={onCreateChannel}
-            onCreateCategory={onCreateCategory}
-            onToggleCategory={onToggleCategory}
-          />
+      {/* Single scrollable list */}
+      <div className="flex-1 overflow-y-auto">
+        {/* DMs Section */}
+        <div className="py-2">
+          <div className="flex items-center justify-between px-4 py-1">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Direct Messages
+            </span>
+            <button
+              onClick={onNewThread}
+              className="h-5 w-5 rounded flex items-center justify-center hover:bg-muted transition-colors"
+              title="New DM"
+            >
+              <Plus className="h-3 w-3 text-muted-foreground" />
+            </button>
+          </div>
+          {threads.map((thread) => (
+            <button
+              key={thread.id}
+              onClick={() => onSelectThread(thread.id)}
+              className={cn(
+                'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors',
+                activeThreadId === thread.id
+                  ? 'bg-emerald-500/10 text-emerald-400'
+                  : 'text-foreground/70 hover:bg-muted/50'
+              )}
+            >
+              {thread.agent_id && thread.agent_id !== 'cc' ? (
+                <img
+                  src={`/avatars/${thread.agent_id}.webp`}
+                  alt={thread.agent_id}
+                  className="h-5 w-5 rounded-full object-cover flex-shrink-0"
+                />
+              ) : (
+                <MessageSquare className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+              )}
+              <span className="text-sm truncate">{thread.title}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Categories + Channels Section */}
+        {categories.map((category) => (
+          <div key={category.id} className="py-1">
+            {/* Category header */}
+            <button
+              onClick={() => onToggleCategory?.(category.id)}
+              className="flex items-center gap-1 px-3 py-1.5 w-full hover:bg-muted/30 transition-colors"
+            >
+              {category.collapsed ? (
+                <ChevronRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+              ) : (
+                <ChevronDown className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+              )}
+              <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase truncate">
+                {category.name.toUpperCase()}
+              </span>
+              {onCreateChannel && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onCreateChannel(category.id)
+                  }}
+                  className="ml-auto h-5 w-5 rounded flex items-center justify-center hover:bg-muted transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
+                  aria-label={`Add channel to ${category.name}`}
+                >
+                  <Plus className="h-3 w-3 text-muted-foreground" />
+                </button>
+              )}
+            </button>
+
+            {/* Channels in this category */}
+            {!category.collapsed &&
+              channelsByCategory(category.id).map((channel) => (
+                <button
+                  key={channel.id}
+                  onClick={() => onSelectChannel(channel.id)}
+                  aria-label={channel.name}
+                  className={cn(
+                    'w-full text-left px-6 py-1.5 flex items-center gap-2 transition-colors text-sm',
+                    activeChannelId === channel.id
+                      ? 'bg-emerald-500/10 text-emerald-400'
+                      : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                  )}
+                >
+                  <Hash className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span className="truncate">{channel.name}</span>
+                </button>
+              ))}
+          </div>
+        ))}
+
+        {/* Uncategorized channels */}
+        {uncategorizedChannels.length > 0 && (
+          <div className="py-1">
+            {uncategorizedChannels.map((channel) => (
+              <button
+                key={channel.id}
+                onClick={() => onSelectChannel(channel.id)}
+                aria-label={channel.name}
+                className={cn(
+                  'w-full text-left px-6 py-1.5 flex items-center gap-2 transition-colors text-sm',
+                  activeChannelId === channel.id
+                    ? 'bg-emerald-500/10 text-emerald-400'
+                    : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                )}
+              >
+                <Hash className="h-3.5 w-3.5 flex-shrink-0" />
+                <span className="truncate">{channel.name}</span>
+              </button>
+            ))}
+          </div>
         )}
       </div>
     </div>
