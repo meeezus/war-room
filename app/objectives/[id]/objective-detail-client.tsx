@@ -526,7 +526,7 @@ export function ObjectiveDetailClient({
                 {missions.map((m) => (
                   <Link
                     key={m.id}
-                    href="/missions"
+                    href={`/missions/${m.id}`}
                     className="block rounded-sm border border-border bg-card/50 p-3 transition-colors hover:bg-card/80"
                   >
                     <div className="flex items-center justify-between gap-2">

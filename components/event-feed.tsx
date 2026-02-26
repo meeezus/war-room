@@ -39,7 +39,7 @@ const EVENT_TYPE_COLORS: Record<string, string> = {
   task_escalated: "#f59e0b",
 };
 
-type FilterCategory = "all" | "proposals" | "missions" | "tasks" | "system";
+type FilterCategory = "all" | "proposals" | "missions" | "tasks" | "patrol" | "system";
 
 const FILTER_TYPES: Record<FilterCategory, string[] | null> = {
   all: null, // special: everything except heartbeat
@@ -50,6 +50,7 @@ const FILTER_TYPES: Record<FilterCategory, string[] | null> = {
     "task_routed", "task_escalated",
     "step_started", "step_completed", "step_failed", "step_stale",
   ],
+  patrol: ["patrol_started", "patrol_complete", "discovery_created", "discovery_approved", "discovery_dismissed"],
   system: ["heartbeat", "user_request", "agent_action", "council_reviewed", "skill_patch_extracted", "skill_applied", "skill_sunset", "cross_pollination"],
 };
 

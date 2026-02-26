@@ -751,16 +751,22 @@ export async function getSkillPatchStats(): Promise<{ recentPatches: number; app
 
 export async function getLastPatrolSummary(): Promise<{ timestamp: string | null; discoveryCount: number }> {
   if (!supabase) return { timestamp: null, discoveryCount: 0 }
-  const { data } = await supabase
-    .from('war_room_events')
-    .select('created_at, metadata')
-    .eq('event_type', 'patrol_complete')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
+  const [patrolRes, countRes] = await Promise.all([
+    supabase
+      .from('war_room_events')
+      .select('created_at')
+      .eq('event_type', 'patrol_complete')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from('discoveries')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'pending'),
+  ])
   return {
-    timestamp: data?.created_at ?? null,
-    discoveryCount: (data?.metadata as any)?.discovery_count ?? 0,
+    timestamp: patrolRes.data?.created_at ?? null,
+    discoveryCount: countRes.count ?? 0,
   }
 }
 

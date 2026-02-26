@@ -13,6 +13,28 @@ import { generateAlerts } from '@/lib/pulse-alerts'
 export const runtime = 'nodejs'
 export const maxDuration = 300 // 5 min max for long Claude responses
 
+// --- In-process rate limiting and concurrent request protection ---
+// Note: in-memory, per-process. Adequate for single-instance deployment.
+// For multi-instance (Vercel scale-out), promote to Redis-backed middleware.
+const inFlightRequests = new Map<string, boolean>()
+const rateLimitBuckets = new Map<string, { count: number; windowStart: number }>()
+const RATE_LIMIT_WINDOW_MS = 1000 // 1-second sliding window
+const RATE_LIMIT_MAX_REQUESTS = 2 // max 2 requests per second per thread
+
+function checkRateLimit(threadId: string): { allowed: boolean; retryAfterMs: number } {
+  const now = Date.now()
+  const bucket = rateLimitBuckets.get(threadId)
+  if (!bucket || now - bucket.windowStart >= RATE_LIMIT_WINDOW_MS) {
+    rateLimitBuckets.set(threadId, { count: 1, windowStart: now })
+    return { allowed: true, retryAfterMs: 0 }
+  }
+  if (bucket.count < RATE_LIMIT_MAX_REQUESTS) {
+    bucket.count++
+    return { allowed: true, retryAfterMs: 0 }
+  }
+  return { allowed: false, retryAfterMs: RATE_LIMIT_WINDOW_MS - (now - bucket.windowStart) }
+}
+
 export async function POST(req: NextRequest) {
   const ctx = createRequestContext()
   const { threadId, content } = await req.json()
@@ -22,6 +44,26 @@ export async function POST(req: NextRequest) {
   }
 
   ctx.log('request_received', { threadId })
+
+  // --- Concurrent request guard ---
+  if (inFlightRequests.get(threadId)) {
+    return Response.json(
+      { error: 'A request is already in progress for this thread.' },
+      { status: 429, headers: { 'Retry-After': '1' } }
+    )
+  }
+
+  // --- Rate limiting: max 2 requests per second per thread ---
+  const { allowed, retryAfterMs } = checkRateLimit(threadId)
+  if (!allowed) {
+    return Response.json(
+      { error: 'Rate limit exceeded. Max 2 requests per second per thread.' },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil(retryAfterMs / 1000)) } }
+    )
+  }
+
+  // Mark in-flight synchronously — no yields between check and set
+  inFlightRequests.set(threadId, true)
 
   // Save user message
   await saveMessage(threadId, 'user', content)
@@ -233,6 +275,7 @@ export async function POST(req: NextRequest) {
         const errorData = JSON.stringify({ type: 'error', message: errMsg })
         controller.enqueue(encoder.encode(`data: ${errorData}\n\n`))
       } finally {
+        inFlightRequests.delete(threadId)
         controller.close()
       }
     },

@@ -58,13 +58,24 @@ export default function BriefPage() {
             Loading brief...
           </p>
         ) : (
-          <div
-            className="prose prose-invert prose-sm max-w-none
-              prose-headings:font-[family-name:var(--font-space-grotesk)]
-              prose-code:font-[family-name:var(--font-jetbrains-mono)]
-              prose-code:text-emerald-400 prose-code:bg-muted/50 prose-code:px-1 prose-code:rounded
-              prose-a:text-blue-400 prose-a:no-underline hover:prose-a:text-blue-300"
-            dangerouslySetInnerHTML={{ __html: brief.html }}
+          <iframe
+            srcDoc={brief.html}
+            className="w-full border-0 rounded-sm"
+            style={{ minHeight: "80vh" }}
+            sandbox="allow-scripts allow-same-origin"
+            onLoad={(e) => {
+              // Auto-resize iframe to content height
+              const iframe = e.currentTarget;
+              const resize = () => {
+                try {
+                  const h = iframe.contentDocument?.documentElement?.scrollHeight;
+                  if (h) iframe.style.height = h + 32 + "px";
+                } catch { /* cross-origin fallback */ }
+              };
+              resize();
+              // Re-check after images/fonts load
+              setTimeout(resize, 500);
+            }}
           />
         )}
       </div>

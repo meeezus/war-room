@@ -34,6 +34,7 @@ export default function DiscoveriesPage() {
   const [statusFilter, setStatusFilter] = useState<'pending' | 'approved' | 'dismissed'>('pending')
   const [severityFilters, setSeverityFilters] = useState<Set<string>>(new Set(['critical', 'warning', 'info']))
   const [loading, setLoading] = useState(true)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const fetchDiscoveries = useCallback(async () => {
     setLoading(true)
@@ -164,7 +165,8 @@ export default function DiscoveriesPage() {
               return (
                 <div
                   key={discovery.id}
-                  className="rounded-sm border border-border bg-card backdrop-blur-xl p-4"
+                  className="rounded-sm border border-border bg-card backdrop-blur-xl p-4 cursor-pointer transition-colors hover:bg-card/80"
+                  onClick={() => setExpandedId(expandedId === discovery.id ? null : discovery.id)}
                 >
                   <div className="flex items-start gap-3">
 
@@ -189,9 +191,36 @@ export default function DiscoveriesPage() {
                         )}
                       </div>
 
-                      <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
+                      <p className={`text-xs text-muted-foreground mb-2 ${expandedId === discovery.id ? '' : 'line-clamp-2'}`}>
                         {discovery.description}
                       </p>
+
+                      {/* Expanded details */}
+                      {expandedId === discovery.id && (
+                        <div className="mb-2 space-y-2">
+                          {discovery.suggested_action && (
+                            <div className="rounded-sm bg-emerald-500/5 border border-emerald-500/20 px-3 py-2">
+                              <span className="text-[10px] uppercase tracking-wider text-emerald-400/80 font-[family-name:var(--font-space-grotesk)]">
+                                Suggested Action
+                              </span>
+                              <p className="text-xs text-foreground/80 mt-1">{discovery.suggested_action}</p>
+                            </div>
+                          )}
+                          {discovery.file_path && (
+                            <p className="font-[family-name:var(--font-jetbrains-mono)] text-[11px] text-muted-foreground">
+                              {discovery.file_path}
+                            </p>
+                          )}
+                          {discovery.evidence && (
+                            <div className="rounded-sm bg-muted/30 px-3 py-2">
+                              <span className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-[family-name:var(--font-space-grotesk)]">
+                                Evidence
+                              </span>
+                              <p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap">{discovery.evidence}</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       <div className="flex items-center gap-2 text-[10px] text-muted-foreground/75">
                         <span className="font-[family-name:var(--font-jetbrains-mono)]">
@@ -204,18 +233,18 @@ export default function DiscoveriesPage() {
 
                     {/* Actions (pending only) */}
                     {discovery.status === 'pending' && (
-                      <div className="flex items-center gap-2 shrink-0 mt-0.5">
+                      <div className="flex items-center gap-2 shrink-0 mt-0.5" onClick={e => e.stopPropagation()}>
                         <button
                           onClick={() => handleAction(discovery.id, 'approve')}
                           className="px-2.5 py-1 rounded-sm border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs font-medium hover:bg-emerald-500/20 transition-colors"
                         >
-                          Approve ✓
+                          Approve
                         </button>
                         <button
                           onClick={() => handleAction(discovery.id, 'dismiss')}
                           className="px-2.5 py-1 rounded-sm border border-border bg-muted/40 text-muted-foreground text-xs font-medium hover:text-foreground hover:bg-muted transition-colors"
                         >
-                          Dismiss ✕
+                          Dismiss
                         </button>
                       </div>
                     )}

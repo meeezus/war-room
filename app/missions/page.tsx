@@ -44,7 +44,7 @@ function formatDuration(startedAt: string | null, completedAt: string | null): s
 export default function MissionsPage() {
   const [missions, setMissions] = useState<Mission[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<FilterStatus>("all");
+  const [filter, setFilter] = useState<FilterStatus>("running");
 
   useEffect(() => {
     async function fetchData() {
