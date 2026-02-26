@@ -9,6 +9,7 @@ import { createServiceClient } from '@/lib/supabase-server'
 import { buildPulseContext } from '@/lib/pulse-context'
 import { parseActions, executeActions, stripActionBlocks, type PulseAction } from '@/lib/pulse-actions'
 import { generateAlerts } from '@/lib/pulse-alerts'
+import { emitMessage } from '@/lib/spark-bridge'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300 // 5 min max for long Claude responses
@@ -67,6 +68,9 @@ export async function POST(req: NextRequest) {
 
   // Save user message
   await saveMessage(threadId, 'user', content)
+
+  // Emit user message to Spark
+  emitMessage(threadId, 'user', content).catch(() => {})
 
   // Load agent identity for this thread
   const thread = await getThread(threadId)
@@ -251,6 +255,9 @@ export async function POST(req: NextRequest) {
           const msg = await saveMessage(threadId, 'assistant', displayResponse, agentId)
           const doneData = JSON.stringify({ type: 'done', messageId: msg.id, agentId })
           controller.enqueue(encoder.encode(`data: ${doneData}\n\n`))
+
+          // Emit assistant message to Spark
+          emitMessage(threadId, 'assistant', displayResponse, agentId).catch(() => {})
 
           // Auto-title: if thread still has default title, generate one from user's first message
           if (thread?.title === 'New Thread' || !thread?.title) {
