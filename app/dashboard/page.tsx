@@ -12,6 +12,7 @@ import { ObjectiveOverview } from "@/components/objective-overview";
 import { TerminalPanel } from "@/components/terminal/terminal-panel";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Menu, X } from "lucide-react";
+import { captureWarning } from "@/lib/sentry";
 
 function ConnectPrompt() {
   return (
@@ -79,7 +80,7 @@ export default function DashboardPage() {
         fetch('/api/recaps').then(r => r.json()).then(d => {
           const total = (d.groups ?? []).reduce((sum: number, g: { recaps: unknown[] }) => sum + g.recaps.length, 0);
           setRecapCount(total);
-        }).catch(() => {});
+        }).catch((err) => captureWarning('recap count fetch failed', { operation: 'dashboard.fetchRecapCount' }));
         fetch('/api/usage').then(r => r.json()).then(d => {
           const provider = d.providers?.[0];
           if (provider) {
@@ -89,7 +90,7 @@ export default function DashboardPage() {
               dailyCost: today?.cost ?? 0,
             });
           }
-        }).catch(() => {});
+        }).catch((err) => captureWarning('usage data fetch failed', { operation: 'dashboard.fetchUsageData' }));
       } catch (err) {
         console.error('Dashboard fetch error:', err);
       } finally {

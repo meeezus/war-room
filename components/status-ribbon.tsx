@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { StealthCard } from "./stealth-card";
 import type { HealthCheck } from "@/lib/types";
+import { captureWarning } from "@/lib/sentry";
 
 interface StatusRibbonProps {
   pendingDiscoveries: number;
@@ -145,7 +146,11 @@ function HealthCard() {
     fetch("/api/health")
       .then((r) => r.json())
       .then((data: HealthCheck) => setHealth(data))
-      .catch(() => setHealth(null));
+      .catch((err) => {
+        captureWarning('health-check fetch failed', { operation: 'status-ribbon.fetchHealth' })
+        console.error('[status-ribbon] health fetch failed:', err)
+        setHealth(null)
+      });
   }, []);
 
   return (
