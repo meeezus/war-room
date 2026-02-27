@@ -64,7 +64,7 @@ function SituationCard({
 }: Pick<StatusRibbonProps, "pendingDiscoveries" | "criticalCount" | "warningCount" | "infoCount" | "awarenessCount" | "lastPatrol">) {
   const recentPatrol = isRecentPatrol(lastPatrol.timestamp);
   return (
-    <StealthCard hover={false} className="px-4 py-3 min-w-[200px] min-h-[110px] flex-shrink-0 flex flex-col justify-between">
+    <StealthCard hover={false} className="px-3 py-2.5 sm:px-4 sm:py-3 sm:min-w-[200px] sm:min-h-[110px] sm:flex-shrink-0 flex flex-col justify-between min-h-[90px]">
       <CardLabel romaji="Dōjō Hōkoku" english="SitRep" />
       <CardValue>{pendingDiscoveries}</CardValue>
       <div className="flex gap-1.5 mt-1 flex-wrap">
@@ -113,7 +113,7 @@ function SituationCard({
 
 function SkillsCard({ skillStats }: { skillStats: StatusRibbonProps["skillStats"] }) {
   return (
-    <StealthCard hover={false} className="px-4 py-3 min-w-[200px] min-h-[110px] flex-shrink-0 flex flex-col justify-between">
+    <StealthCard hover={false} className="px-3 py-2.5 sm:px-4 sm:py-3 sm:min-w-[200px] sm:min-h-[110px] sm:flex-shrink-0 flex flex-col justify-between min-h-[90px]">
       <CardLabel romaji="Ginō" english="Skills" />
       <CardValue>{skillStats.recentPatches}</CardValue>
       <p className="text-xs text-muted-foreground font-[family-name:var(--font-jetbrains-mono)]">
@@ -150,7 +150,7 @@ function HealthCard() {
 
   return (
     <Link href="/health" className="block">
-      <StealthCard hover={false} className="px-4 py-3 min-w-[200px] min-h-[110px] flex-shrink-0 flex flex-col justify-between">
+      <StealthCard hover={false} className="px-3 py-2.5 sm:px-4 sm:py-3 sm:min-w-[200px] sm:min-h-[110px] sm:flex-shrink-0 flex flex-col justify-between min-h-[90px]">
         <CardLabel romaji="Kenzen" english="Health" />
         {health ? (
           <div className="flex flex-col gap-1 mt-1">
@@ -186,7 +186,7 @@ function HealthCard() {
 function CouncilCard({ activeSessions }: { activeSessions: number }) {
   return (
     <Link href="/council" className="block">
-      <StealthCard hover={false} className="px-4 py-3 min-w-[200px] min-h-[110px] flex-shrink-0 flex flex-col justify-between">
+      <StealthCard hover={false} className="px-3 py-2.5 sm:px-4 sm:py-3 sm:min-w-[200px] sm:min-h-[110px] sm:flex-shrink-0 flex flex-col justify-between min-h-[90px]">
         <CardLabel romaji="Hyōjō" english="Council" />
         <CardValue>{activeSessions}</CardValue>
         <p className="text-xs text-muted-foreground font-[family-name:var(--font-jetbrains-mono)]">
@@ -200,7 +200,7 @@ function CouncilCard({ activeSessions }: { activeSessions: number }) {
 function RecapCard({ recapCount }: { recapCount: number }) {
   return (
     <Link href="/recaps" className="block">
-      <StealthCard hover={false} className="px-4 py-3 min-w-[200px] min-h-[110px] flex-shrink-0 flex flex-col justify-between">
+      <StealthCard hover={false} className="px-3 py-2.5 sm:px-4 sm:py-3 sm:min-w-[200px] sm:min-h-[110px] sm:flex-shrink-0 flex flex-col justify-between min-h-[90px]">
         <CardLabel romaji="Ouroboros" english="Recaps" />
         <CardValue>{recapCount}</CardValue>
         <p className="text-xs text-muted-foreground font-[family-name:var(--font-jetbrains-mono)]">
@@ -214,7 +214,7 @@ function RecapCard({ recapCount }: { recapCount: number }) {
 function UsageCard({ usageData }: { usageData: StatusRibbonProps["usageData"] }) {
   return (
     <Link href="/usage" className="block">
-      <StealthCard hover={false} className="px-4 py-3 min-w-[200px] min-h-[110px] flex-shrink-0 flex flex-col justify-between">
+      <StealthCard hover={false} className="px-3 py-2.5 sm:px-4 sm:py-3 sm:min-w-[200px] sm:min-h-[110px] sm:flex-shrink-0 flex flex-col justify-between min-h-[90px]">
         <CardLabel romaji="Shiyō" english="Usage" />
         {usageData ? (
           <>
@@ -239,7 +239,7 @@ function UsageCard({ usageData }: { usageData: StatusRibbonProps["usageData"] })
 function ChatCard() {
   return (
     <Link href="/chat" className="block">
-      <StealthCard hover={false} className="px-4 py-3 min-w-[200px] min-h-[110px] flex-shrink-0 flex flex-col justify-between">
+      <StealthCard hover={false} className="px-3 py-2.5 sm:px-4 sm:py-3 sm:min-w-[200px] sm:min-h-[110px] sm:flex-shrink-0 flex flex-col justify-between min-h-[90px]">
         <CardLabel romaji="Taiwa" english="Chat" />
         <div className="flex items-center gap-2">
           <img
@@ -270,7 +270,7 @@ export function StatusRibbon({
   usageData,
 }: StatusRibbonProps) {
   return (
-    <div className="flex gap-2 md:gap-3 overflow-x-auto pb-2">
+    <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-2 md:gap-3 sm:overflow-x-auto sm:pb-2">
       <ChatCard />
       <SituationCard
         pendingDiscoveries={pendingDiscoveries}
