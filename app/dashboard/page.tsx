@@ -80,7 +80,10 @@ export default function DashboardPage() {
         fetch('/api/recaps').then(r => r.json()).then(d => {
           const total = (d.groups ?? []).reduce((sum: number, g: { recaps: unknown[] }) => sum + g.recaps.length, 0);
           setRecapCount(total);
-        }).catch((err) => captureWarning('recap count fetch failed', { operation: 'dashboard.fetchRecapCount' }));
+        }).catch((err) => {
+          captureWarning('recap count fetch failed', { operation: 'dashboard.fetchRecapCount' })
+          console.error('[dashboard] recap count fetch failed:', err)
+        });
         fetch('/api/usage').then(r => r.json()).then(d => {
           const provider = d.providers?.[0];
           if (provider) {
@@ -90,7 +93,10 @@ export default function DashboardPage() {
               dailyCost: today?.cost ?? 0,
             });
           }
-        }).catch((err) => captureWarning('usage data fetch failed', { operation: 'dashboard.fetchUsageData' }));
+        }).catch((err) => {
+          captureWarning('usage data fetch failed', { operation: 'dashboard.fetchUsageData' })
+          console.error('[dashboard] usage data fetch failed:', err)
+        });
       } catch (err) {
         console.error('Dashboard fetch error:', err);
       } finally {
