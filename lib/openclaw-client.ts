@@ -52,11 +52,11 @@ function buildConnectFrame(): ReqFrame {
       minProtocol: 3,
       maxProtocol: 3,
       client: {
-        id: "shoin-chat",
+        id: "webchat-ui",
         displayName: "Shoin Chat",
         version: "1.0",
         platform: "web",
-        mode: "ui",
+        mode: "webchat",
         instanceId: `shoin-chat-${randomUUID().slice(0, 8)}`,
       },
       locale: "en-US",
@@ -157,8 +157,13 @@ export function sendToOpenClaw(message: string): ReadableStream<string> {
   return new ReadableStream<string>({
     async start(controller) {
       try {
-        // 1. Open WebSocket
-        ws = new WebSocket(GATEWAY_URL);
+        // 1. Open WebSocket with explicit origin header for server-side connections
+        ws = new WebSocket(GATEWAY_URL, {
+          origin: "http://localhost:3000",
+          headers: {
+            Origin: "http://localhost:3000",
+          },
+        });
 
         await new Promise<void>((resolve, reject) => {
           const timer = setTimeout(() => {

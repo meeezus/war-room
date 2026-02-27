@@ -205,6 +205,8 @@ export async function POST(req: NextRequest) {
             // For Makima/OpenClaw: if stream errors before any content, fall back to spawnClaude
             if (isMakima && !fullResponse) {
               console.log('[chat/route] OpenClaw stream failed, falling back to claude --print')
+              // Notify client about fallback
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'fallback', reason: 'openclaw_unavailable' })}\n\n`))
               const fallbackMessage = pulseContext
                 ? `[PULSE CONTEXT]\n${pulseContext}\n[/PULSE CONTEXT]\n\nUser: ${content}`
                 : content
