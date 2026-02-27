@@ -145,6 +145,7 @@ export default function DashboardPage() {
           <span className="hidden md:inline text-xs text-muted-foreground">
             Shogunate Command Center
           </span>
+          {/* Desktop: full stats bar */}
           <span className="ml-auto hidden md:inline font-[family-name:var(--font-jetbrains-mono)] text-xs tabular-nums text-muted-foreground/75">
             <Link href="/objectives" className="transition-colors hover:text-foreground/60">
               {objectives.length} objectives
@@ -156,6 +157,20 @@ export default function DashboardPage() {
             {" \u00B7 "}
             {missions.filter(m => m.status === 'failed').length + pendingDiscoveries} need attention
           </span>
+
+          {/* Mobile: attention badge only */}
+          {(() => {
+            const attentionCount = missions.filter(m => m.status === 'failed').length + pendingDiscoveries;
+            return attentionCount > 0 ? (
+              <span className="ml-auto md:hidden rounded-full bg-red-500/15 px-2 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-xs font-medium text-red-400">
+                {attentionCount} need attention
+              </span>
+            ) : (
+              <span className="ml-auto md:hidden font-[family-name:var(--font-jetbrains-mono)] text-xs text-muted-foreground/50">
+                {missions.filter(m => m.status === 'running').length} running
+              </span>
+            );
+          })()}
           <ThemeToggle />
         </div>
         <StatusRibbon
