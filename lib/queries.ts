@@ -237,14 +237,18 @@ export async function getBoardWithTasks(id: string): Promise<{
   }
 }
 
-export async function getAllTasks() {
+export async function getAllTasks(filters?: { kind?: string; daimyo?: string; search?: string }): Promise<Task[]> {
   if (!supabase) return []
-  const { data, error } = await supabase
-    .from('tasks')
-    .select('*, projects(title)')
-    .order('updated_at', { ascending: false })
+  let query = supabase.from('tasks')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(200)
+  if (filters?.kind) query = query.eq('kind', filters.kind)
+  if (filters?.daimyo) query = query.eq('daimyo', filters.daimyo)
+  if (filters?.search) query = query.ilike('title', `%${filters.search}%`)
+  const { data, error } = await query
   if (error) { console.error('getAllTasks error:', error); return [] }
-  return data ?? []
+  return (data as Task[]) ?? []
 }
 
 export async function getMissionStats(): Promise<{ active: number; total: number }> {
@@ -892,4 +896,48 @@ export async function getDaimyoActivity(): Promise<Record<string, number>> {
     counts[agent] = (counts[agent] ?? 0) + 1
   }
   return counts
+}
+
+export async function getDashboardCounts() {
+  if (!supabase) return { activeSessions: 0, agentsOnline: 0, tasksRunning: 0, errors24h: 0 }
+  const [sessionsRes, agentsRes, tasksRes, errorsRes] = await Promise.all([
+    supabase.from('missions').select('id', { count: 'exact', head: true }).eq('status', 'running'),
+    supabase.from('agent_status').select('id', { count: 'exact', head: true }).neq('status', 'offline'),
+    supabase.from('tasks').select('id', { count: 'exact', head: true }).eq('status', 'in_progress'),
+    supabase.from('missions').select('id', { count: 'exact', head: true }).eq('status', 'failed')
+      .gte('completed_at', new Date(Date.now() - 86400000).toISOString()),
+  ])
+  return {
+    activeSessions: sessionsRes.count ?? 0,
+    agentsOnline: agentsRes.count ?? 0,
+    tasksRunning: tasksRes.count ?? 0,
+    errors24h: errorsRes.count ?? 0,
+  }
+}
+
+export async function getRecentSessions(limit = 8) {
+  if (!supabase) return []
+  const { data } = await supabase.from('missions')
+    .select('id, title, assigned_to, status, started_at, completed_at')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  return data ?? []
+}
+
+export async function getRecentLogs(limit = 8) {
+  if (!supabase) return []
+  const { data } = await supabase.from('war_room_events')
+    .select('id, event_type, title, created_at')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  return data ?? []
+}
+
+export async function getAgentGrid() {
+  if (!supabase) return []
+  const { data, error } = await supabase.from('agent_status')
+    .select('*')
+    .order('name')
+  if (error) { console.error('getAgentGrid error:', error); return [] }
+  return data ?? []
 }

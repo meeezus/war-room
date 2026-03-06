@@ -67,10 +67,15 @@ export async function fetchRecentQueries(): Promise<ChatMessage[]> {
   return realQueries
 }
 
+interface AssistantMessage {
+  content: string
+  created_at: string
+}
+
 /**
  * Fetch the assistant response for a given user message
  */
-async function fetchResponse(threadId: string, userMessageTime: string): Promise<string | null> {
+async function fetchResponse(threadId: string, userMessageTime: string): Promise<AssistantMessage | null> {
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -78,7 +83,7 @@ async function fetchResponse(threadId: string, userMessageTime: string): Promise
 
   const { data } = await supabase
     .from('chat_messages')
-    .select('content')
+    .select('content, created_at')
     .eq('thread_id', threadId)
     .eq('role', 'assistant')
     .gt('created_at', userMessageTime)
@@ -86,7 +91,8 @@ async function fetchResponse(threadId: string, userMessageTime: string): Promise
     .limit(1)
     .single()
 
-  return data?.content || null
+  if (!data) return null
+  return { content: data.content, created_at: data.created_at }
 }
 
 /**
@@ -94,10 +100,12 @@ async function fetchResponse(threadId: string, userMessageTime: string): Promise
  */
 async function evaluateQuery(
   query: string,
-  response: string | null,
+  assistantMessage: AssistantMessage | null,
   queryId: string,
   timestamp: string
 ): Promise<QueryMetrics> {
+  const response = assistantMessage?.content || null
+
   if (!response) {
     return {
       queryId,
@@ -111,6 +119,11 @@ async function evaluateQuery(
       suggestions: ['Investigate why query had no response'],
     }
   }
+
+  // Compute actual response latency from DB timestamps
+  const latencyMs = assistantMessage?.created_at
+    ? Math.round(new Date(assistantMessage.created_at).getTime() - new Date(timestamp).getTime())
+    : null
 
   const prompt = `Evaluate this clinical trials chat interaction:
 
@@ -158,7 +171,7 @@ Respond in this exact JSON format:
       timestamp,
       qualityScore: evaluation.qualityScore,
       efficiencyScore: evaluation.efficiencyScore,
-      latencyMs: null, // TODO: Track actual latency if available in metadata
+      latencyMs,
       issues: evaluation.issues,
       suggestions: evaluation.suggestions,
     }
@@ -171,7 +184,7 @@ Respond in this exact JSON format:
       timestamp,
       qualityScore: 5, // Default to middle score on error
       efficiencyScore: 5,
-      latencyMs: null,
+      latencyMs,
       issues: ['Evaluation failed'],
       suggestions: [],
     }
@@ -291,8 +304,8 @@ export async function analyzeQueries(): Promise<AnalysisReport> {
   // Evaluate each query
   const metrics: QueryMetrics[] = []
   for (const query of queries) {
-    const response = await fetchResponse(query.thread_id, query.created_at)
-    const metric = await evaluateQuery(query.content, response, query.id, query.created_at)
+    const assistantMessage = await fetchResponse(query.thread_id, query.created_at)
+    const metric = await evaluateQuery(query.content, assistantMessage, query.id, query.created_at)
     metrics.push(metric)
   }
 

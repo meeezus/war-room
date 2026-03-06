@@ -35,6 +35,7 @@ export interface Mission {
   started_at: string | null
   completed_at: string | null
   result: Record<string, unknown> | null
+  evaluation_result: Record<string, unknown> | null
   created_at: string
 }
 
@@ -332,4 +333,25 @@ export interface ActiveWorker {
   daimyo: string | null
   started_at: string | null
   mission_id: string | null
+}
+
+export interface EngineStatus {
+  health: 'nominal' | 'degraded' | 'down'
+  avgCycleMs: number | null
+  budgetOk: boolean
+  failures: { id: string; title: string; agent: string; rootCause: string | null; fixApproach: string | null }[]
+  wins: { id: string; title: string; agent: string }[]
+  stalledObjectives: { id: string; title: string }[]
+  autoApproved: { id: string; title: string }[]
+  pendingProposals: number
+  authority: {
+    enabled: boolean
+    threshold: number
+    domains: Record<string, {
+      tier: 'auto-approve' | 'propose-only'
+      totalMissions: number
+      successful: number
+      successRate: number
+    }>
+  }
 }

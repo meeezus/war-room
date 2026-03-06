@@ -1,0 +1,76 @@
+---
+session: war-room
+date: 2026-03-03
+status: complete
+outcome: SUCCEEDED
+---
+
+goal: Replace CRM member overlay with full-page two-column layout + tabbed right panel
+now: Verify live deploy, test mobile responsiveness, consider next CRM enhancements (search, filters on member page)
+
+test: |
+  open https://jack-crm-prototype.vercel.app
+  # Click any member → full-page two-column view
+  # Click "← Members" → returns to list
+  # Browser back button → returns to list
+  # Tab switching: History / Labs / Nutrition (only shows tabs with data)
+  # Chat bar: type query → response; click pill → fills input
+  # Notes: type → Save → reopen → persists (localStorage)
+  # Mobile: resize ≤860px → columns stack vertically
+  # Tre Ogden: all 3 tabs. Matt/others: fewer/no tabs
+
+done_this_session:
+  - task: Replaced .detail-overlay/.detail-card CSS with full-page .member-page layout system (topbar, chatbar, two-column, tabs)
+    files: [~/Shugyo/ÆON/Clients/Jack/index.html]
+  - task: Rewrote openMember() — hides app chrome, builds two-column layout, pushes history state
+    files: [~/Shugyo/ÆON/Clients/Jack/index.html]
+  - task: Created 12 helper functions (_buildMemberTopbar, _buildMemberChatbar, _buildLeftColumn, _buildMemberTabs, _buildTabContent, _buildHistoryTab, _buildLabsTab, _buildNutritionTab, _renderMemberChips, _renderHeatmap, switchMemberTab, closeMemberPage)
+    files: [~/Shugyo/ÆON/Clients/Jack/index.html]
+  - task: Added browser back button support via popstate listener + history.pushState
+    files: [~/Shugyo/ÆON/Clients/Jack/index.html]
+  - task: Updated draftReply() to render into memberPage instead of old overlay
+    files: [~/Shugyo/ÆON/Clients/Jack/index.html]
+  - task: Updated tour step references from detailOverlay/detailCard to memberPage
+    files: [~/Shugyo/ÆON/Clients/Jack/index.html]
+  - task: Updated responsive CSS at 768px and 480px breakpoints for column stacking
+    files: [~/Shugyo/ÆON/Clients/Jack/index.html]
+  - task: Deployed to Vercel production
+    files: []
+
+blockers: []
+
+decisions:
+  - show_hide_pattern: "No router. openMember() hides header/main/bottomNav/FAB, shows #memberPage. closeMemberPage() reverses. Uses history.pushState for back button."
+  - tabs_conditional: "History tab shown when m.threads exists, Labs when m.labs.length > 0, Nutrition when m.cronometer exists. First available tab auto-selected."
+  - left_column_content: "Profile card, overview+summary, engagement stats, stack pills, activity heatmap, notes section with file upload"
+  - backward_compat: "closeDetail() kept as alias for closeMemberPage() so existing chat responses and tour code still work"
+  - thread_history_link: "Changed 'See thread history ↓' from smooth-scroll to switchMemberTab('history') call"
+
+findings:
+  - zero_stale_refs: "After all edits, grep for detailOverlay/detailCard returned 0 matches — clean migration"
+  - file_grew_slightly: "8294 → 8389 lines (+95 lines net). The helper function extraction added lines but the template is now more maintainable."
+
+worked:
+  - Working bottom-to-top through the file to avoid line number drift during edits
+  - Using Edit tool with large unique context strings for reliable replacements
+  - Keeping DOM IDs identical (memberChat-{id}, memberChatInput-{id}, crmChips-{id}) so sendMemberChat/sendMemberChip work unchanged
+  - Prefixing internal helpers with _ to avoid collision with existing functions
+
+failed: []
+
+next:
+  - "Test mobile responsiveness on actual device via Vercel URL"
+  - "Consider adding member search/filter within the full-page view"
+  - "Export member summary button (copy to clipboard)"
+  - "Resume Tenshu v2 ops dashboard rebuild (separate session)"
+
+files:
+  modified:
+    - ~/Shugyo/ÆON/Clients/Jack/index.html (CSS: lines ~346-472 replaced overlay→member-page styles; responsive 768px+480px updated; HTML: overlay div→member-page div at ~line 1520; JS: openMember ~6767, 12 new helpers ~6820-7050, closeMemberPage+popstate ~7111, draftReply ~7470, tour refs ~8065)
+
+context_for_next_session:
+  deploy_url: https://jack-crm-prototype.vercel.app
+  source_file: ~/Shugyo/ÆON/Clients/Jack/index.html
+  vercel_project: jack-crm-prototype
+  key_functions: openMember, closeMemberPage, switchMemberTab, _buildLeftColumn, _buildHistoryTab, _buildLabsTab, _buildNutritionTab
+  preserved_functions: sendMemberChat, sendMemberChip, saveNotes, handleNoteUpload, renderNoteAttachments, removeAttachment, openInSkool, copyDraft

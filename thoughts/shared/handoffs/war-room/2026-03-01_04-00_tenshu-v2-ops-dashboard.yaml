@@ -1,0 +1,102 @@
+---
+session: war-room
+date: 2026-03-01
+status: partial
+outcome: PARTIAL_PLUS
+---
+
+goal: Ship morning command center (engine health, failures, authority), then explore Tenshu v2 direction
+now: Morning brief + waterfall shipped. Major design decision made — strip Tenshu down to pure ops dashboard (like Mission Control). Handoff for clean rebuild session.
+
+test: |
+  # What shipped today:
+  cd ~/Code/war-room && npm run dev
+  open http://localhost:3000/dashboard  # Morning brief panel visible
+  open http://localhost:3000/missions/010c7cf2-7e5b-4bcf-808f-9ee78eaad6f7  # Waterfall + forensics
+  curl http://localhost:3000/api/engine-status | jq .  # New API
+
+done_this_session:
+  - task: Built /api/engine-status endpoint — 7 parallel Supabase queries (heartbeats, failures, wins, stalled objectives, auto-approved, pending, authority)
+    files: [app/api/engine-status/route.ts]
+  - task: Added EngineStatus type + evaluation_result to Mission type
+    files: [lib/types.ts]
+  - task: Built MorningBrief component — collapsible panel with failures, attention (expandable), wins, authority tiers
+    files: [components/morning-brief.tsx]
+  - task: Upgraded HealthCard in StatusRibbon — shows Nominal/Degraded/Down + avg cycle time
+    files: [components/status-ribbon.tsx]
+  - task: Integrated MorningBrief into dashboard — scrollable center column, non-blocking fetch
+    files: [app/dashboard/page.tsx]
+  - task: Fixed scrolling bug — moved MorningBrief inside overflow-y-auto center column
+    files: [app/dashboard/page.tsx]
+  - task: Fixed terminal always open — defaulted collapsed to true
+    files: [components/terminal/terminal-panel.tsx]
+  - task: Made attention items clickable — expandable disclosure lists for stalled objectives and auto-approved
+    files: [components/morning-brief.tsx]
+  - task: Built Mission Execution Waterfall — Chrome DevTools-style timeline visualization for agent tasks
+    files: [components/mission-waterfall.tsx]
+  - task: Added Failure Forensics panel — shows evaluation_result root_cause + fix_approach on failed missions
+    files: [components/mission-detail.tsx]
+  - task: Created Tenshu v2 mockup HTML — clean ops dashboard layout inspired by Mission Control
+    files: [~/.agent/diagrams/tenshu-v2-mockup.html]
+
+blockers: []
+
+decisions:
+  - tenshu_is_pure_ops: "War Room / Tenshu = reflexive agentic automation ops dashboard ONLY. Not for human-directed iterative work. Objectives, council, daimyo characters, chat — all belong to a different product."
+  - strip_from_tenshu: "Remove: Objectives, Council, Morning Brief, Daimyo sidebar with personalities, Chat, action bars for human-directed work (New Objective, Council review)"
+  - keep_in_tenshu: "Keep: Active Sessions, Agents Online, Tasks Running, Errors, System Health, Event feed, Waterfall on mission detail"
+  - model_after_mission_control: "Adopt Mission Control (builderz-labs) layout patterns — clean stat cards, key-value panels, organized sidebar by verb, persistent event rail, bottom action bar"
+  - shoin_stays_in_repo: "Don't separate Shoin Chat into own repo yet. It's just a route. Split when products diverge significantly."
+  - custom_ide_is_rabbit_hole: "Building a full IDE (Cursor/Windsurf competitor) is a rabbit hole. The Daimyo character stuff could be a web companion app or VS Code extension instead."
+  - daimyo_characters_future_home: "The Daimyo names, council reviews, approval gates, interactive sessions — all belong in a future creative workspace / IDE companion. Park for now."
+
+findings:
+  - mission_control_reference: "github.com/builderz-labs/mission-control — clean ops dashboard for agentic systems. Screenshot at docs/mission-control.jpg. Key patterns: 4 top-level stat cards, key-value health panels, sidebar nav grouped by verb, bottom action bar, persistent event rail."
+  - agent_prism_reference: "github.com/evilmartians/agent-prism — React components for visualizing AI agent execution traces. Could enhance waterfall later with OpenTelemetry span format."
+  - conflation_lesson: "Sensei had conflated two products — (1) autonomous agent ops dashboard and (2) human-directed creative workspace with agent assistance. Objectives were created for human thinking goals, not automation targets. This explains why approving agent work felt 'fake'."
+  - waterfall_works_with_existing_data: "No new data needed for waterfall — tasks already have started_at, completed_at, status, kind, model. Just needed visualization."
+
+worked:
+  - Morning brief collapsible panel with auto-expand when attention needed
+  - Waterfall using pure CSS percentage positioning (no canvas/SVG)
+  - Failure forensics from evaluation_result JSONB
+  - Moving MorningBrief inside scrollable column fixed layout
+
+failed:
+  - Initial MorningBrief placement between header and main content blocked scrolling
+  - Terminal defaulting to open was annoying
+  - evaluation_result type casting needed IIFE pattern to satisfy TypeScript
+
+next:
+  - "MAIN: Rebuild Tenshu as pure ops dashboard (Mission Control style)"
+  - "Strip: Remove objectives page, council page, daimyo sidebar, morning brief, chat from nav"
+  - "Keep: /missions, /health, event feed, waterfall, /discoveries"
+  - "Add: Active Sessions card, Agents Online card (from agent_status table), clean stat row"
+  - "Add: Organized sidebar nav — Command (Overview, Missions, Tasks) / Observe (Events, Discoveries, Skills) / System (Health, Usage)"
+  - "Add: Persistent event rail (right sidebar, always visible)"
+  - "Add: Bottom action bar (Run Mission, View Logs, Spawn Agent)"
+  - "Reference mockup: ~/.agent/diagrams/tenshu-v2-mockup.html"
+  - "FUTURE: Daimyo character UI → separate creative workspace product"
+  - "FUTURE: Agent Prism integration for deeper execution traces"
+
+files:
+  created:
+    - ~/Code/war-room/app/api/engine-status/route.ts
+    - ~/Code/war-room/components/morning-brief.tsx
+    - ~/Code/war-room/components/mission-waterfall.tsx
+    - ~/.agent/diagrams/tenshu-v2-mockup.html
+  modified:
+    - ~/Code/war-room/lib/types.ts (EngineStatus interface, evaluation_result on Mission)
+    - ~/Code/war-room/components/status-ribbon.tsx (HealthCard upgrade, engineHealth prop)
+    - ~/Code/war-room/app/dashboard/page.tsx (MorningBrief integration, scrollable layout)
+    - ~/Code/war-room/components/terminal/terminal-panel.tsx (default collapsed)
+    - ~/Code/war-room/components/mission-detail.tsx (waterfall + forensics)
+
+context_for_next_session:
+  mockup: ~/.agent/diagrams/tenshu-v2-mockup.html
+  mission_control_reference: https://github.com/builderz-labs/mission-control
+  agent_prism_reference: https://github.com/evilmartians/agent-prism
+  current_dashboard: app/dashboard/page.tsx
+  current_ribbon: components/status-ribbon.tsx
+  waterfall_component: components/mission-waterfall.tsx
+  engine_status_api: app/api/engine-status/route.ts

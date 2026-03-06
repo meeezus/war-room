@@ -1,0 +1,99 @@
+---
+session: war-room
+date: 2026-02-27
+status: partial
+outcome: PARTIAL_PLUS
+---
+
+goal: Build interactive CRM prototype for Jack's Skool community ($1,200/mo bundle pitch) and scrape real member data
+now: User has feedback on prototype UI. Fix Skool member scraper (login detection issue). Plug real 267-member data into prototype.
+
+test: |
+  open ~/Shugyo/ÆON/Clients/Jack/crm-prototype.html
+  # Also verify scraper runs:
+  cd ~/Code/clawdbot/skills/skool-scraper/scripts && npx tsx scrape-members.ts --refresh
+
+done_this_session:
+  - task: Added tooltips to dashboard signal cards (Gone Quiet, Dropping Off, Never Engaged, Awaiting Jack)
+    files: [~/Shugyo/ÆON/Clients/Jack/crm-prototype.html]
+  - task: Reframed "Reply Rate" (48% looked bad) to qualitative "Engagement" labels (High/Moderate/Low) with tooltip showing raw numbers
+    files: [~/Shugyo/ÆON/Clients/Jack/crm-prototype.html]
+  - task: Added "Draft Reply" feature — AI-generated contextual responses with Copy to Clipboard + Open in Skool buttons
+    files: [~/Shugyo/ÆON/Clients/Jack/crm-prototype.html]
+  - task: Added draft replies to CRM chatbot responses (inline buttons per member)
+    files: [~/Shugyo/ÆON/Clients/Jack/crm-prototype.html]
+  - task: Added "Automated Outreach" section to retention tab with Elena (gone quiet) and Jordan (never engaged) draft check-ins
+    files: [~/Shugyo/ÆON/Clients/Jack/crm-prototype.html]
+  - task: Restructured from 3 tabs to 2 tabs (Dashboard + Member Management) — inspired by Six Blades command center
+    files: [~/Shugyo/ÆON/Clients/Jack/crm-prototype.html]
+  - task: Added revenue stats to dashboard ($39,932/mo = 267 x $149), At-Risk count, Awaiting Reply count
+    files: [~/Shugyo/ÆON/Clients/Jack/crm-prototype.html]
+  - task: Rebuilt Members tab as filterable table (All/Active/Awaiting Reply/At-Risk/New) with at-risk alert section
+    files: [~/Shugyo/ÆON/Clients/Jack/crm-prototype.html]
+  - task: Added Export Report button (prototype placeholder)
+    files: [~/Shugyo/ÆON/Clients/Jack/crm-prototype.html]
+  - task: Wrote Playwright member-list scraper for Skool
+    files: [~/Code/clawdbot/skills/skool-scraper/scripts/scrape-members.ts]
+  - task: Installed playwright in clawdbot project (pnpm add -w playwright)
+    files: [~/Code/clawdbot/package.json]
+
+blockers:
+  - Skool member scraper not working yet — login detection was false-positive (matched avatars on public page), fixed to check for LOG IN button and URL redirect. Latest version waits 5 min for manual login. User hasn't completed a successful scrape yet.
+
+questions:
+  - User will have UI feedback on the prototype in next session
+  - Can we get Skool member list without being a paid member? (current cookies from Sensei's account)
+  - Cookie longevity — Skool session cookies expired overnight last time. Need resilient re-auth strategy.
+  - Should scraper be integrated into Shogunate engine for automated daily runs?
+
+decisions:
+  - two_tabs_not_three: Merged Retention into Member Management as filter-based at-risk section. Dashboard + Member Management only.
+  - playwright_over_browser_use: Playwright for production scraping (deterministic, fast). /browser-use crashed machine twice, is AI-driven and expensive.
+  - reply_rate_reframing: "48% Reply Rate" sounded bad despite Jack replying to every thread. Changed to qualitative "High/Moderate/Low" engagement labels with tooltip for raw numbers.
+  - six_blades_patterns: Borrowed filter bar, table layout, at-risk cards from Six Blades command center (~/Shugyo/ÆON/Prospects/six-blades/six_blades_command_center.html)
+
+findings:
+  - skool_redirects_unauthenticated: /members URL redirects to /about for non-logged-in users. Must verify actual login before scraping.
+  - skool_member_count_267: Screenshot showed 267 Members (not 268 as previously stated)
+  - cookie_false_positive: Avatar images appear on public Skool pages, causing login check to pass when not actually authenticated
+  - skool_dom_unknown: Member list DOM selectors still unknown — need successful login + screenshot of actual /members page to determine selectors
+
+worked:
+  - Six Blades filter bar + table pattern works well for member management
+  - Draft Reply with Copy to Clipboard is a killer demo feature
+  - Tooltips on signal cards explain metrics clearly
+  - osascript to open Terminal windows for browser automation (avoids Claude Code crashes)
+
+failed:
+  - Generic CSS selectors for Skool member cards (MemberCard, member-card, etc.) — only caught 1 fallback link
+  - Checking for avatar images as login indicator — false positive on public pages
+  - waitForURL with community slug pattern — Skool may redirect to dashboard after login, not community
+  - Cookies from previous browser-use session didn't persist or were never valid
+
+next:
+  - Get user feedback on CRM prototype UI and iterate
+  - Fix Skool scraper — need successful manual login to capture real /members page DOM structure
+  - Once scraper works, plug real 267-member data into prototype
+  - Consider Skool API exploration (may have REST endpoints for member data)
+  - Update proposal-v2-bundle.html to reflect 267 members (was 268)
+  - Explore Skool DM automation for outreach to gone-quiet members
+
+files:
+  created:
+    - ~/Code/clawdbot/skills/skool-scraper/scripts/scrape-members.ts
+    - ~/Shugyo/ÆON/Clients/Jack/skool-data/debug/members-page.png
+    - ~/Shugyo/ÆON/Clients/Jack/skool-data/debug/members-page.html
+  modified:
+    - ~/Shugyo/ÆON/Clients/Jack/crm-prototype.html (major — tooltips, draft reply, 2-tab restructure, filterable table, revenue stats)
+    - ~/Code/clawdbot/package.json (added playwright dependency)
+
+context_for_next_session:
+  prototype_location: ~/Shugyo/ÆON/Clients/Jack/crm-prototype.html
+  design_doc: ~/Shugyo/ÆON/Clients/Jack/docs/2026-02-27-crm-mockup-design.md
+  parsed_thread_data: ~/Shugyo/ÆON/Clients/Jack/skool-data/parsed-threads.json
+  scraper_script: ~/Code/clawdbot/skills/skool-scraper/scripts/scrape-members.ts
+  six_blades_reference: ~/Shugyo/ÆON/Prospects/six-blades/six_blades_command_center.html
+  brand_reference: ~/clawd/drafts/jack-prototype-mockup.html
+  jack_agent_app: ~/Code/ajac/ (has correct brand palette + King logo)
+  proposal_html: ~/Shugyo/ÆON/Clients/Jack/proposal-v2-bundle.html
+  skool_debug_screenshot: ~/Shugyo/ÆON/Clients/Jack/skool-data/debug/members-page.png

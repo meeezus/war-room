@@ -1,0 +1,189 @@
+---
+session: war-room
+date: 2026-03-05
+status: complete
+outcome: null
+---
+
+goal: "Makima resiliency hardening + income research + spiritual habits integration + Agent Control Surface concept"
+now: "Brainstorm and plan the Agent Control Surface — native macOS/iOS app for agent orchestration"
+test: |
+  # Verify bestEffort on all crons:
+  cd ~/Code/shogunate && npx openclaw cron list --json 2>/dev/null | python3 -c "import sys,json; d=json.loads(sys.stdin.read()[sys.stdin.read().find('{'):]); print(sum(1 for j in d['jobs'] if (j.get('delivery') or {}).get('bestEffort')),'of',len(d['jobs']),'have bestEffort')"
+  # Verify watchdog in crontab:
+  crontab -l | grep cron-watchdog
+  # Verify spiritual prompts in crons:
+  cat ~/.openclaw/cron/jobs.json | grep -c "spiritual-habits"
+  # Dry-run watchdog:
+  bash ~/clawd/scripts/cron-watchdog.sh && echo "clean"
+
+done_this_session:
+  - task: "Verified Makima COO overhaul is 100% complete (19/19 tasks)"
+    files: []
+    details: |
+      User thought overhaul wasn't done. Checked actual state:
+      - priorities-context.md: DELETED ✅
+      - ACTIVE-TASKS.md: updated 3/5, has Jack P0 ✅
+      - 26→14 crons ✅ (dead crons killed)
+      - All crons on main/systemEvent except OpenClaw Update (correctly isolated) ✅
+      - SOUL.md: 86 lines (target ~100) ✅
+      - AGENTS.md: 112 lines with routing table + authority matrix ✅
+      - HEARTBEAT.md: 17 lines ✅
+      - USER.md: created ✅
+      - Skills: daimyo-council + makima-voice created ✅
+      - Action Authority Matrix with ASK/PROPOSE/AUTO ✅
+      The compacted session had already executed all 4 phases.
+
+  - task: "Set bestEffort: true on all 14 OpenClaw crons"
+    files:
+      - ~/.openclaw/cron/jobs.json
+    details: |
+      CLI `--best-effort-deliver` only works if delivery block exists. 13/14 had delivery: null.
+      Fixed by editing jobs.json directly — added delivery config (mode: announce, channel: discord,
+      to: Sensei DM channel 1474286673444737097, bestEffort: true) to all 14 crons.
+      Prevents silent delivery failures — logs error instead of hard fail.
+
+  - task: "Created external cron health watchdog"
+    files:
+      - ~/clawd/scripts/cron-watchdog.sh
+    details: |
+      Bash script in SYSTEM crontab (not OpenClaw) — runs daily at 10am.
+      Checks if 3 critical crons ran in last 24h: Morning Check-In, Evening Check-In, Overnight COO.
+      Uses ~/.openclaw/cron/runs/<jobId>.jsonl for run history.
+      Timestamp field is `ts` (not `startedAtMs` — discovered during testing).
+      Alerts via macOS native notification (osascript display notification + Basso sound).
+      Logs to ~/clawd/logs/cron-watchdog.log.
+      Truly independent of OpenClaw — if gateway dies, watchdog still fires.
+
+  - task: "Integrated spiritual habits framework into Morning + Evening crons"
+    files:
+      - ~/.openclaw/cron/jobs.json
+    details: |
+      Added PRESENCE section to Morning Check-In and Evening Check-In payloads.
+      Morning: reads spiritual-habits-framework.md, picks ONE morning prompt.
+      Evening: reads same file, picks ONE evening reflection prompt.
+      File ref: ~/clawd/memory/from-cc/2026-03-05T2345-spiritual-habits-framework.md
+      User can update the framework file anytime — Makima reads it fresh each cron.
+
+  - task: "Resiliency assessment — honest evaluation of what's self-healing vs fragile"
+    files: []
+    details: |
+      Resilient: Gateway/Poller KeepAlive, ACTIVE-TASKS staleness self-correct, proposal auto-dismiss.
+      Fragile: Silent cron failures (fixed with bestEffort), no external monitoring (fixed with watchdog),
+      no circuit breaker for corrupted files, no token budget awareness, no self-monitoring of own crons.
+      Decision: Only do bestEffort + watchdog. Skip numerical calibration scoring (over-engineering),
+      contradiction detection (solved architecturally), new Tenshu page (maintenance burden).
+
+  - task: "Read 3 X posts on resiliency patterns"
+    files: []
+    details: |
+      @ksimback: Comprehensive OpenClaw cron troubleshooting (85❤️). Silent failures #1 problem.
+        bestEffort:true, webhook delivery, openclaw cron runs for history, external monitoring,
+        hybrid heartbeat+cron, stagger windows, restart catch-up semantics (v2026.3.2).
+      @joaomdmoura: CrewAI Cognitive Memory (279❤️). Memory = cognition not storage.
+        5 operations: encode, consolidate, recall, extract, forget. Contradiction detection.
+        Composite scoring (similarity × recency × importance). Deliberate forgetting.
+        Applied insight: Makima's memory could benefit but we already have Spark + ACTIVE-TASKS.
+      @ericosiu: Calibration Loops (69❤️). Dynamic trust score per action category.
+        Approval +3, edit +2, rejection +1. Trust decay -2/day after 7 days no feedback.
+        Self-downgrade on performance drop. Per-channel calibration.
+        Applied insight: Maps directly to our Authority Matrix calibration section in AGENTS.md.
+        Decision: existing ASK→PROPOSE→AUTO with "3 approvals to upgrade" is sufficient.
+        Numerical scoring is overkill for 1 agent + 1 human.
+
+  - task: "Conceived Agent Control Surface — native macOS/iOS app concept"
+    files: []
+    details: |
+      Concept: Make AI agents first-class citizens of macOS/iOS, not just web dashboard passengers.
+      - Menu bar presence (agent status always visible)
+      - Actionable notifications with [Approve] [Skip] buttons
+      - iPhone widgets (ACTIVE-TASKS.md on home screen, agent health on Lock Screen)
+      - Shortcuts integration ("Hey Siri, what's Makima's morning brief?")
+      - Focus mode awareness (agents behave differently per Focus)
+      - Apple Watch (glanceable status, wrist proposal approval)
+      Tech: SwiftUI (shared Mac+iPhone+Watch), CloudKit sync, Supabase+OpenClaw API backend.
+      NOT a rebuild of War Room/Tenshu — the web dashboard stays for deep ops.
+      This is the CONTROL SURFACE (approve, dismiss, glance, alert). Think Raycast vs Chrome.
+      MVP: menu bar + notifications in a weekend sprint. Widgets + Watch in follow-up.
+      Product potential: anyone running OpenClaw/agent setups would want this.
+
+blockers: []
+
+questions:
+  - "SwiftUI learning path: Sensei has never built native Apple apps. What's the fastest ramp? 100 Days of SwiftUI? Apple tutorials? Build-and-learn?"
+  - "Supabase API layer: Does the Agent Control Surface need a new API, or can it use existing Supabase client directly from Swift?"
+  - "App Store vs direct distribution: Menu bar apps can be distributed directly. iPhone requires App Store or TestFlight."
+
+decisions:
+  - resiliency_minimal: "Only bestEffort + external watchdog. Skipped numerical calibration scoring, contradiction detection, new Tenshu page. Rationale: we just slimmed 26→14 crons. Adding monitoring infrastructure for monitoring infrastructure is exactly what the overhaul killed."
+  - spiritual_integration: "Added to existing Morning/Evening cron payloads instead of new crons. Makima reads the framework file fresh each time — user can update it without touching crons."
+  - watchdog_independence: "Watchdog runs in system crontab, not OpenClaw. Uses macOS native notifications. Zero dependency on the system it monitors."
+
+findings:
+  - overhaul_was_done: "The Makima COO overhaul (19 tasks, 4 phases) was fully executed in the compacted session. All verification checks passed. User thought it wasn't done — it was."
+  - besteffort_cli_bug: "openclaw cron edit --best-effort-deliver only works if delivery block already exists. For crons with delivery:null, must edit jobs.json directly."
+  - timestamp_field: "OpenClaw cron run history uses 'ts' field for timestamp, not 'startedAtMs'. Discovered during watchdog testing."
+  - native_beats_web: "macOS notification from watchdog proved the point — native OS integration cuts through in ways web notifications don't. This is the thesis for the Agent Control Surface."
+
+worked:
+  - "Editing jobs.json directly when CLI flags don't work"
+  - "Dry-running watchdog immediately after creation to catch bugs (found wrong timestamp field)"
+  - "Honest resiliency assessment before building — prevented over-engineering"
+  - "Reading X posts before designing (3 posts with concrete patterns)"
+
+failed:
+  - "openclaw cron edit --best-effort-deliver — silently does nothing when delivery block is null"
+  - "Typo in Gmail Cleanup cron ID (7bb5be4e vs 7bb5de4e) — caught on verification"
+
+next:
+  - "P0: Brainstorm Agent Control Surface using /brainstorming skill"
+  - "  - Apply 3 lenses (user, system, future)"
+  - "  - 2-3 approaches with trade-offs"
+  - "  - MVP scope: menu bar + native notifications + proposal approve/skip"
+  - "  - Answer: SwiftUI + CloudKit vs SwiftUI + direct Supabase?"
+  - "  - Answer: What API layer does the app need?"
+  - ""
+  - "P1: Research SwiftUI + menu bar app patterns"
+  - "  - How do Raycast, Bartender, iStatMenus do menu bar?"
+  - "  - UserNotifications framework for actionable notifications"
+  - "  - WidgetKit for iPhone/Watch widgets"
+  - "  - Shortcuts framework (AppIntents) for Siri integration"
+  - ""
+  - "P2: Design the data contract"
+  - "  - What data flows from Supabase → app? (proposals, tasks, agent status, morning brief)"
+  - "  - What actions flow from app → backend? (approve, skip, dismiss)"
+  - "  - Real-time: Supabase Realtime subscriptions from Swift?"
+  - ""
+  - "Future: Wire Makima income research into her routing (trading skill, daily scan cron)"
+  - "Future: Save iMessage URL extractor as permanent script"
+
+files:
+  created:
+    - ~/clawd/scripts/cron-watchdog.sh
+  modified:
+    - ~/.openclaw/cron/jobs.json (bestEffort on 14 crons + spiritual prompts in Morning/Evening)
+
+context_for_next_session:
+  agent_control_surface:
+    concept: "Native macOS/iOS app — agent orchestration control surface. Menu bar, actionable notifications, widgets, Shortcuts, Focus modes, Watch."
+    not: "NOT a rebuild of War Room/Tenshu. Web dashboard stays for deep ops. This is approve/dismiss/glance/alert."
+    analogy: "Raycast vs Chrome. GitHub Desktop vs github.com. Native = the control surface, web = the full experience."
+    tech: "SwiftUI (shared across platforms), CloudKit or direct Supabase, UserNotifications, WidgetKit, AppIntents"
+    mvp: "Menu bar status + actionable notifications for proposal approve/skip. Weekend sprint scope."
+    product_potential: "Anyone running OpenClaw or agent orchestration would want this. Native notification > Discord notification."
+
+  resiliency_state:
+    besteffort: "All 14 crons have bestEffort:true via jobs.json delivery block"
+    watchdog: "~/clawd/scripts/cron-watchdog.sh in system crontab at 10am daily. Monitors Morning, Evening, Overnight COO."
+    watchdog_log: "~/clawd/logs/cron-watchdog.log"
+    spiritual: "Morning + Evening crons read ~/clawd/memory/from-cc/2026-03-05T2345-spiritual-habits-framework.md"
+
+  income_research:
+    brief: "~/clawd/memory/from-cc/2026-03-05T2300-income-research-brief.md — 6 income streams prioritized"
+    not_wired: "Trading research not yet in Makima's routing table or crons. Deferred."
+    smaug_skill: "~/.claude/skills/smaug/SKILL.md created. Smaug at ~/Code/smaug-msos/."
+
+  x_posts_read_this_session:
+    - "@ksimback: OpenClaw cron troubleshooting guide (85❤️) — bestEffort, webhook delivery, external monitoring"
+    - "@joaomdmoura: CrewAI Cognitive Memory (279❤️) — encode/consolidate/recall/extract/forget, contradiction detection"
+    - "@ericosiu: Calibration Loops (69❤️) — dynamic trust scoring, decay, per-action calibration"

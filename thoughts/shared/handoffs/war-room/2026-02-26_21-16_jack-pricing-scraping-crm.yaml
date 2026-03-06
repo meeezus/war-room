@@ -1,0 +1,134 @@
+---
+session: war-room
+date: 2026-02-26
+status: partial
+outcome: PARTIAL_PLUS
+original_session_id: 0c77e26d-6d71-4dd4-b4a1-4d2a9f2ffd55
+---
+
+goal: Jack client-zero pricing ($1,200/mo bundle), Skool scraping feasibility, CRM scoping
+now: Finalize $1,200 pricing breakdown, test Skool scraper with authenticated cookies, mockup CRM play
+
+test: "browser-use open https://www.skool.com/health-optimization && browser-use state"
+
+done_this_session:
+  - task: Folio tier analysis against Luke Pierce pricing framework
+    files: []
+    details: >
+      Folio maps to $25K-60K "Company Brain" tier. 589 commits, 32 days, ~230 hours,
+      $26,450 of work invested. Jack anchored at $50-100/mo for Folio alone (Feb 3 call).
+
+  - task: Bundle pricing landed at $1,200/mo
+    files: [~/Shugyo/ÆON/Clients/Jack/proposal-v2-bundle.html]
+    details: >
+      Folio ($300-500) + 24/7 Community Agent ($500-700) + Skool CRM ($200-300) = $1,200/mo bundle.
+      Client-zero pricing. $500 one-time setup. $8/user overage past 50 community members.
+      Jack said "priceless" and offered to invest twice, but also anchored at $50-100 for Folio alone.
+      Risk: $1,200 is 12-24x his stated anchor. May need to phase or justify heavily.
+
+  - task: Skool scraping feasibility — tested live with browser-use
+    files: []
+    details: >
+      No official Skool API exists. skoolapi.com is third-party/TOS-violating. Tested browser-use:
+      1. Public pages: free communities show full post content without login
+      2. Authenticated (Sensei's cookies): saw Health Optimization (266 members, $149/mo)
+      3. Categories found: Health Journals, Q&A, Protocols, Blogs, Research & Bloodwork
+      4. DOM selectors: PostItemWrapper, UserNameWrapper, styled-components with readable names
+      5. Post URLs: /{community-slug}/{post-slug}
+      6. Playwright scraping = zero AI tokens (pure DOM reading)
+      7. Apify has dedicated Skool scraper actor as alternative
+
+  - task: CRM goldmine discovery — Tre Ogden's Health Journal
+    files: []
+    details: >
+      103 comments, Jack replying with detailed per-member health analysis.
+      Jack wants: "what have I recommended for Karen?" — per-member conversation tracking.
+      Also wants: reminders/notifications on when to respond to unanswered threads.
+      50+ comment threads are common. Jack forgets what he's said to members.
+
+  - task: Apple Notes sync research (background agent)
+    files: []
+    details: >
+      Jack uses Apple Notes (not Obsidian). Already migrated 3GB of notes previously.
+      CloudKit API possible for automated sync. Need to determine: automated vs maintenance
+      on HIS laptop, how it detects new notes, what upload looks like.
+
+  - task: Proposal v2 HTML created and iteratively refined
+    files: [~/Shugyo/ÆON/Clients/Jack/proposal-v2-bundle.html]
+    details: >
+      Updated from v1 ($400/mo agent-only) to v2 ($1,200/mo bundle).
+      Removed technical jargon (RAG, ARAG, Vector DB mean nothing to Jack).
+      Added: retention gate (30-60 day membership before agent access per Jack's biz mentor),
+      health journal tracking, daily Skool sync, separate KBs (Jack's notes vs community content).
+      Fixed ÆOM → ÆON typo throughout.
+
+blockers:
+  - Session hit context compaction mid-conversation, lost some state
+  - Skool auth scraping needs real test with persistent cookies (started but not completed)
+  - Apple Notes sync research agent returned but findings not fully integrated
+
+questions:
+  - Is $1,200/mo too aggressive for client-zero? Phase approach? ($800 → $1,200 after 60 days?)
+  - Playwright vs Apify vs browser-use for production Skool scraper? Cost/reliability tradeoffs
+  - Apple Notes CloudKit — does it need to run on Jack's laptop or can we do it server-side?
+  - Auth for community agent — invite whitelist vs Zapier "New Paid Member" auto-provision?
+  - How to handle Jack's duplicate queries racking up Opus bills (11x same query = ~$22)?
+
+decisions:
+  - bundle_pricing: $1,200/mo for Folio + Agent + CRM based on value replacement math ($4K-9K/mo human equivalent)
+  - separate_kbs: Jack's personal notes KB stays private; community agent gets blog + webinar + Skool content only
+  - no_skool_embed: Agent lives at jackschroder.com/agent, NOT embedded in Skool
+  - retention_gate: 30-60 day membership before agent access (Jack's biz mentor recommendation)
+  - scraping_method: Playwright preferred (zero token cost, full DOM access), Apify as backup
+
+findings:
+  - skool_no_api: Skool has NO official API, NO RSS, NO webhooks, NO developer docs
+  - skool_dom_readable: Styled-components with descriptive class names (PostItemWrapper, UserNameWrapper)
+  - free_communities_public: Free Skool communities show full post content without auth
+  - private_needs_cookies: Jack's paid community ($149/mo) requires authenticated session
+  - jack_not_price_sensitive: "I would literally pay $1,000 just to prevent myself from doing the fucking time"
+  - jack_duplicate_queries: 11x same "topical steroid withdrawal" query, $22 wasted — he creates NEW conversations each time
+  - folio_opus_routing_bug: Content gen patterns route to Opus ($15/$75 per M tokens) even for tweets — see session 8ae4cc48
+  - zapier_integration: Skool Pro plan has Zapier triggers including "New Paid Member" — solves auth provisioning
+
+worked:
+  - browser-use for live Skool DOM inspection (both public and authenticated)
+  - Oracle agent for parallel Skool API/scraping research
+  - Reading call transcripts to inform pricing psychology
+  - Luke Pierce pricing tweet as external anchor for value-based pricing
+
+failed:
+  - skoolapi.com third-party API — TOS-violating, unreliable
+  - $400/mo pricing from council review — way too low for the build complexity
+  - "$99/mo" original Folio price — stale, abandoned
+
+next:
+  - Finalize $1,200/mo pricing breakdown — per-line margins, what scales for non-client-zero
+  - Test authenticated Skool scraper end-to-end with browser-use (use Sensei's cookies)
+  - Build Skool scraper prototype — daily cron, new post detection, DB storage
+  - Mockup CRM dashboard — member profiles, conversation history, unanswered thread alerts
+  - Fix Folio Opus routing bug — tweets and summaries should NOT hit Opus (session 8ae4cc48)
+  - Update proposal/contract to reflect final pricing
+  - Apple Notes sync — determine CloudKit approach, test with Jack's notes
+  - Branding/logo for the community agent product
+
+files:
+  created:
+    - ~/Shugyo/ÆON/Clients/Jack/proposal-v2-bundle.html
+  modified: []
+
+key_files_reference:
+  proposal_v2: ~/Shugyo/ÆON/Clients/Jack/proposal-v2-bundle.html
+  prototype_mockup: ~/Shugyo/jack-prototype-mockup.html
+  technical_plan_visual: ~/Shugyo/plans/clawd--2026-02-20-jack-prototype-visual.html
+  proposal_plan_visual: ~/Shugyo/plans/folio--2026-02-20-jack-proposal-plan.html
+  full_spec: .specs/2026-02-20-jack-agent-full-plan.md
+  contact: ~/clawd/memory/contacts/jack-schroder.md
+  voice_guide: ~/gt/jack_research/voice-analysis/VOICE-STYLE-GUIDE.md
+  voice_analysis_dir: ~/Shugyo/ÆON/Clients/Jack/voice-analysis/
+  transcriptions_dir: ~/Shugyo/ÆON/Clients/Jack/transcriptions/
+  brand_dir: ~/Shugyo/ÆON/Clients/Jack/brand/
+  folio_command_center: ~/Shugyo/ÆON/Clients/Jack/Folio/Command-Center.md
+  folio_roadmap: ~/Shugyo/ÆON/Clients/Jack/Folio/ROADMAP.md
+  folio_billing_session: "~/.claude/projects/-Users-michaelenriquez/8ae4cc48-f0eb-408d-832a-19f8750b0326.jsonl"
+  lost_session: "~/.claude/projects/-Users-michaelenriquez-Code-war-room/0c77e26d-6d71-4dd4-b4a1-4d2a9f2ffd55.jsonl"

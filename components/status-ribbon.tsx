@@ -16,6 +16,7 @@ interface StatusRibbonProps {
   councilSessions: number;
   recapCount: number;
   usageData: { quotaPercent: number; dailyCost: number } | null;
+  engineHealth?: { health: 'nominal' | 'degraded' | 'down'; avgCycleMs: number | null };
 }
 
 function timeAgo(dateStr: string): string {
@@ -138,7 +139,31 @@ function StatusDot({ ok }: { ok: boolean }) {
   );
 }
 
-function HealthCard() {
+function EngineHealthLabel({ health, avgCycleMs }: { health: 'nominal' | 'degraded' | 'down'; avgCycleMs: number | null }) {
+  const config = {
+    nominal: { color: "#22c55e", label: "Nominal" },
+    degraded: { color: "#f59e0b", label: "Degraded" },
+    down: { color: "#ef4444", label: "Down" },
+  }[health];
+
+  return (
+    <div className="flex flex-col gap-0.5 mb-1">
+      <span
+        className="text-sm font-medium font-[family-name:var(--font-jetbrains-mono)]"
+        style={{ color: config.color }}
+      >
+        {config.label}
+      </span>
+      {avgCycleMs !== null && (
+        <span className="text-[10px] text-muted-foreground/60 font-[family-name:var(--font-jetbrains-mono)]">
+          {(avgCycleMs / 1000).toFixed(0)}s avg cycle
+        </span>
+      )}
+    </div>
+  );
+}
+
+function HealthCard({ engineHealth }: { engineHealth?: { health: 'nominal' | 'degraded' | 'down'; avgCycleMs: number | null } }) {
   const [health, setHealth] = useState<HealthCheck | null>(null);
 
   useEffect(() => {
@@ -152,6 +177,9 @@ function HealthCard() {
     <Link href="/health" className="block">
       <StealthCard hover={false} className="px-4 py-3 min-w-[200px] min-h-[110px] flex-shrink-0 flex flex-col justify-between">
         <CardLabel romaji="Kenzen" english="Health" />
+        {engineHealth && (
+          <EngineHealthLabel health={engineHealth.health} avgCycleMs={engineHealth.avgCycleMs} />
+        )}
         {health ? (
           <div className="flex flex-col gap-1 mt-1">
             <div className="flex items-center gap-2">
@@ -268,6 +296,7 @@ export function StatusRibbon({
   councilSessions,
   recapCount,
   usageData,
+  engineHealth,
 }: StatusRibbonProps) {
   return (
     <div className="flex gap-2 md:gap-3 overflow-x-auto pb-2">
@@ -281,7 +310,7 @@ export function StatusRibbon({
         lastPatrol={lastPatrol}
       />
       <SkillsCard skillStats={skillStats} />
-      <HealthCard />
+      <HealthCard engineHealth={engineHealth} />
       <CouncilCard activeSessions={councilSessions} />
       <RecapCard recapCount={recapCount} />
       <UsageCard usageData={usageData} />

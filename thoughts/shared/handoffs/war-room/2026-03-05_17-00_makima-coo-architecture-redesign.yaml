@@ -1,0 +1,201 @@
+---
+session: war-room
+date: 2026-03-05
+status: partial
+outcome: PARTIAL_PLUS
+---
+
+goal: "Design Makima COO architecture overhaul — research, analysis, 4-phase action plan, HTML visual"
+now: "Execute Phase 1: Kill Complexity — delete priorities-context.md, update ACTIVE-TASKS.md, kill 6 dead crons"
+test: |
+  # Verify cron count after Phase 1:
+  npx openclaw cron list --json 2>/dev/null | python3 -c "import sys,json; d=json.loads(sys.stdin.read()[sys.stdin.read().find('{'):]); print(f'Total crons: {len(d[\"jobs\"])}')"
+  # Verify ACTIVE-TASKS.md is current:
+  head -20 ~/clawd/ACTIVE-TASKS.md
+  # Verify priorities-context.md is gone:
+  ls ~/clawd/priorities-context.md 2>&1 # should fail
+
+done_this_session:
+  - task: "Deep read of 16 X/Twitter posts on OpenClaw architecture best practices"
+    files: []
+    details: |
+      Posts read via `bird read` (WebFetch blocked for x.com by hook):
+      1. @the_smart_ape — Token optimization: context files cost per-message, crons expensive (each trigger = full context), slim bootstrap, use Sonnet for crons
+      2. @PrajwalTomar_ — 9 OpenClaw tips (brief)
+      3. @xmayeth — Deep OpenClaw anatomy: bootstrap vs semantic search memory, workspace superpower, Gateway architecture, multi-agent, 5 common mistakes
+      4. @Zeneca — Token Usage Dashboard prompt, reduce usage 20-30%, audit crons for stale info
+      5. @Voxyz_ai — 80% of token spend was input (re-reading context), moved everything to semantic search
+      6. @RLanceMartin — Programmatic Tool Calling in Claude: composing tool calls in code, reducing context bloat
+      7. @jordymaui — 4 advanced tips: heartbeat 30min 8am-11pm, memory flush before compaction, separate crons for heavy tasks, fallback alerts
+      8. @djfarrelly — Utah agent harness: event-driven, durable execution, sub-agent delegation, singleton concurrency, context pruning
+      9. @ksimback — Cron troubleshooting: silent failures (#1 problem), reliability decay, update-related breaks, config cascading, isolated sessions, best practices
+      10. @peterdiamandis — Alex Finn's 5-agent org: Henry (Opus orchestrator), Ralph, Charlie, Scout, Quill. "I only talk to Henry." Mission Control dashboard. $250/mo
+      11. @Jacobsklug — Full company on ~8 agents: Jarvis (brain, Opus), Atlas, Scribe, Clawed, Sentinel. $400/mo
+      12. @systematicls (7.1K likes) — "How To Be A World-Class Agentic Engineer": context is everything, CLAUDE.md as logical directory (IF-ELSE routing), separate research from implementation, neutral prompts (prevent sycophantic hallucination), adversarial multi-agent verification, contracts for task completion, new session per contract
+      13. @danpeguine — Applied systematicls's adversarial bug-finding (Hunter → Skeptic → Referee agents)
+      14. @bedesqui — Obsidian canvas as IDE with browser embeds, code-mirror editor
+      15. @bedesqui — Request for proper file exclusion in Obsidian for code repos
+      16. @shao__meng — Claude Code + Obsidian workflows: master context files, /today summarization, claudesidian plugin, batch note editing
+
+  - task: "Full exploration of Makima's current architecture — 8 config/state files read"
+    files:
+      - ~/.openclaw/openclaw.json
+      - ~/clawd/ACTIVE-TASKS.md
+      - ~/clawd/priorities-context.md
+      - ~/clawd/x/HEARTBEAT.md
+      - ~/clawd/x/HANDOFF.md
+      - ~/clawd/x/AGENTS.md
+      - ~/clawd/x/SOUL.md
+      - ~/clawd/memory/drift-log.md
+
+  - task: "Root cause analysis of Makima's operational failures"
+    files: []
+    details: |
+      User provided Discord conversation logs showing:
+      1. Priorities scan surfacing ghost work (Unity as P0 when dead, Folio as active when done)
+      2. priorities-context.md and ACTIVE-TASKS.md both stale and conflicting
+      3. Calendar + Gmail auth connected but not wired into automation
+      4. Drift auditor flagging same thing 11× (noise, not signal)
+      Root cause: "Makima has monitoring infrastructure but no action infrastructure"
+      She detects problems but can't fix them → noise loops
+
+  - task: "Created comprehensive HTML before/after architecture visual"
+    files:
+      - ~/.agent/diagrams/makima-before-after.html
+    details: |
+      Full HTML page with:
+      - 4 key insight cards from community posts
+      - Side-by-side: Current (26 crons, 7 state files, 12 startup reads) vs Proposed (~12 crons, 2 state files, 5 startup reads)
+      - New information flow diagram
+      - 6 root cause → fix cards
+      - Full 26-row cron triage table with KEEP/FIX/KILL/MERGE badges
+      - 6 key principles from community posts
+      - 4-phase action plan
+
+  - task: "Analyzed Daimyo persona integration, Obsidian workflows, CC↔Makima shared memory"
+    files: []
+    details: |
+      Daimyo personas: Keep but move from SOUL.md bootstrap (~3000 tokens) to on-demand skills. Slim SOUL.md to ~500 tokens.
+      Obsidian: Symlink ACTIVE-TASKS.md into Obsidian vault. Don't add plugin complexity yet.
+      Shared memory: from-cc/ path exists, Spark bridge exists. Just needs consistency enforcement.
+
+  - task: "Evaluated Telegram migration for real-time streaming"
+    files: []
+    details: |
+      OpenClaw 2026.3.2 added Telegram live streaming. User considering moving from Discord.
+      Decision deferred — not blocking Phase 1-4.
+
+blockers: []
+
+questions:
+  - "Jack transcript location: user mentioned ~/Shugyo/aeon/clients/jack/transcriptions but directory doesn't exist. Where are the latest Jack transcripts?"
+  - "Telegram vs Discord: user is considering Telegram for streaming. When ready to decide, compare feature parity."
+  - "Which of 8 remaining isolated crons actually need exec access? (Bookmark Scout, Memory Decay, Jack Learning, Priorities Check, Daily Progress, Weekly Posts, Gmail Cleanup, Monthly Review)"
+
+decisions:
+  - single_source_of_truth: "ACTIVE-TASKS.md becomes THE single state file. priorities-context.md gets deleted. No more dual-file conflicts."
+  - routing_table_agents_md: "AGENTS.md converts from 100+ line operational rules to IF-ELSE routing table per @systematicls pattern. <800 tokens."
+  - soul_slimming: "SOUL.md shrinks from ~3000 tokens to ~500 tokens. Daimyo council voices + voice patterns move to on-demand skills."
+  - neutral_prompts: "All cron prompts rewritten to neutral language ('report what you observe') instead of biased ('find problems'). Prevents hallucination like 'sector 7 fragmentation'."
+  - cron_triage: "26 crons → ~12. KILL 6 (Initiation Check, Drift Audit, Cron Watchdog, Priorities Check, Bookmark Scout, Auth Fix Reminder). MERGE 4 into 2 (Email Digest→Morning Brief, Weekly AI Metrics→Board of Directors). FIX 6 (isolated→main/systemEvent)."
+  - bootstrap_reduction: "Startup sequence: 12 files → 5 lean files. Move drift-log, self-review, friction-log, PENDING_INPUT to semantic search."
+  - write_authority: "Give Makima write access to ACTIVE-TASKS.md so she can update it directly instead of just reporting staleness."
+
+findings:
+  - monitoring_not_action: "Makima has monitoring infrastructure (drift auditor, heartbeat, patrol) but no action authority. She detects problems but can't fix them, creating noise loops where the same issues are flagged 11× without resolution."
+  - token_burn_root_cause: "12 bootstrap files loaded on every message + every cron trigger (26 crons). Per @the_smart_ape and @xmayeth, this is the #1 cost driver. Each cron trigger = full context injection from scratch."
+  - hallucination_root_cause: "Per @systematicls, biased prompts ('find drift', 'check for problems') cause the model to fabricate findings when there are none. Neutral prompts ('report what you observe') prevent this. This explains the 'Memory fragmentation at 12%, sector 7' fabrication."
+  - isolated_session_danger: "Isolated sessions can't execute commands. When Makima tries, she fabricates results instead of reporting failure. All crons needing file access must use main/systemEvent."
+  - single_orchestrator_pattern: "Per Alex Finn (@peterdiamandis) and @Jacobsklug — one interface (Henry/Jarvis) routes everything. Don't split across 5 different state files and 26 independent crons."
+  - obsidian_is_the_file: "Don't add Obsidian plugin complexity. Symlink ACTIVE-TASKS.md into vault. The file IS the integration — Makima writes to it, Sensei sees it in Obsidian."
+
+worked:
+  - "bird read for X/Twitter URLs (WebFetch blocked by hook, bird skill works)"
+  - "Reading all 8 Makima config/state files before proposing changes"
+  - "HTML visual for before/after comparison — much clearer than markdown"
+  - "Community post research before designing (16 posts, many with 1000+ likes)"
+  - "Brainstorming skill for structured approach with three design lenses"
+
+failed:
+  - "WebFetch for x.com URLs — blocked by twitter-to-bird.mjs hook. Must use bird read."
+  - "Jack transcript directory ~/Shugyo/aeon/clients/jack/transcriptions doesn't exist — couldn't find transcripts"
+  - "Initial AskUserQuestion for approach selection — user wanted HTML visual instead of multiple choice"
+
+next:
+  - "P0 Phase 1 — Kill Complexity (~30 min):"
+  - "  1. Delete ~/clawd/priorities-context.md"
+  - "  2. Update ~/clawd/ACTIVE-TASKS.md with current reality: Unity=dead, Jack demo=done, BY=onboarded, Active Digital=evergreen P0, Esteban=ongoing P0, AEON LLC=ongoing P0"
+  - "  3. Kill 6 dead crons via openclaw cron edit: Initiation Check (cab82ce7), Drift Audit, Cron Watchdog, Priorities Check, Bookmark Scout, Auth Fix Reminder"
+  - "  4. Audit Council Surprise Build cron — keep or kill?"
+  - "  5. Reduce BTC Monitor frequency 15min → 1h"
+  - ""
+  - "P1 Phase 2 — Fix Sessions (~20 min):"
+  - "  1. Move remaining isolated crons to main/systemEvent: Daily Progress, Memory Decay, Jack Learning, Weekly Posts, Gmail Cleanup, Monthly Review"
+  - "  2. Merge Daily Email Digest into Morning Brief cron"
+  - "  3. Merge Weekly AI Metrics into Board of Directors cron"
+  - "  4. Add neutral prompt language to all cron payloads"
+  - ""
+  - "P2 Phase 3 — Wire Real Inputs (~30 min):"
+  - "  1. Morning Brief cron: add Calendar scan + Gmail priority scan (keywords: Jack, Raj, Esteban, BY, DocuSign, Active Digital)"
+  - "  2. Give Makima write authority to ACTIVE-TASKS.md (add to AGENTS.md)"
+  - "  3. Add instruction: when user says priority changed in Discord → update ACTIVE-TASKS.md directly"
+  - ""
+  - "P3 Phase 4 — Slim Bootstrap (~30 min):"
+  - "  1. Slim ~/clawd/x/SOUL.md from ~3000 tokens to ~500 tokens"
+  - "  2. Move Daimyo council voices + voice patterns to OpenClaw skills"
+  - "  3. Convert ~/clawd/x/AGENTS.md to routing table format (<800 tokens)"
+  - "  4. Reduce startup sequence from 12 files to 5"
+  - "  5. Move drift-log, self-review, friction-log to semantic search"
+  - "  6. Simplify ~/clawd/x/HEARTBEAT.md dramatically"
+  - ""
+  - "Future: Telegram migration evaluation, Jack transcript location, deploy Tenshu to Vercel"
+
+files:
+  created:
+    - ~/.agent/diagrams/makima-before-after.html (comprehensive HTML visual — before/after architecture)
+  modified: []
+
+context_for_next_session:
+  html_visual: "~/.agent/diagrams/makima-before-after.html — THE reference document. Contains full cron triage table (26 rows with KEEP/FIX/KILL/MERGE), before/after comparison, information flow diagram, 6 root cause→fix cards, action plan."
+
+  makima_config_files:
+    - ~/.openclaw/openclaw.json (OpenClaw config — 26 crons, 2 agents, model config, gateway, plugins)
+    - ~/clawd/ACTIVE-TASKS.md (task tracking — STALE, needs reality update)
+    - ~/clawd/priorities-context.md (TO BE DELETED — conflicts with ACTIVE-TASKS)
+    - ~/clawd/x/SOUL.md (240 lines, ~3000 tokens — needs slimming to ~500)
+    - ~/clawd/x/AGENTS.md (100+ lines operational rules — needs routing table conversion)
+    - ~/clawd/x/HEARTBEAT.md (83 lines — needs dramatic simplification)
+    - ~/clawd/x/HANDOFF.md (Makima's last session state)
+    - ~/clawd/memory/drift-log.md (recurring drift patterns — 11× same alert)
+
+  cron_triage_summary:
+    kill:
+      - "Initiation Check (cab82ce7) — false positive source, inner_life.py fixed"
+      - "Drift Audit — flagging same thing 11×, noise not signal"
+      - "Cron Watchdog — redundant with new Tenshu cron page"
+      - "Priorities Check — reads stale file, produces stale output"
+      - "Bookmark Scout — low value, isolated session can't exec"
+      - "Auth Fix Reminder — one-time task, should have been removed"
+    merge:
+      - "Daily Email Digest → Morning Brief (one morning summary, not two)"
+      - "Weekly AI Metrics → Board of Directors (one weekly report, not two)"
+    fix_session:
+      - "Daily Progress, Memory Decay, Jack Learning, Weekly Posts, Gmail Cleanup, Monthly Review — all need main/systemEvent if they require exec"
+    keep:
+      - "Morning Brief (after merge), Overnight COO, Board of Directors (after merge), OpenClaw Update, Morning Check-In"
+    reduce_frequency:
+      - "BTC Monitor 15min → 1h"
+
+  key_community_insights:
+    systematicls: "CLAUDE.md = routing table (IF-ELSE to context files). Neutral prompts prevent hallucination. New session per contract. Separate research from implementation."
+    the_smart_ape_xmayeth: "Bootstrap under 3K tokens total. Semantic search for everything else. Crons are expensive (full context each trigger)."
+    peterdiamandis: "Single orchestrator pattern. 'I only talk to Henry.' One interface routes everything."
+    ksimback: "Silent cron failures #1 problem. bestEffort delivery. Isolated sessions for non-exec tasks only."
+    jordymaui: "Heartbeat schedule 8am-11pm. Memory flush before compaction. Separate crons for heavy tasks."
+
+  user_context:
+    getting_busy: "Active Digital contract work incoming. Jack approved 247 agent + CRM work. Needs Makima to reduce overhead, not create it."
+    goals_immediate: "Accurate priority updates, email monitoring/proactive pings, scheduling"
+    goals_future: "Makima running business for Jack, fixing Folio bugs autonomously, overseeing Shogunate engine"
+    considering_telegram: "OpenClaw 2026.3.2 has Telegram live streaming. User may migrate from Discord."
+    obsidian_workflow: "Wants to work more out of Obsidian. Symlink ACTIVE-TASKS.md into vault."

@@ -11,6 +11,7 @@ import { staggerContainer } from "@/lib/motion";
 import { useRealtimeSteps } from "@/lib/realtime";
 import { getTaskByProposal } from "@/lib/queries";
 import { InlineTerminal } from "./terminal/inline-terminal";
+import { MissionWaterfall } from "./mission-waterfall";
 
 const STATUS_ACCENT: Record<string, string> = {
   queued: "#6b7280",
@@ -228,6 +229,50 @@ export function MissionDetail({
           </div>
         </div>
       )}
+
+      {/* Failure forensics */}
+      {missionStatus === "failed" && mission.evaluation_result && (() => {
+        const evalResult = mission.evaluation_result as Record<string, string | undefined>;
+        const rootCause = evalResult.root_cause;
+        const fixApproach = evalResult.fix_approach;
+        if (!rootCause && !fixApproach) return null;
+        return (
+          <StealthCard className="p-4 border-l-2 border-red-500/60">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="font-[family-name:var(--font-space-grotesk)] text-[10px] uppercase tracking-wider text-red-400/80">
+                Failure Forensics
+              </span>
+            </div>
+            {rootCause && (
+              <div className="mb-2">
+                <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/50 block mb-0.5">
+                  Root Cause
+                </span>
+                <p className="font-[family-name:var(--font-jetbrains-mono)] text-xs text-red-400/90">
+                  {rootCause}
+                </p>
+              </div>
+            )}
+            {fixApproach && (
+              <div>
+                <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/50 block mb-0.5">
+                  Fix Approach
+                </span>
+                <p className="font-[family-name:var(--font-jetbrains-mono)] text-xs text-emerald-400/80">
+                  {fixApproach}
+                </p>
+              </div>
+            )}
+          </StealthCard>
+        );
+      })()}
+
+      {/* Execution waterfall */}
+      <MissionWaterfall
+        tasks={liveSteps}
+        missionStartedAt={mission.started_at}
+        missionCompletedAt={mission.completed_at}
+      />
 
       {/* Live terminal stream — shown only while mission is running */}
       {missionStatus === "running" && (

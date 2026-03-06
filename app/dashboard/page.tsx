@@ -1,34 +1,67 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
-import { getAgents, getMissions, getMissionStats, getPendingDiscoveryCount, getSkillPatchStats, getLastPatrolSummary, getActiveCouncilSessionCount, getAwarenessProposalCount, getObjectivesWithMetrics } from "@/lib/queries";
-import type { AgentStatus, Mission, ObjectiveWithMetrics } from "@/lib/types";
 import Link from "next/link";
-import { StatusRibbon } from "@/components/status-ribbon";
-import { AgentSidebar } from "@/components/agent-sidebar";
+import { supabase } from "@/lib/supabase";
+import type { EngineStatus } from "@/lib/types";
+import { SidebarNav } from "@/components/sidebar-nav";
+import { StatCard } from "@/components/stat-card";
+import { EventRail } from "@/components/event-rail";
 import { StealthCard } from "@/components/stealth-card";
-import { ObjectiveOverview } from "@/components/objective-overview";
-import { TerminalPanel } from "@/components/terminal/terminal-panel";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Menu, X } from "lucide-react";
+import { getDashboardCounts, getRecentSessions, getRecentLogs } from "@/lib/queries";
+import { cn } from "@/lib/utils";
+
+type Session = {
+  id: string;
+  title: string;
+  assigned_to: string;
+  status: string;
+  started_at: string | null;
+  completed_at: string | null;
+};
+
+type LogEntry = {
+  id: string;
+  event_type: string;
+  title: string;
+  created_at: string;
+};
+
+type Counts = {
+  activeSessions: number;
+  agentsOnline: number;
+  tasksRunning: number;
+  errors24h: number;
+};
+
+function statusDot(status: string) {
+  if (status === "running" || status === "in_progress") return "bg-green-500";
+  if (status === "failed") return "bg-red-500";
+  if (status === "completed") return "bg-blue-500";
+  return "bg-muted-foreground/40";
+}
+
+function relativeTime(iso: string | null) {
+  if (!iso) return "—";
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
 
 function ConnectPrompt() {
   return (
     <div className="flex h-full items-center justify-center">
       <StealthCard className="max-w-md p-8 text-center">
-        <h2 className="mb-3 font-[family-name:var(--font-space-grotesk)] text-lg font-semibold text-foreground">
+        <h2 className="mb-3 font-[family-name:var(--font-space-grotesk)] text-lg font-semibold">
           Connect Supabase to see live data
         </h2>
-        <p className="mb-4 text-sm text-muted-foreground">
-          Add these environment variables to your <code className="rounded bg-muted px-1.5 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-xs">.env.local</code> file:
-        </p>
-        <div className="rounded-sm bg-muted/50 p-4 text-left font-[family-name:var(--font-jetbrains-mono)] text-xs text-muted-foreground">
-          <p>NEXT_PUBLIC_SUPABASE_URL=your-url</p>
-          <p>NEXT_PUBLIC_SUPABASE_ANON_KEY=your-key</p>
-        </div>
-        <p className="mt-4 text-xs text-muted-foreground/75">
-          Then restart the dev server.
+        <p className="text-sm text-muted-foreground">
+          Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local
         </p>
       </StealthCard>
     </div>
@@ -36,62 +69,36 @@ function ConnectPrompt() {
 }
 
 export default function DashboardPage() {
-  const [agents, setAgents] = useState<AgentStatus[]>([]);
-  const [missions, setMissions] = useState<Mission[]>([]);
-  const [skillStats, setSkillStats] = useState({ recentPatches: 0, appliedPatches: 0 });
-  const [lastPatrol, setLastPatrol] = useState<{ timestamp: string | null; discoveryCount: number }>({ timestamp: null, discoveryCount: 0 });
-  const [objectives, setObjectives] = useState<ObjectiveWithMetrics[]>([]);
-  const [missionStats, setMissionStats] = useState({ active: 0, total: 0 });
-  const [pendingDiscoveries, setPendingDiscoveries] = useState(0);
-  const [councilSessions, setCouncilSessions] = useState(0);
-  const [awarenessCount, setAwarenessCount] = useState(0);
-  const [recapCount, setRecapCount] = useState(0);
-  const [usageData, setUsageData] = useState<{ quotaPercent: number; dailyCost: number } | null>(null);
+  const [engineStatus, setEngineStatus] = useState<EngineStatus | null>(null);
+  const [counts, setCounts] = useState<Counts>({ activeSessions: 0, agentsOnline: 0, tasksRunning: 0, errors24h: 0 });
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(typeof window !== 'undefined' ? window.innerWidth >= 768 : true);
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState("");
+
+  useEffect(() => {
+    const fmt = () =>
+      new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
+    setCurrentTime(fmt());
+    const timer = setInterval(() => setCurrentTime(fmt()), 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [agentsData, missionsData, missionStatsData, discoveryCount, skillStatsData, lastPatrolData, councilSessionCount, awarenessCountData, objectivesData] = await Promise.all([
-          getAgents(),
-          getMissions(),
-          getMissionStats(),
-          getPendingDiscoveryCount(),
-          getSkillPatchStats(),
-          getLastPatrolSummary(),
-          getActiveCouncilSessionCount(),
-          getAwarenessProposalCount(),
-          getObjectivesWithMetrics(),
+        const [statusRes, countsData, sessionsData, logsData] = await Promise.all([
+          fetch("/api/engine-status").then((r) => r.json()),
+          getDashboardCounts(),
+          getRecentSessions(8),
+          getRecentLogs(8),
         ]);
-        setAgents(agentsData);
-        setMissions(missionsData);
-        setMissionStats(missionStatsData);
-        setPendingDiscoveries(discoveryCount);
-        setSkillStats(skillStatsData);
-        setLastPatrol(lastPatrolData);
-        setCouncilSessions(councilSessionCount);
-        setAwarenessCount(awarenessCountData);
-        setObjectives(objectivesData);
-
-        // Fetch recap count + usage data (non-critical — don't block)
-        fetch('/api/recaps').then(r => r.json()).then(d => {
-          const total = (d.groups ?? []).reduce((sum: number, g: { recaps: unknown[] }) => sum + g.recaps.length, 0);
-          setRecapCount(total);
-        }).catch(() => {});
-        fetch('/api/usage').then(r => r.json()).then(d => {
-          const provider = d.providers?.[0];
-          if (provider) {
-            const today = provider.dailyUsage?.find((u: { date: string }) => u.date === new Date().toISOString().split('T')[0]);
-            setUsageData({
-              quotaPercent: provider.quotaInfo?.percentUsed ?? 0,
-              dailyCost: today?.cost ?? 0,
-            });
-          }
-        }).catch(() => {});
+        setEngineStatus(statusRes);
+        setCounts(countsData);
+        setSessions(sessionsData as Session[]);
+        setLogs(logsData as LogEntry[]);
       } catch (err) {
-        console.error('Dashboard fetch error:', err);
+        console.error("Dashboard fetch error:", err);
       } finally {
         setLoading(false);
       }
@@ -101,18 +108,11 @@ export default function DashboardPage() {
 
   if (!supabase) {
     return (
-      <div className="flex h-screen flex-col overflow-hidden bg-background p-2 md:p-4">
-        <div className="mb-2 md:mb-4 flex-shrink-0">
-          <div className="mb-2 md:mb-3 flex items-baseline gap-3">
-            <h1 className="font-[family-name:var(--font-space-grotesk)] text-lg md:text-2xl font-bold tracking-tight text-foreground">
-              Dynasty Tenshu
-            </h1>
-            <span className="hidden md:inline text-xs text-muted-foreground">
-              Shogunate Command Center
-            </span>
-          </div>
+      <div className="flex h-screen bg-background">
+        <SidebarNav />
+        <div className="flex-1">
+          <ConnectPrompt />
         </div>
-        <ConnectPrompt />
       </div>
     );
   }
@@ -127,122 +127,256 @@ export default function DashboardPage() {
     );
   }
 
+  const healthVariant =
+    engineStatus?.health === "nominal"
+      ? "success"
+      : engineStatus?.health === "degraded"
+      ? "warning"
+      : "danger";
+
+  const authorityDomains = engineStatus?.authority?.domains
+    ? Object.entries(engineStatus.authority.domains)
+    : [];
+
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background p-2 md:p-4">
-      {/* Header */}
-      <div className="mb-2 md:mb-4 flex-shrink-0">
-        <div className="mb-2 md:mb-3 flex items-center md:items-baseline gap-2 md:gap-3 flex-wrap">
-          {/* Mobile sidebar toggle */}
-          <button
-            onClick={() => setMobileSidebarOpen(true)}
-            className="md:hidden h-8 w-8 rounded-md hover:bg-muted flex items-center justify-center transition-colors flex-shrink-0"
-          >
-            <Menu className="h-4 w-4 text-muted-foreground" />
-          </button>
-          <h1 className="font-[family-name:var(--font-space-grotesk)] text-lg md:text-2xl font-bold tracking-tight text-foreground">
-            Dynasty Tenshu
-          </h1>
-          <span className="hidden md:inline text-xs text-muted-foreground">
-            Shogunate Command Center
-          </span>
-          <span className="ml-auto hidden md:inline font-[family-name:var(--font-jetbrains-mono)] text-xs tabular-nums text-muted-foreground/75">
-            <Link href="/objectives" className="transition-colors hover:text-foreground/60">
-              {objectives.length} objectives
-            </Link>
-            {" \u00B7 "}
-            <Link href="/missions" className="transition-colors hover:text-foreground/60">
-              {missions.filter(m => m.status === 'running').length} running
-            </Link>
-            {" \u00B7 "}
-            {missions.filter(m => m.status === 'failed').length + pendingDiscoveries} need attention
-          </span>
-          <ThemeToggle />
-        </div>
-        <StatusRibbon
-          pendingDiscoveries={pendingDiscoveries}
-          lastPatrol={lastPatrol}
-          skillStats={skillStats}
-          councilSessions={councilSessions}
-          awarenessCount={awarenessCount}
-          recapCount={recapCount}
-          usageData={usageData}
-        />
-      </div>
+    <div className="flex h-screen bg-background">
+      {/* Left Sidebar */}
+      <SidebarNav />
 
-      {/* Mobile Sidebar Drawer */}
-      {mobileSidebarOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileSidebarOpen(false)} />
-          <div className="absolute inset-y-0 left-0 w-72 bg-background border-r border-border p-4 overflow-y-auto">
-            <div className="mb-3 flex items-center justify-between">
-              <span className="font-[family-name:var(--font-space-grotesk)] text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Daimyo Council
-              </span>
-              <button
-                onClick={() => setMobileSidebarOpen(false)}
-                className="h-8 w-8 rounded-md hover:bg-muted flex items-center justify-center"
-              >
-                <X className="h-4 w-4 text-muted-foreground" />
-              </button>
-            </div>
-            <AgentSidebar agents={agents} />
-          </div>
-        </div>
-      )}
-
-      {/* Main Content */}
-      <div className="flex flex-1 gap-4 overflow-hidden">
-        {/* Left - Agent Sidebar (desktop only) */}
-        <div className={`hidden md:block transition-all duration-150 flex-shrink-0 overflow-hidden ${sidebarOpen ? "w-64" : "w-10"}`}>
-          {sidebarOpen ? (
-            <div className="flex h-full flex-col">
-              <div className="mb-2 flex h-6 items-center justify-between">
-                <span className="font-[family-name:var(--font-space-grotesk)] text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Daimyo Council
-                </span>
-                <button
-                  onClick={() => setSidebarOpen(false)}
-                  className="text-muted-foreground font-[family-name:var(--font-space-grotesk)] text-xs hover:text-foreground/60"
-                >
-                  &laquo;
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto">
-                <AgentSidebar agents={agents} />
-              </div>
-            </div>
-          ) : (
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="flex h-full w-10 flex-col items-center pt-2 text-muted-foreground hover:text-foreground/60"
-            >
-              <span className="font-[family-name:var(--font-space-grotesk)] text-xs [writing-mode:vertical-rl]">DC</span>
-              <span className="mt-2 font-[family-name:var(--font-space-grotesk)] text-xs">&raquo;</span>
-            </button>
-          )}
-        </div>
-
-        {/* Center - Objective Overview */}
-        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          <div className="mb-2 flex h-6 items-center gap-2">
-            <span className="font-[family-name:var(--font-space-grotesk)] text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Objectives
+      {/* Main Area */}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        {/* Top Bar */}
+        <div className="flex h-10 flex-shrink-0 items-center gap-4 border-b border-border/50 px-5 font-[family-name:var(--font-jetbrains-mono)] text-[11px] text-muted-foreground">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-500 shadow-[0_0_6px] shadow-green-500" />
+          <span>Engine Live</span>
+          <span className="text-muted-foreground/40">·</span>
+          <span>
+            Cycle{" "}
+            <span className="text-amber-500">
+              {Math.round((engineStatus?.avgCycleMs || 0) / 1000)}s
             </span>
-            {pendingDiscoveries > 0 && (
-              <span className="rounded-full bg-blue-500/15 px-1.5 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-medium text-blue-400">
-                {pendingDiscoveries} discover{pendingDiscoveries === 1 ? "y" : "ies"}
-              </span>
-            )}
+          </span>
+          <span className="text-muted-foreground/40">·</span>
+          <span>Gateway 198ms</span>
+          <span className="flex-1" />
+          <ThemeToggle />
+          <span className="text-muted-foreground/40">{currentTime}</span>
+        </div>
+
+        <div className="flex flex-1 overflow-hidden">
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-4">
+            {/* Stat Cards Row */}
+            <div className="mb-4 grid grid-cols-4 gap-3">
+              <Link href="/sessions" className="block">
+                <StatCard
+                  label="Active Sessions"
+                  value={counts.activeSessions}
+                  subtext="missions running"
+                  variant={counts.activeSessions > 0 ? "success" : "default"}
+                />
+              </Link>
+              <Link href="/agents" className="block">
+                <StatCard
+                  label="Agents Online"
+                  value={counts.agentsOnline}
+                  subtext="not offline"
+                  variant={counts.agentsOnline > 0 ? "success" : "default"}
+                />
+              </Link>
+              <Link href="/tasks" className="block">
+                <StatCard
+                  label="Tasks Running"
+                  value={counts.tasksRunning}
+                  subtext="in progress"
+                  variant={counts.tasksRunning > 0 ? "default" : "default"}
+                />
+              </Link>
+              <Link href="/missions" className="block">
+                <StatCard
+                  label="Errors (24h)"
+                  value={counts.errors24h}
+                  subtext="failed missions"
+                  variant="danger"
+                />
+              </Link>
+            </div>
+
+            {/* 3-Column Panel Row */}
+            <div className="mb-4 grid grid-cols-3 gap-3">
+              {/* System Health */}
+              <div className="rounded-sm border border-border/50 bg-card p-3">
+                <div className="mb-2 border-b border-border/50 pb-2 font-[family-name:var(--font-space-grotesk)] text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  System Health
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-muted-foreground">Supabase</span>
+                    <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-green-500">Connected</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-muted-foreground">Claude CLI</span>
+                    <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-green-500">Available</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-muted-foreground">Avg Cycle</span>
+                    <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-amber-500">
+                      {Math.round((engineStatus?.avgCycleMs || 0) / 1000)}s
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-muted-foreground">Budget</span>
+                    <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-green-500">OK</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-muted-foreground">Health</span>
+                    <span
+                      className={cn(
+                        "font-[family-name:var(--font-jetbrains-mono)] text-[10px] capitalize",
+                        healthVariant === "success" ? "text-green-500" : healthVariant === "warning" ? "text-amber-500" : "text-red-500"
+                      )}
+                    >
+                      {engineStatus?.health || "unknown"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Engine Status */}
+              <div className="rounded-sm border border-border/50 bg-card p-3">
+                <div className="mb-2 border-b border-border/50 pb-2 font-[family-name:var(--font-space-grotesk)] text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Engine Status
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-muted-foreground">Wins (24h)</span>
+                    <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-green-500">
+                      {engineStatus?.wins?.length ?? 0}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-muted-foreground">Failures (24h)</span>
+                    <span className={cn("font-[family-name:var(--font-jetbrains-mono)] text-[10px]", (engineStatus?.failures?.length ?? 0) > 0 ? "text-red-500" : "text-green-500")}>
+                      {engineStatus?.failures?.length ?? 0}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-muted-foreground">Stalled</span>
+                    <span className={cn("font-[family-name:var(--font-jetbrains-mono)] text-[10px]", (engineStatus?.stalledObjectives?.length ?? 0) > 0 ? "text-amber-500" : "text-muted-foreground/60")}>
+                      {engineStatus?.stalledObjectives?.length ?? 0}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-muted-foreground">With Root Cause</span>
+                    <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/60">
+                      {engineStatus?.failures?.filter((f) => f.rootCause).length ?? 0}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Authority */}
+              <div className="rounded-sm border border-border/50 bg-card p-3">
+                <div className="mb-2 flex items-center justify-between border-b border-border/50 pb-2">
+                  <span className="font-[family-name:var(--font-space-grotesk)] text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Authority
+                  </span>
+                  <span
+                    className={cn(
+                      "font-[family-name:var(--font-jetbrains-mono)] text-[10px]",
+                      engineStatus?.authority?.enabled ? "text-green-500" : "text-muted-foreground/60"
+                    )}
+                  >
+                    {engineStatus?.authority?.enabled ? "enabled" : "disabled"}
+                  </span>
+                </div>
+                <div className="space-y-1.5">
+                  {authorityDomains.length === 0 && (
+                    <div className="text-[11px] text-muted-foreground/60">
+                      No domain data yet. Authority tracks agent success rates per domain to auto-approve trusted work.
+                    </div>
+                  )}
+                  {authorityDomains.slice(0, 4).map(([domain, info]) => (
+                    <div key={domain} className="flex items-center justify-between">
+                      <span className="text-[11px] capitalize text-muted-foreground">{domain}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/60">
+                          {info.tier === "auto-approve" ? "auto" : "propose"}
+                        </span>
+                        <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-green-500">
+                          {Math.round(info.successRate * 100)}%
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* 2-Column Bottom Row */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* Recent Sessions */}
+              <div className="rounded-sm border border-border/50 bg-card p-3">
+                <div className="mb-2 border-b border-border/50 pb-2 font-[family-name:var(--font-space-grotesk)] text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Recent Sessions
+                </div>
+                <div className="space-y-1">
+                  {sessions.length === 0 && (
+                    <div className="text-[11px] text-muted-foreground/60">No sessions</div>
+                  )}
+                  {sessions.map((s) => (
+                    <Link
+                      key={s.id}
+                      href={`/missions/${s.id}`}
+                      className="flex items-center gap-2 rounded px-1 py-1 transition-colors hover:bg-muted/30"
+                    >
+                      <span className={cn("h-1.5 w-1.5 flex-shrink-0 rounded-full", statusDot(s.status))} />
+                      <span className="flex-1 truncate text-[11px]">{s.title || s.id.slice(0, 8)}</span>
+                      <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/60">
+                        {s.assigned_to || "—"}
+                      </span>
+                      <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/40">
+                        {relativeTime(s.started_at || s.completed_at)}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Recent Logs */}
+              <div className="rounded-sm border border-border/50 bg-card p-3">
+                <div className="mb-2 border-b border-border/50 pb-2 font-[family-name:var(--font-space-grotesk)] text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Recent Logs
+                </div>
+                <div className="space-y-1">
+                  {logs.length === 0 && (
+                    <div className="text-[11px] text-muted-foreground/60">No log entries</div>
+                  )}
+                  {logs.map((l) => (
+                    <Link
+                      key={l.id}
+                      href="/events"
+                      className="flex items-center gap-2 rounded px-1 py-1 transition-colors hover:bg-muted/30"
+                    >
+                      <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/50">
+                        {l.event_type}
+                      </span>
+                      <span className="flex-1 truncate text-[11px] text-muted-foreground/80">{l.title || "—"}</span>
+                      <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/40">
+                        {relativeTime(l.created_at)}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="flex-1 overflow-hidden">
-            <ObjectiveOverview objectives={objectives} />
-          </div>
+
+          {/* Right Event Rail */}
+          <EventRail />
         </div>
 
       </div>
-
-      {/* Bottom - Terminal Panel */}
-      <TerminalPanel />
     </div>
   );
 }
