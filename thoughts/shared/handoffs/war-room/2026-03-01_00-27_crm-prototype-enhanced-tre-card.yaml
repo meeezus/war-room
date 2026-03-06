@@ -1,0 +1,99 @@
+---
+session: war-room
+date: 2026-03-01
+status: partial
+outcome: PARTIAL_PLUS
+---
+
+goal: Enhanced CRM prototype with real data, smart chat, thread history, cronometer, and full-page member layout mockup
+now: Build full-page member view (mobile-first, profile bar at top, conditional tabs, pinned chat bar) — replace the overlay card in index.html. User wants to think about Salesforce-like UX first.
+
+test: |
+  curl -s https://jack-crm-prototype.vercel.app/ | grep -o "sendMemberChip" | head -1
+
+done_this_session:
+  - task: Fixed openInSkool() to actually open Tre's Skool thread URL (was fake notification)
+    files: [~/Shugyo/ÆON/Clients/Jack/index.html:7315-7327]
+  - task: Moved chat bar to top of member detail card with "Ask CRM" button
+    files: [~/Shugyo/ÆON/Clients/Jack/index.html:6680-6698]
+  - task: Added smart suggestion pills (Draft reply, My last rec, Cronometer, Stack, Labs, Symptoms, Open in Skool)
+    files: [~/Shugyo/ÆON/Clients/Jack/index.html:6868-6895]
+  - task: Fixed dark chat bubble (was using --surface-hover #1e1e2e, changed to --bg)
+    files: [~/Shugyo/ÆON/Clients/Jack/index.html:6644]
+  - task: Fixed "Draft reply to latest" — was matching "latest" keyword before "draft". Moved draft handler before latest in if/else chain. Now generates contextual reply based on latest member message content (fatigue→mitochondrial, supplements→methylation, gut→charcoal)
+    files: [~/Shugyo/ÆON/Clients/Jack/index.html:6607-6640]
+  - task: Added "See thread history ↓" link in Summary that smooth-scrolls to thread section
+    files: [~/Shugyo/ÆON/Clients/Jack/index.html:6700]
+  - task: Added Upload file + Save button to Your Notes section with localStorage persistence, attachment chips with remove
+    files: [~/Shugyo/ÆON/Clients/Jack/index.html:6856-6875, 6969-7020]
+  - task: Created full-page member layout mockup HTML (interactive, tabbed, responsive)
+    files: [~/.agent/diagrams/crm-member-fullpage-mockup.html]
+  - task: Multiple Vercel deploys to jack-crm-prototype.vercel.app with --force cache bypass
+    files: []
+
+blockers: []
+
+questions:
+  - "User wants to think about Salesforce-like UX before committing to full-page layout. May change direction."
+  - "Should tabs be Overview/Thread/Nutrition/Notes or something else?"
+  - "How much of the 224 member data should be visible in the full-page view vs just the curated members?"
+
+decisions:
+  - chat_at_top: "Moved chat bar from bottom of card to top — primary interaction, not afterthought"
+  - chips_built_in_js: "Smart pills built via JS after innerHTML (not inline template literals) to avoid quote escaping hell"
+  - draft_reply_priority: "Draft/reply handler must come BEFORE latest/recent handler in if/else chain — 'Draft reply to latest' contains 'latest' keyword"
+  - conditional_tabs: "Only show Thread tab if m.threads exists, Nutrition if m.cronometer exists. Stack/Labs go in Overview, not own tabs"
+  - no_sidebar: "User rejected left sidebar — wants mobile-first layout (profile bar at top, full-width tabs) for desktop too"
+  - default_member_data: "Most members only have: name, join date, last active, level, points, post counts, activity heatmap, status. Stack/labs/threads/cronometer are Tre-specific enrichment"
+
+findings:
+  - keyword_collision: "In chat handler if/else chain, keyword order matters. 'Draft reply to latest comment' matches 'latest' before 'draft'. Always put more specific handlers first."
+  - quote_escaping_hell: "Template literals with ternary + string concat + onclick handlers = broken escaping. Build DOM elements in JS after innerHTML instead."
+  - jack_vision: "Jack wants per-member AI knowledge base (like ChatGPT Projects). Browse thread first, then ask AI. Scoped to one thread per member, not all posts. Already built for Tre."
+  - tabs_vs_cards: "Jack said 'tabs per person' but at 224 members that's unusable. Card/page-based flow (search → click → detail) is correct UX."
+
+worked:
+  - "Building chip buttons via JS DOM after innerHTML avoids template literal escaping issues"
+  - "Vercel --force flag bypasses CDN cache reliably"
+  - "Contextual draft reply using keyword matching on latest thread message content"
+  - "sendMemberChip() helper that sets input value then calls sendMemberChat()"
+
+failed:
+  - "Inline escaped quotes in template literal ternaries (\\\\' produced broken JS)"
+  - "oninput for auto-save notes (removed in favor of explicit Save button)"
+
+next:
+  - "PENDING USER DECISION: Full-page member view layout. User wants to think about Salesforce-like UX first."
+  - "When approved: Replace overlay card (openMember function) with full-page view. Mobile-first layout, profile bar at top, conditional tabs (Overview always, Thread/Nutrition only if data exists, Notes always), pinned chat bar at bottom."
+  - "Key files to modify: ~/Shugyo/ÆON/Clients/Jack/index.html — openMember() at ~line 6649, closeDetail() at ~line 6969"
+  - "Mockup for reference: ~/.agent/diagrams/crm-member-fullpage-mockup.html"
+  - "After building: cp index.html crm-prototype.html && cd ~/Shugyo/ÆON/Clients/Jack && vercel --prod --yes --force"
+  - "Consider scraping more member threads (not just Tre) to demo the Thread tab on other members"
+  - "Upload/Save notes needs testing with actual file uploads"
+
+files:
+  created:
+    - ~/.agent/diagrams/crm-member-fullpage-mockup.html
+  modified:
+    - ~/Shugyo/ÆON/Clients/Jack/index.html
+    - ~/Shugyo/ÆON/Clients/Jack/crm-prototype.html
+
+context_for_next_session:
+  prototype_location: ~/Shugyo/ÆON/Clients/Jack/index.html
+  prototype_vercel: https://jack-crm-prototype.vercel.app
+  crm_prototype_copy: ~/Shugyo/ÆON/Clients/Jack/crm-prototype.html
+  mockup: ~/.agent/diagrams/crm-member-fullpage-mockup.html
+  tre_thread_data: ~/Shugyo/ÆON/Clients/Jack/skool-data/tre-health-journey-thread.json
+  members_data: ~/Shugyo/ÆON/Clients/Jack/skool-data/crm-members-final.json
+  posts_with_comments: ~/Shugyo/ÆON/Clients/Jack/skool-data/posts-with-comments.json
+  cookie_file: ~/.skool-cookies.json
+  community_slug: healthoptimization
+  tre_thread_url: https://www.skool.com/healthoptimization/health-journey?p=e330575c
+  prd: ~/Code/war-room/.specs/2026-02-27-jack-crm-PRD.md
+  trd: ~/Code/war-room/.specs/2026-02-27-jack-crm-TRD.md
+  scraper_scripts: ~/Code/clawdbot/skills/skool-scraper/scripts/
+  openMember_line: ~6649
+  sendMemberChat_line: ~6573
+  sendMemberChip_line: ~6568
+  members_array_line: ~1451
+  tre_object_line: ~1452

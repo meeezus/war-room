@@ -18,7 +18,7 @@ const sentryOptions = {
   silent: !process.env.CI,
   widenClientFileUpload: true,
   disableLogger: true,
-  automaticVercelMonitors: false,
+  automaticVercelMonitors: true,
 };
 
 // Only wrap with Sentry if auth token is present — prevents build crash in local dev

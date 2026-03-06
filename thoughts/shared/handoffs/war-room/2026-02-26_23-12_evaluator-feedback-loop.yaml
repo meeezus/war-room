@@ -1,0 +1,88 @@
+---
+session: war-room
+date: 2026-02-26
+status: complete
+outcome: PARTIAL_PLUS
+---
+
+goal: Close evaluator feedback loop — failed missions self-heal, unblock engine pipeline, kill Discord spam
+now: Monitor engine executing missions, investigate any new execute_next errors, verify failure_evaluated events appear after real failures
+
+test: cd ~/Code/shogunate && .venv/bin/python3 -m pytest tests/ -q
+
+done_this_session:
+  - task: "Implemented evaluate_failed_mission() — Haiku analyzes failures, creates [Remediation] proposals, 3 spam guards (existing proposal, 3-strike pause, budget check)"
+    files: [engine/evaluator.py, engine/executor.py, engine/config.py, engine/budget.py]
+  - task: "Wrote 7 unit tests for failure evaluation (creates proposal, no-retry, existing proposal guard, max retries pause, disabled config, stores result)"
+    files: [tests/unit/test_evaluator.py]
+  - task: "Fixed _run_failure_analysis prompt — was reading nonexistent mission.error column, now fetches actual task errors/output"
+    files: [engine/evaluator.py]
+  - task: "Killed Discord notifications — send_discord() is now a no-op, War Room terminal is the sole event feed"
+    files: [engine/notifications.py]
+  - task: "Unblocked engine pipeline — marked 2 stuck missions (1 ghost running with 0 tasks, 1 queued with all tasks done), cleared 44 zombie proposals (approved but all missions failed)"
+    files: []
+  - task: "Fixed agent_status column name — executor used daimyo_id but table has 'name' column"
+    files: [engine/executor.py]
+  - task: "Renewed Claude OAuth token (expired Jan 28), engine claude -p calls work again"
+    files: []
+  - task: "Stopped Makima Discord spam — disabled polld agent_health poller (was detecting 20+ stale dead-team agents every 30s, waking Makima each time)"
+    files: [~/.clawd/polld.yaml]
+  - task: "Created plain-prose morning report at ~/clawd/memory/from-cc/2026-02-27T043000-evaluator-feedback-loop.md"
+    files: []
+
+blockers:
+  - "execute_next() was hitting agent_status.daimyo_id error — FIXED this session"
+  - "claude -p can't run inside Claude Code sessions (CLAUDECODE env var) — only affects testing, not production poller"
+
+questions:
+  - "War-room repo is on feature/error-boundaries branch with unreviewed changes from engine missions — need to review before merging"
+  - "Should non-code objectives (1Password, ÆON) stay active or be paused? Engine is creating missions for them but they can't be solved by code agents"
+  - "Awareness eval timeouts for ed, light, power — may need AWARENESS_TIMEOUT_SECONDS increased or awareness prompt simplified"
+
+decisions:
+  - kill_discord_notifications: "send_discord() is a no-op now. War Room terminal feed is the sole notification channel. Discord was noise — 'Unknown mission', 'Task Escalated' spam with no actionable info."
+  - zombie_proposal_cleanup: "44 approved proposals with all-failed missions marked as 'failed' to unblock check_stalled_objectives from creating fresh proposals."
+  - polld_agent_health_disabled: "Disabled in ~/.clawd/polld.yaml. Source of Makima 'Done.' spam. Dead team registries (folio-v2, folio-landing, voice-dna-sprint, etc.) need cleanup before re-enabling."
+  - daemon_thread_for_failure_eval: "evaluate_failed_mission runs in a daemon thread from executor — never blocks the poll cycle. Best-effort, logged on failure."
+  - failure_analysis_fetches_tasks: "Prompt includes actual failed task errors and completed task output, not just mission-level data (missions table has no error column)."
+
+findings:
+  - pipeline_was_fully_stuck: "144 failed missions, 2 completed, 0 queued/running. Every approved proposal already had a failed mission. run_pending() skipped them, check_stalled_objectives() saw active proposals. Complete deadlock."
+  - agent_status_schema_mismatch: "executor.py referenced agent_status.daimyo_id but column is 'name'. Silently crashed every execute_next() call."
+  - polld_spam_source: "polld agent_health poller detects 20+ stale agents from dead teams every 30s → wakes Makima → she replies 'Done.' per event. Kuato sync also failing (267+ consecutive failures)."
+  - oauth_token_expired_jan28: "~/.claude/.credentials.json token expired 2026-01-28. Needed `claude login` to refresh. Affects all engine claude -p calls."
+
+worked:
+  - "Parallel agents (kraken) for implementation + tests — both completed, tests adapted to implementation automatically"
+  - "Live testing against real Supabase data to catch schema mismatches (mission.error, agent_status.daimyo_id)"
+  - "Marking zombie proposals as failed to trigger check_stalled_objectives fresh proposal creation"
+
+failed:
+  - "claude -p from inside Claude Code — always fails (CLAUDECODE env var or hangs). Can only test evaluator's LLM path from outside CC."
+  - "env -u CLAUDECODE workaround — works for subprocess but claude CLI still hangs in nested sessions"
+
+next:
+  - "Monitor engine overnight — check /tmp/warroom-poller.err for execute_next errors, failure_evaluated events"
+  - "Review war-room feature/error-boundaries branch changes — unreviewed engine mission output"
+  - "Investigate awareness eval timeouts (ed, light, power timing out) — may need prompt simplification or timeout increase"
+  - "Clean polld dead team registries so agent_health can be re-enabled safely"
+  - "Verify [Remediation] proposals appear after real mission failures (couldn't test LLM path from CC)"
+  - "Consider pausing non-code objectives (1Password, ÆON) that code agents can't solve"
+  - "War Room terminal feed: add color for failure_evaluated and objective_needs_human event types"
+
+files:
+  created:
+    - engine/budget.py
+    - ~/clawd/memory/from-cc/2026-02-27T043000-evaluator-feedback-loop.md
+  modified:
+    - engine/evaluator.py
+    - engine/executor.py
+    - engine/config.py
+    - engine/notifications.py
+    - engine/investigation.py
+    - engine/poller.py
+    - pyproject.toml
+    - uv.lock
+    - tests/unit/test_evaluator.py
+    - tests/unit/test_poller.py
+    - ~/.clawd/polld.yaml

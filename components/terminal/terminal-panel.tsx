@@ -48,7 +48,7 @@ interface BufferedEvent {
 export function TerminalPanel() {
   const [events, setEvents] = useState<BufferedEvent[]>([])
   const [paused, setPaused] = useState(false)
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(true)
   const [connected, setConnected] = useState(false)
   const pauseBufferRef = useRef<BufferedEvent[]>([])
   const bottomRef = useRef<HTMLDivElement>(null)

@@ -1,0 +1,130 @@
+---
+session: war-room
+date: 2026-02-27
+status: partial
+outcome: FAILED
+---
+
+goal: Discovered Skool's real DOM selectors, data model, and pagination architecture. Got 94/266 members via level filters.
+now: Use browser-use --browser real or OpenClaw Chrome relay to interact with Skool's client-side pagination UI directly. The ?p=2 param returned page:2 — verify if users actually differ.
+
+test: |
+  cat ~/Shugyo/ÆON/Clients/Jack/skool-data/members-list.json | python3 -c "import json,sys; d=json.load(sys.stdin); print(f'{d[\"totalMembers\"]} members, validated={d[\"validated\"]}')"
+
+done_this_session:
+  - task: Fixed CRM prototype tour steps 2,3,6,7 — root cause was scrollIntoView smooth race condition with getBoundingClientRect
+    files: [~/Shugyo/ÆON/Clients/Jack/crm-prototype.html]
+  - task: Deployed tour fixes to Vercel (jack-crm-prototype.vercel.app), user sent both previews to Jack
+    files: [~/Shugyo/ÆON/Clients/Jack/index.html]
+  - task: Discovered correct Skool members URL — /{slug}/-/members NOT /{slug}/members
+    files: []
+  - task: Discovered Skool is Next.js SSR — all member data in __NEXT_DATA__ JSON blob (126K chars)
+    files: [~/Shugyo/ÆON/Clients/Jack/skool-data/debug/next-data.json]
+  - task: Mapped full member data model — id, name, handle, firstName, lastName, bio, location, avatar, joinDate, lastActive, level, points, online, socialLinks, role, email(self only)
+    files: [~/Shugyo/ÆON/Clients/Jack/skool-data/debug/next-data.json]
+  - task: Discovered pagination metadata — page:1, totalPages:9, total:266, itemsPerPage:30
+    files: []
+  - task: Scraped 94 unique members using level filters (1-4) — only approach that returns different member sets
+    files: [~/Shugyo/ÆON/Clients/Jack/skool-data/members-list.json]
+  - task: Created 5 scraper scripts during discovery process
+    files: [~/Code/clawdbot/skills/skool-scraper/scripts/discover-api.ts, ~/Code/clawdbot/skills/skool-scraper/scripts/scrape-all-members.ts, ~/Code/clawdbot/skills/skool-scraper/scripts/scrape-via-search.ts, ~/Code/clawdbot/skills/skool-scraper/scripts/scrape-full.ts, ~/Code/clawdbot/skills/skool-scraper/scripts/scrape-nextjs-data.ts]
+
+blockers:
+  - Skool caps member list at 30 per page. URL params (?page=N, ?sortType=X) are ignored server-side EXCEPT ?levels=N and ?p=N
+  - The ?p=2 param returned page:2 in __NEXT_DATA__ but firstUser was same — needs verification if actual user list differs
+  - No Skool API exists (confirmed by user). All data extraction must be DOM/SSR based
+  - Level filter gives 94 members (levels 1-4, each capped at 30). Level 1 likely has 200+ members but only returns 30
+
+questions:
+  - Does ?p=2 actually return different users? (firstUser was same but could be because logged-in user always appears first)
+  - Can browser-use --browser real + clicking the actual pagination UI solve this? (UI pagination controls not found in DOM but JS has pagination logic)
+  - Would OpenClaw Chrome relay (ws://127.0.0.1:18789) be better than Playwright for interacting with authenticated Skool session?
+  - Is the "Showing 30 of 266 users" text at bottom supposed to have pagination controls? Maybe admin-only feature?
+  - Should we try the leaderboards page with different URL params for member extraction?
+
+decisions:
+  - scrollIntoView_instant: Changed smooth→instant scroll in tour to fix spotlight race condition with getBoundingClientRect 180ms later
+  - level_filter_strategy: Using ?levels=N URL param as primary pagination — only server-side param that actually filters different member sets
+  - no_public_api: Confirmed Skool has no public API. api2.skool.com endpoints all return 404. Must use SSR/DOM scraping only
+  - next_data_primary: __NEXT_DATA__ is the richest data source — contains full user objects with metadata, member info, spData (level/points), social links
+
+findings:
+  - skool_url_format: "Members URL is /{slug}/-/members NOT /{slug}/members — the /-/ prefix is required"
+  - skool_nextjs_ssr: "Skool is Next.js with SSR. Member data lives in __NEXT_DATA__.props.pageProps.users (30 items) and .renderData.members (30 items)"
+  - pagination_metadata: "totalPages:9, total:266, itemsPerPage:30, page:1 — pagination EXISTS but URL ?page=N param is IGNORED"
+  - p_param_works: "?p=2 returns page:2 in __NEXT_DATA__ (vs ?page=2 returns page:1). Different param name! But need to verify users differ"
+  - level_distribution: "Level 1: 30+ members (capped), Level 2: ~29, Level 3: ~25, Level 4: ~10. Total via levels: 94"
+  - sort_params_ignored: "sortType URL param (memberapprovedat, membercontributions, memberlastonline, name) returns 0 users — server-side doesn't process it"
+  - search_client_only: "Search input filters existing 30 DOM members client-side. ?search=X URL param also ignored"
+  - member_data_model: |
+      Full user object fields: id, name(handle), firstName, lastName, email(self only),
+      metadata: {bio, location, online, pictureBubble, pictureProfile, spData(JSON: pts/lv/pcl/pnl/role),
+      linkFacebook/Instagram/Linkedin/Twitter/Website/Youtube, loginTimezone, myersBriggs, lastOffline, notifs},
+      member: {id, role, createdAt(join), lastOffline, metadata:{mbsltv(LTV), invitedBy, aflPctAtJoin}}
+  - api_url_discovered: "api2.skool.com is the backend API URL (found in env config). readGroupMembersData() is the API call. But no public endpoints work"
+  - bulk_export_exists: "membersBulkActions type:bulk-export-csv exists in JS but requires isAdmin:true — we're a regular member"
+  - styled_components_selectors: "[class*='MemberItemWrapper'], [class*='UserNameLink'], [class*='MemberBio'], [class*='MemberInfoItem'], [class*='MembersListWrapper']"
+  - openclaw_gateway_up: "OpenClaw gateway at ws://127.0.0.1:18789 is running. Chrome relay extension could control authenticated Skool tab directly"
+
+worked:
+  - "__NEXT_DATA__ extraction — richest data source with full user objects"
+  - "Level filter URL param (?levels=N) — only server-side filter that returns different member sets"
+  - "Cookie persistence via ~/.skool-cookies.json — cookies saved from earlier session still valid"
+  - "Playwright headless:false for interactive Skool login"
+  - "browser-use --browser real for reading tweets with authenticated X session"
+
+failed:
+  - "?page=N URL param — completely ignored by Skool's SSR, always returns page 1"
+  - "?sortType=X URL param — returns 0 users for most sort options"
+  - "?search=X URL param — ignored, returns default 30"
+  - "Next.js data route (/_next/data/{buildId}/...?page=2) — returns same 30 users regardless of page"
+  - "x-nextjs-data:1 header on data route — no difference"
+  - "Scrolling (window + container) — no infinite scroll, no IntersectionObserver, no load-more"
+  - "Next.js router.push with page param — doesn't trigger server-side data refetch"
+  - "Direct api2.skool.com calls — all return 404"
+  - "React fiber tree inspection for pagination state — no fiber key found"
+
+next:
+  - "CRITICAL: Test if ?p=2 returns DIFFERENT users (it returned page:2 but need to compare actual user lists)"
+  - "Try browser-use --browser real to navigate Skool with existing Chrome auth and interact with pagination UI"
+  - "Try OpenClaw Chrome relay to control authenticated Skool tab — may see pagination controls that Playwright misses"
+  - "If ?p=N works: simple loop p=1 through p=9, collect users, deduplicate"
+  - "If ?p=N doesn't work: try combining ?levels=N&p=M for cross-product pagination"
+  - "Fallback: alphabet search in DOM (type 'aa', 'ab', 'ac'... into search to get unique batches)"
+  - "Update scrape-members.ts with correct URL format (/-/members) and real selectors"
+  - "Add post-scrape validation gate (members < 200 = failure)"
+
+files:
+  created:
+    - ~/Code/clawdbot/skills/skool-scraper/scripts/discover-api.ts
+    - ~/Code/clawdbot/skills/skool-scraper/scripts/scrape-all-members.ts
+    - ~/Code/clawdbot/skills/skool-scraper/scripts/scrape-via-search.ts
+    - ~/Code/clawdbot/skills/skool-scraper/scripts/scrape-full.ts
+    - ~/Code/clawdbot/skills/skool-scraper/scripts/scrape-nextjs-data.ts
+    - ~/Code/clawdbot/skills/skool-scraper/scripts/test-pagination.ts
+    - ~/Code/clawdbot/skills/skool-scraper/scripts/discover-pagination.ts
+    - ~/Code/clawdbot/skills/skool-scraper/scripts/analyze-members-js.ts
+    - ~/Shugyo/ÆON/Clients/Jack/skool-data/debug/next-data.json
+    - ~/Shugyo/ÆON/Clients/Jack/skool-data/debug/members-chunk.js
+    - ~/Shugyo/ÆON/Clients/Jack/skool-data/debug/members-pagination.png
+    - ~/Shugyo/ÆON/Clients/Jack/skool-data/debug/showing-area.png
+  modified:
+    - ~/Shugyo/ÆON/Clients/Jack/skool-data/members-list.json (94 members via level filter)
+
+context_for_next_session:
+  prototype_location: ~/Shugyo/ÆON/Clients/Jack/crm-prototype.html
+  prototype_vercel: https://jack-crm-prototype.vercel.app
+  prd: ~/Code/war-room/.specs/2026-02-27-jack-crm-PRD.md
+  trd: ~/Code/war-room/.specs/2026-02-27-jack-crm-TRD.md
+  scraper_scripts: ~/Code/clawdbot/skills/skool-scraper/scripts/
+  members_data: ~/Shugyo/ÆON/Clients/Jack/skool-data/members-list.json
+  debug_data: ~/Shugyo/ÆON/Clients/Jack/skool-data/debug/
+  next_data_dump: ~/Shugyo/ÆON/Clients/Jack/skool-data/debug/next-data.json
+  cookie_file: ~/.skool-cookies.json
+  community_slug: healthoptimization
+  correct_members_url: https://www.skool.com/healthoptimization/-/members
+  group_id: c8832bf507bf41e2a11fb7044d066c6d
+  api_url: https://api2.skool.com
+  build_id: "1772146447897"
+  openclaw_gateway: http://127.0.0.1:18789
+  previous_handoff: thoughts/shared/handoffs/war-room/2026-02-27_15-55_jack-crm-trd-reports-timesaved.yaml

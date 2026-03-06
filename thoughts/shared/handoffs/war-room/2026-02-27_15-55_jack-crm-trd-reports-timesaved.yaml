@@ -1,0 +1,102 @@
+---
+session: war-room
+date: 2026-02-27
+status: partial
+outcome: PARTIAL_PLUS
+---
+
+goal: Built Reports tab with data-backed time saved analysis, wrote PRD + TRD through Daimyo pipeline, ran premortem
+now: User has feedback on prototype UI. Build Sprint 1 — scraper with persistent browser profile + first successful authenticated scrape to discover DOM selectors.
+
+test: |
+  open ~/Shugyo/ÆON/Clients/Jack/crm-prototype.html
+  # Click "Reports" tab — verify charts render + time saved calculator shows data-backed numbers
+  # Also open proposal:
+  open ~/Shugyo/ÆON/Clients/Jack/proposal-v2-bundle.html
+  # Scroll to "Retention & Member Intelligence" — verify time saved comparison table
+
+done_this_session:
+  - task: Built Reports tab with 5 canvas-based trend charts (Active Community, At-Risk, Response Rate, Response Time, Time Saved with range bands)
+    files: [~/Shugyo/ÆON/Clients/Jack/crm-prototype.html]
+  - task: Built Time Saved Calculator with data-backed estimates and methodology tooltips (10.2 hrs/mo, $2,551 value, $298 churn prevented)
+    files: [~/Shugyo/ÆON/Clients/Jack/crm-prototype.html]
+  - task: Analyzed 136 real Jack replies across 4 threads — measured context burden (1,295 words avg), writing time (1.8 min), total per reply (7.0 min without CRM, 1.2 min with)
+    files: [~/Shugyo/ÆON/Clients/Jack/docs/crm-time-saved-analysis.md]
+  - task: Added "with CRM vs without" comparison table to proposal HTML under Retention section
+    files: [~/Shugyo/ÆON/Clients/Jack/proposal-v2-bundle.html]
+  - task: Fixed tooltip overflow bug (white-space nowrap → normal + max-width)
+    files: [~/Shugyo/ÆON/Clients/Jack/crm-prototype.html]
+  - task: Wrote PRD at .specs/2026-02-27-jack-crm-PRD.md — 20 user stories, feature matrix, acceptance criteria, user flows
+    files: [~/Code/war-room/.specs/2026-02-27-jack-crm-PRD.md]
+  - task: Updated PRD — standalone pricing TBD, promoted Reports to MVP, added US-018/019/020
+    files: [~/Code/war-room/.specs/2026-02-27-jack-crm-PRD.md]
+  - task: Wrote TRD at .specs/2026-02-27-jack-crm-TRD.md — scraper architecture, auth hierarchy, data contracts, security threat matrix, launchd spec, 3 build sprints
+    files: [~/Code/war-room/.specs/2026-02-27-jack-crm-TRD.md]
+  - task: Ran premortem on TRD — found 2 tigers (launchd+headed conflict, DOM selector fragility), 1 elephant (single machine). All mitigated.
+    files: [~/Code/war-room/.specs/2026-02-27-jack-crm-TRD.md]
+  - task: Fixed 268→267 member count in proposal
+    files: [~/Shugyo/ÆON/Clients/Jack/proposal-v2-bundle.html]
+
+blockers:
+  - Skool DOM selectors still unknown — blocked until first authenticated scrape
+  - Need manual login to Skool to establish persistent browser profile
+
+questions:
+  - User will have UI feedback on prototype in next session
+  - Standalone CRM pricing still TBD — time saved analysis suggests $400-500/mo
+  - Mac Mini purchase timeline — needed for always-on scraper (launchd + headed browser)
+  - Does Skool "Log in with a code" button have a stable CSS selector?
+  - What's the exact OTP email subject line from Skool?
+
+decisions:
+  - data_backed_time_saved: Analyzed 136 real Jack replies. Per-reply: 7.0 min without CRM → 1.2 min with CRM = 5.8 min saved. Monthly (25 active threads): 10.2 hrs / $2,551.
+  - template_drafts_for_mvp: MVP uses template-based draft replies, not live LLM. Haiku integration deferred to V1.0 (~$0.25/mo cost).
+  - persistent_profile_primary: Auth hierarchy — persistent browser profile (userDataDir) > password (Keychain) > OTP/IMAP > manual + alert.
+  - mac_mini_solves_two_tigers: Always-on Mac Mini resolves both launchd+headed browser conflict and single-machine dependency.
+  - selector_validation_gate: Post-scrape check — if members < 200, don't overwrite good data, alert Makima.
+
+findings:
+  - context_burden_grows_with_thread: Early replies (comment 1-19) = 0.9 min re-reading. Late replies (50+) = 8.6 min. 58/136 of Jack's replies are deep in threads.
+  - seventy_nine_pct_lab_refs: 79% of Jack's replies reference specific lab markers — high context dependency, CRM's core value.
+  - twenty_six_pct_truncated: 26% of replies were cut off by Skool "See more" — real reply lengths understated, time saved estimates are conservative.
+  - launchd_headed_conflict: launchd background jobs don't get WindowServer access on macOS — can't run headed Playwright. Mac Mini with logged-in GUI session solves this.
+  - tooltip_overflow_fix: white-space:nowrap breaks long tooltips. Changed to white-space:normal + width:max-content + max-width:320px.
+
+worked:
+  - Canvas-based charts with no dependencies — drawLineChart() function handles DPR scaling, grid, fill, range bands
+  - Data analysis via inline Node script (cat << 'SCRIPT' | node --input-type=module) — fast, no temp files
+  - Premortem caught real architectural conflict (launchd + headed browser) that TRD missed
+  - Speaking points doc separate from tooltip text — tooltips stay concise, doc has full methodology
+
+failed:
+  - Initial time saved numbers were gut estimates, not data-backed — user correctly pushed for real analysis
+  - Tooltip CSS with inline width + left offsets — fought with base CSS transform:translateX(-50%). Removed inline overrides, let base CSS center.
+
+next:
+  - Get user feedback on Reports tab and prototype UI changes
+  - Build Sprint 1 from TRD — refactor scraper to use persistent browser profile (userDataDir)
+  - Add password re-login fallback (macOS Keychain integration)
+  - Add OTP/IMAP login fallback (imapflow dependency)
+  - First successful authenticated scrape → discover real DOM selectors on /members page
+  - Replace generic CSS selectors with discovered ones
+  - Add post-scrape validation gate (members < 200 = failure)
+  - Consider: add time saved section to proposal as standalone CRM pricing justification
+
+files:
+  created:
+    - ~/Code/war-room/.specs/2026-02-27-jack-crm-PRD.md
+    - ~/Code/war-room/.specs/2026-02-27-jack-crm-TRD.md
+    - ~/Shugyo/ÆON/Clients/Jack/docs/crm-time-saved-analysis.md
+  modified:
+    - ~/Shugyo/ÆON/Clients/Jack/crm-prototype.html (Reports tab, time saved calc, tooltip fix, charts)
+    - ~/Shugyo/ÆON/Clients/Jack/proposal-v2-bundle.html (time saved table, 268→267 fix)
+
+context_for_next_session:
+  prototype_location: ~/Shugyo/ÆON/Clients/Jack/crm-prototype.html
+  prd: ~/Code/war-room/.specs/2026-02-27-jack-crm-PRD.md
+  trd: ~/Code/war-room/.specs/2026-02-27-jack-crm-TRD.md
+  time_saved_analysis: ~/Shugyo/ÆON/Clients/Jack/docs/crm-time-saved-analysis.md
+  parsed_thread_data: ~/Shugyo/ÆON/Clients/Jack/skool-data/parsed-threads.json
+  scraper_script: ~/Code/clawdbot/skills/skool-scraper/scripts/scrape-members.ts
+  proposal_html: ~/Shugyo/ÆON/Clients/Jack/proposal-v2-bundle.html
+  previous_handoff: thoughts/shared/handoffs/war-room/2026-02-27_12-45_jack-crm-prototype-scraper.yaml
