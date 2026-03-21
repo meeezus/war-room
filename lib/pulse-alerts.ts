@@ -25,7 +25,7 @@ export async function generateAlerts(): Promise<PulseAlert[]> {
     const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString()
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
 
-    const [failedMissionsRes, failedTasksRes, staleTasksRes, projectsRes, recentActivityRes, pendingDiscoveriesRes] = await Promise.all([
+    const [failedMissionsRes, failedTasksRes, staleTasksRes, projectsRes, recentActivityRes, pendingDiscoveriesRes, costFailuresRes] = await Promise.all([
       // Failed missions in last 24h
       sb.from('missions')
         .select('id, title, assigned_to')
@@ -46,7 +46,7 @@ export async function generateAlerts(): Promise<PulseAlert[]> {
         .limit(10),
       // All active projects (check for approaching deadlines, P0 stalls)
       sb.from('projects')
-        .select('*')
+        .select('id, title, status, priority, target_date')
         .in('status', ['inprogress', 'queue']),
       // Any activity in last 24h (to detect silence)
       sb.from('war_room_events')
@@ -57,6 +57,13 @@ export async function generateAlerts(): Promise<PulseAlert[]> {
       sb.from('discoveries')
         .select('id, severity', { count: 'exact' })
         .eq('status', 'pending'),
+      // Embedding cost tracking failures in last 24h
+      sb.from('war_room_events')
+        .select('id, metadata', { count: 'exact' })
+        .eq('event_type', 'cost_tracking_failure')
+        .gte('created_at', oneDayAgo)
+        .order('created_at', { ascending: false })
+        .limit(1),
     ])
 
     const failedMissions = (failedMissionsRes.data ?? []) as Pick<Mission, 'id' | 'title' | 'assigned_to'>[]
@@ -65,6 +72,8 @@ export async function generateAlerts(): Promise<PulseAlert[]> {
     const projects = (projectsRes.data ?? []) as Project[]
     const recentActivityCount = recentActivityRes.count ?? 0
     const pendingDiscoveries = (pendingDiscoveriesRes.data ?? []) as Pick<Discovery, 'id' | 'severity'>[]
+    const costFailureCount = costFailuresRes.count ?? 0
+    const latestCostFailure = (costFailuresRes.data ?? [])[0]?.metadata as Record<string, unknown> | undefined
 
     const alerts: PulseAlert[] = []
 
@@ -141,6 +150,15 @@ export async function generateAlerts(): Promise<PulseAlert[]> {
       alerts.push({
         severity: 'info',
         message: 'No engine activity in the last 24 hours — everything quiet',
+      })
+    }
+
+    // Embedding cost tracking failures — warning
+    if (costFailureCount > 0) {
+      const totalFailures = (latestCostFailure?.total_failures as number) ?? costFailureCount
+      alerts.push({
+        severity: 'warning',
+        message: `Embedding cost tracking: ${totalFailures} DB write failure${totalFailures !== 1 ? 's' : ''} since startup — spending may be underreported`,
       })
     }
 
