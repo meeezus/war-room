@@ -1008,8 +1008,8 @@ export async function getOutcomeCounts(): Promise<Record<string, OutcomeCard>> {
   const [opsecProposals, opsecProposalCount, discoveries, discoveryCount, errors24h] = await Promise.all([
     supabase.from('proposals').select('id, title, created_at, status').in('source', ['patrol', 'awareness']).order('created_at', { ascending: false }).limit(3),
     supabase.from('proposals').select('id', { count: 'exact', head: true }).in('source', ['patrol', 'awareness']),
-    supabase.from('discoveries').select('id, title, created_at, status').order('created_at', { ascending: false }).limit(3),
-    supabase.from('discoveries').select('id', { count: 'exact', head: true }),
+    supabase.from('discoveries').select('id, title, created_at, status').in('status', ['pending', 'new']).order('created_at', { ascending: false }).limit(3),
+    supabase.from('discoveries').select('id', { count: 'exact', head: true }).in('status', ['pending', 'new']),
     supabase.from('missions').select('id', { count: 'exact' }).eq('status', 'failed').gte('created_at', yesterday),
   ])
 
@@ -1047,7 +1047,7 @@ export async function getOutcomeCounts(): Promise<Record<string, OutcomeCard>> {
       detail: null,
       count: aeonTotal,
       actionLabel: aeonTotal > 0 ? 'Review' : undefined,
-      actionHref: aeonTotal > 0 ? '/objectives' : undefined,
+      actionHref: aeonTotal > 0 ? '/missions' : undefined,
       items: (aeonData.data || []).map((p: { title: string; created_at: string; status: string }) => ({ title: p.title, timestamp: p.created_at, status: p.status })),
     },
     opsec: {

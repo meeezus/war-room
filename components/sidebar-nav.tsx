@@ -30,9 +30,7 @@ const sections: NavSection[] = [
   {
     title: "OBSERVE",
     items: [
-      { label: "Activity", href: "/events", icon: "≡" },
       { label: "Research", href: "/research", icon: "⊡" },
-      { label: "Logs", href: "/logs", icon: "⊞" },
       { label: "Tokens", href: "/tokens", icon: "◈" },
       { label: "Memory", href: "/memory", icon: "◇" },
     ],
