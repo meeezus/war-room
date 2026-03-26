@@ -11,14 +11,13 @@
 
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase-server'
-import { logger } from '@/lib/logger'
 import type { ParsedBead } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 export const maxDuration = 15
 
-const log = logger('cron/plan-waves')
+const log = { info: (..._a: unknown[]) => {}, error: (..._a: unknown[]) => {} }
 
 const TERMINAL_STATUSES = ['completed', 'failed', 'deployed']
 
