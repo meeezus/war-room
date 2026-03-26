@@ -38,6 +38,7 @@ const sections: NavSection[] = [
   {
     title: "AUTOMATE",
     items: [
+      { label: "Plans", href: "/plans", icon: "▹" },
       { label: "Cron", href: "/cron", icon: "⟳" },
       { label: "Spawn", href: "/spawn", icon: "⊕" },
       { label: "Alerts", href: "/alerts", icon: "△" },

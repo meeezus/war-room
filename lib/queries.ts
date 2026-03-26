@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import type { AgentStatus, Mission, Step, Event, DashboardStats, Project, ProjectWithMetrics, Board, Task, DynastyStats, Proposal, CouncilSession, ActiveAgent, Discovery, Objective, ObjectiveWithMetrics, ActiveWorker, OutcomeCard, ResearchFinding } from '@/lib/types'
+import type { AgentStatus, Mission, Step, Event, DashboardStats, Project, ProjectWithMetrics, Board, Task, DynastyStats, Proposal, CouncilSession, ActiveAgent, Discovery, Objective, ObjectiveWithMetrics, ActiveWorker, OutcomeCard, ResearchFinding, Plan } from '@/lib/types'
 
 // Domain → Daimyo routing (matches engine/config.py DOMAIN_TO_DAIMYO)
 export const DOMAIN_TO_DAIMYO: Record<string, string> = {
@@ -1103,4 +1103,43 @@ export async function getResearchFindingsCount(): Promise<{ total: number; new: 
     new: newCount.count ?? 0,
     actionable: actionable.count ?? 0,
   }
+}
+
+// ---------------------------------------------------------------------------
+// Plan Runner queries (BEAD-003)
+// ---------------------------------------------------------------------------
+
+export async function getPlans(status?: string): Promise<Plan[]> {
+  if (!supabase) return []
+  let query = supabase
+    .from('plans')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(50)
+  if (status) query = query.eq('status', status)
+  const { data, error } = await query
+  if (error) { console.error('getPlans error:', error); return [] }
+  return (data || []) as Plan[]
+}
+
+export async function getPlan(id: string): Promise<Plan | null> {
+  if (!supabase) return null
+  const { data, error } = await supabase
+    .from('plans')
+    .select('*')
+    .eq('id', id)
+    .single()
+  if (error) { console.error('getPlan error:', error); return null }
+  return data as Plan
+}
+
+export async function getPlanMissions(planId: string) {
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from('missions')
+    .select('id, title, status, assigned_to, wave_index, started_at, completed_at, created_at')
+    .eq('plan_id', planId)
+    .order('wave_index', { ascending: true })
+  if (error) { console.error('getPlanMissions error:', error); return [] }
+  return data || []
 }

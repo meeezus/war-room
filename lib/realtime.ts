@@ -394,6 +394,63 @@ export function useRealtimeTasks(
 }
 
 // ---------------------------------------------------------------------------
+// useRealtimePlanMissions
+// ---------------------------------------------------------------------------
+
+export function useRealtimePlanMissions(
+  planId: string,
+  initialMissions: Mission[],
+): Mission[] {
+  const [missions, setMissions] = useState(initialMissions)
+
+  useEffect(() => {
+    setMissions(initialMissions)
+  }, [initialMissions])
+
+  useEffect(() => {
+    if (!REALTIME_ENABLED || !supabase || !planId) return
+
+    const client = supabase
+    const channel: RealtimeChannel = client
+      .channel(`plan-missions-${planId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "missions",
+          filter: `plan_id=eq.${planId}`,
+        },
+        (payload) => {
+          setMissions((prev) => [payload.new as Mission, ...prev])
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "missions",
+          filter: `plan_id=eq.${planId}`,
+        },
+        (payload) => {
+          const updated = payload.new as Mission
+          setMissions((prev) =>
+            prev.map((m) => (m.id === updated.id ? updated : m)),
+          )
+        },
+      )
+      .subscribe()
+
+    return () => {
+      client.removeChannel(channel)
+    }
+  }, [planId])
+
+  return missions
+}
+
+// ---------------------------------------------------------------------------
 // useRealtimeDiscoveries
 // ---------------------------------------------------------------------------
 

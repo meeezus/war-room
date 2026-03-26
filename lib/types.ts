@@ -28,10 +28,12 @@ export interface Mission {
   id: string
   proposal_id: string | null
   project_id: string | null
+  plan_id: string | null
   title: string
   assigned_to: string
   status: 'queued' | 'running' | 'review' | 'completed' | 'deployed' | 'failed' | 'stale'
   priority: number
+  wave_index: number | null
   started_at: string | null
   completed_at: string | null
   result: Record<string, unknown> | null
@@ -71,6 +73,7 @@ export interface Event {
     | 'skill_patch_extracted' | 'skill_applied' | 'skill_sunset' | 'cross_pollination'
     | 'daily_briefing'
     | 'awareness_cycle_complete' | 'health_check_failed'
+    | 'plan_ingested' | 'plan_wave_completed' | 'plan_completed' | 'plan_failed'
   agent_id: string | null
   title: string
   description: string | null
@@ -434,4 +437,47 @@ export interface OutcomeCard {
   actionLabel?: string;
   actionHref?: string;
   items?: { title: string; timestamp: string; status?: string }[];
+}
+
+// ---------------------------------------------------------------------------
+// Plan Runner types (BEAD-001)
+// ---------------------------------------------------------------------------
+
+export interface Plan {
+  id: string;
+  title: string;
+  raw_markdown: string;
+  parsed_beads: ParsedBead[];
+  analysis: PlanAnalysis | null;
+  status: 'draft' | 'brainstorming' | 'analyzing' | 'reviewing' | 'approved' | 'running' | 'completed' | 'failed';
+  flywheel_score: number | null;
+  score_breakdown: { money: number; blast_radius: number; novelty: number } | null;
+  auto_run: boolean;
+  wave_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ParsedBead {
+  id: string;              // e.g., "BEAD-001"
+  title: string;
+  description: string;
+  dependencies: string[];  // bead IDs this depends on
+  blocks: string[];        // bead IDs this blocks
+  size: 'S' | 'M' | 'L';
+  accept: string[];        // acceptance criteria
+  files: string[];         // file paths
+  repo: string;            // working directory / repo name
+  domain: string;          // engineering, product, etc.
+  wave_index: number;      // computed via topological sort
+  model?: string;          // sonnet, opus, haiku
+}
+
+export interface PlanAnalysis {
+  depth: 'none' | 'quick' | 'polyclaude' | 'council-matrix';
+  pushback: string[];
+  alternatives: string[];
+  blind_spots: string[];
+  recommendation: string;
+  analyzed_at: string;
 }
