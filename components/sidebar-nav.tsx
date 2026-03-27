@@ -19,37 +19,24 @@ interface NavSection {
 
 const sections: NavSection[] = [
   {
-    title: "",
-    items: [
-      { label: "Overview", href: "/dashboard", icon: "◉" },
-      { label: "Agents", href: "/agents", icon: "◎" },
-      { label: "Tasks", href: "/tasks", icon: "☰" },
-      { label: "Sessions", href: "/sessions", icon: "▹" },
-    ],
-  },
-  {
     title: "OBSERVE",
     items: [
+      { label: "Overview", href: "/dashboard", icon: "◉" },
       { label: "Research", href: "/research", icon: "⊡" },
-      { label: "Tokens", href: "/tokens", icon: "◈" },
-      { label: "Memory", href: "/memory", icon: "◇" },
     ],
   },
   {
     title: "AUTOMATE",
     items: [
       { label: "Plans", href: "/plans", icon: "▹" },
-      { label: "Cron", href: "/cron", icon: "⟳" },
-      { label: "Spawn", href: "/spawn", icon: "⊕" },
-      { label: "Alerts", href: "/alerts", icon: "△" },
+      { label: "Missions", href: "/missions", icon: "≡" },
+      { label: "OPSEC", href: "/discoveries", icon: "◈" },
     ],
   },
   {
     title: "SYSTEM",
     items: [
-      { label: "Health", href: "/health", icon: "♡" },
-      { label: "Discoveries", href: "/discoveries", icon: "◬" },
-      { label: "Settings", href: "/settings", icon: "⚙" },
+      { label: "Cron", href: "/cron", icon: "⟳" },
     ],
   },
 ];
@@ -102,25 +89,22 @@ export function SidebarNav({ agents = [] }: SidebarNavProps) {
       {/* Nav Sections */}
       <div className="flex-1 overflow-y-auto py-2">
         {sections.map((section) => {
-          const isCore = section.title === "";
-          const isCollapsed = !isCore && collapsedGroups.includes(section.title);
+          const isCollapsed = collapsedGroups.includes(section.title);
 
           return (
-            <div key={section.title || "core"} className="mb-2">
-              {/* Section header — only for labeled groups */}
-              {!isCore && (
-                <button
-                  onClick={() => toggleGroup(section.title)}
-                  className="flex w-full items-center justify-between px-4 py-2 hover:text-foreground"
-                >
-                  <span className="font-[family-name:var(--font-space-grotesk)] text-[9px] font-semibold uppercase tracking-[1.5px] text-muted-foreground/60">
-                    {section.title}
-                  </span>
-                  <span className="font-[family-name:var(--font-jetbrains-mono)] text-[9px] text-muted-foreground/40">
-                    {isCollapsed ? "›" : "⌄"}
-                  </span>
-                </button>
-              )}
+            <div key={section.title} className="mb-2">
+              {/* Section header */}
+              <button
+                onClick={() => toggleGroup(section.title)}
+                className="flex w-full items-center justify-between px-4 py-2 hover:text-foreground"
+              >
+                <span className="font-[family-name:var(--font-space-grotesk)] text-[9px] font-semibold uppercase tracking-[1.5px] text-muted-foreground/60">
+                  {section.title}
+                </span>
+                <span className="font-[family-name:var(--font-jetbrains-mono)] text-[9px] text-muted-foreground/40">
+                  {isCollapsed ? "›" : "⌄"}
+                </span>
+              </button>
 
               {/* Items */}
               {!isCollapsed &&
