@@ -5,16 +5,30 @@ import type { PlanAnalysis, ParsedBead } from './types'
 /** Call Claude via CLI (uses existing OAuth — no API key needed) */
 function callClaudeCli(prompt: string): Promise<string | null> {
   if (process.env.VERCEL) return Promise.resolve(null)
+
+  const { spawn } = require('child_process')
   return new Promise((resolve) => {
-    execFile(
-      'claude',
-      ['-p', '--model', 'claude-sonnet-4-6', '--print', prompt],
-      { timeout: 60000, env: { ...process.env, CLAUDECODE: '' } },
-      (err, stdout) => {
-        if (err || !stdout?.trim()) resolve(null)
-        else resolve(stdout.trim())
-      }
-    )
+    let stdout = ''
+    const proc = spawn('claude', [
+      '-p',
+      '--model', 'claude-sonnet-4-6',
+      '--output-format', 'text',
+      '--dangerously-skip-permissions',
+    ], {
+      timeout: 90000,
+      env: { ...process.env, CLAUDECODE: '' },
+      cwd: '/tmp',
+    })
+
+    proc.stdin.write(prompt)
+    proc.stdin.end()
+
+    proc.stdout.on('data', (d: Buffer) => { stdout += d.toString() })
+    proc.on('close', (code: number) => {
+      if (code !== 0 || !stdout.trim()) resolve(null)
+      else resolve(stdout.trim())
+    })
+    proc.on('error', () => resolve(null))
   })
 }
 

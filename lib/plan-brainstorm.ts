@@ -8,19 +8,37 @@ export type BrainstormMode = 'startup' | 'builder'
  * Falls back to null if claude CLI not available.
  */
 function callClaudeCli(systemPrompt: string, userPrompt: string): Promise<string | null> {
-  if (process.env.VERCEL) return Promise.resolve(null) // CLI not available on Vercel
+  if (process.env.VERCEL) return Promise.resolve(null)
 
+  const { spawn } = require('child_process')
   return new Promise((resolve) => {
     const fullPrompt = `${systemPrompt}\n\n---\n\n${userPrompt}`
-    execFile(
-      'claude',
-      ['-p', '--model', 'claude-sonnet-4-6', '--print', fullPrompt],
-      { timeout: 60000, env: { ...process.env, CLAUDECODE: '' } }, // unset CLAUDECODE to avoid nested session issues
-      (err, stdout) => {
-        if (err || !stdout?.trim()) resolve(null)
-        else resolve(stdout.trim())
-      }
-    )
+    let stdout = ''
+    let stderr = ''
+
+    const proc = spawn('claude', [
+      '-p',
+      '--model', 'claude-sonnet-4-6',
+      '--output-format', 'text',
+      '--dangerously-skip-permissions',
+    ], {
+      timeout: 90000,
+      env: { ...process.env, CLAUDECODE: '' },
+      cwd: '/tmp', // avoid picking up project CLAUDE.md
+    })
+
+    proc.stdin.write(fullPrompt)
+    proc.stdin.end()
+
+    proc.stdout.on('data', (d: Buffer) => { stdout += d.toString() })
+    proc.stderr.on('data', (d: Buffer) => { stderr += d.toString() })
+
+    proc.on('close', (code: number) => {
+      if (code !== 0 || !stdout.trim()) resolve(null)
+      else resolve(stdout.trim())
+    })
+
+    proc.on('error', () => resolve(null))
   })
 }
 
