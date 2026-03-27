@@ -46,6 +46,7 @@ export default function PlanDetailPage() {
   const [loading, setLoading] = useState(true);
   const [showRaw, setShowRaw] = useState(false);
   const [approving, setApproving] = useState(false);
+  const [brainstorming, setBrainstorming] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchPlan = useCallback(async () => {
@@ -68,9 +69,9 @@ export default function PlanDetailPage() {
     fetchPlan();
   }, [fetchPlan]);
 
-  // Auto-refresh every 5s when analyzing or running
+  // Auto-refresh every 5s when brainstorming, analyzing, or running
   useEffect(() => {
-    if (plan?.status === "analyzing" || plan?.status === "running") {
+    if (plan?.status === "brainstorming" || plan?.status === "analyzing" || plan?.status === "running") {
       intervalRef.current = setInterval(fetchPlan, 5000);
     }
     return () => {
@@ -109,6 +110,16 @@ export default function PlanDetailPage() {
     }
   }
 
+  async function handleBrainstorm() {
+    setBrainstorming(true);
+    try {
+      await fetch(`/api/plans/${planId}/brainstorm`, { method: "POST" });
+      await fetchPlan();
+    } finally {
+      setBrainstorming(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex h-screen bg-background">
@@ -137,9 +148,14 @@ export default function PlanDetailPage() {
 
   const beadCount = plan.parsed_beads?.length ?? 0;
   const statusClass = STATUS_COLORS[plan.status] ?? STATUS_COLORS.draft;
+  const isBrainstorming = plan.status === "brainstorming";
   const isAnalyzing = plan.status === "analyzing";
   const isRunning = plan.status === "running";
   const showApprove = plan.status === "reviewing" || plan.status === "approved";
+
+  // Detect mode from raw_markdown metadata (if brainstorm has run)
+  const modeMatch = plan.raw_markdown?.match(/\*\*Mode:\*\*\s*(Startup|Builder)/i);
+  const detectedMode = modeMatch ? modeMatch[1].toLowerCase() as 'startup' | 'builder' : null;
 
   return (
     <div className="flex h-screen bg-background">
@@ -169,6 +185,17 @@ export default function PlanDetailPage() {
                 >
                   {plan.status}
                 </span>
+                {detectedMode && (
+                  <span
+                    className={`rounded border px-2 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-semibold uppercase tracking-wide ${
+                      detectedMode === 'startup'
+                        ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                        : 'bg-blue-500/15 text-blue-400 border-blue-500/30'
+                    }`}
+                  >
+                    {detectedMode}
+                  </span>
+                )}
                 {plan.flywheel_score !== null && (
                   <span
                     className={`font-[family-name:var(--font-jetbrains-mono)] text-sm font-bold tabular-nums ${scoreColor(plan.flywheel_score)}`}
@@ -208,6 +235,23 @@ export default function PlanDetailPage() {
                     className="h-full bg-green-500 rounded-full transition-all duration-500"
                     style={{ width: `${totalBeads > 0 ? (completedBeads / totalBeads) * 100 : 0}%` }}
                   />
+                </div>
+              </div>
+            )}
+
+            {/* Brainstorming State */}
+            {isBrainstorming && (
+              <div className="rounded-sm border border-purple-500/20 bg-purple-500/5 p-4">
+                <div className="flex items-center gap-3">
+                  <div className="size-2 animate-pulse rounded-full bg-purple-400" />
+                  <div>
+                    <div className="font-[family-name:var(--font-space-grotesk)] text-sm font-semibold text-purple-400">
+                      Brainstorming...
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Expanding idea into structured beads. This takes 10-20 seconds.
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -324,6 +368,15 @@ export default function PlanDetailPage() {
 
             {/* Controls */}
             <div className="flex flex-wrap items-center gap-3">
+              {isBrainstorming && (
+                <button
+                  disabled
+                  className="rounded-sm bg-purple-500/15 px-5 py-2 font-[family-name:var(--font-space-grotesk)] text-sm font-medium text-purple-400 opacity-60 animate-pulse"
+                >
+                  Brainstorming...
+                </button>
+              )}
+
               {isAnalyzing && (
                 <button
                   disabled
@@ -340,6 +393,16 @@ export default function PlanDetailPage() {
                   className="rounded-sm bg-emerald-500 px-5 py-2 font-[family-name:var(--font-space-grotesk)] text-sm font-medium text-background transition-colors hover:bg-emerald-400 disabled:opacity-50"
                 >
                   {approving ? "Approving..." : "Approve & Execute"}
+                </button>
+              )}
+
+              {detectedMode && !isBrainstorming && !isRunning && plan.status !== "completed" && (
+                <button
+                  onClick={handleBrainstorm}
+                  disabled={brainstorming}
+                  className="rounded-sm border border-purple-500/30 px-4 py-2 font-[family-name:var(--font-space-grotesk)] text-sm text-purple-400 transition-colors hover:bg-purple-500/10 disabled:opacity-50"
+                >
+                  {brainstorming ? "Re-brainstorming..." : "Re-brainstorm"}
                 </button>
               )}
 
