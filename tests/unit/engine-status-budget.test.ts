@@ -171,3 +171,43 @@ describe('budgetOk computation logic', () => {
     expect(total).toBe(33)
   })
 })
+
+// Query limit enforcement — regression guard against unbounded fetches
+describe('query limit enforcement', () => {
+  it('applies .limit() to all bounded queries to prevent unbounded scans', async () => {
+    const limitCalls: number[] = []
+
+    mockFrom.mockImplementation((table: string) => {
+      const chain = makeChain({ data: [], error: null, count: 0 })
+      // Intercept limit calls to capture the values
+      const originalLimit = chain.limit as ReturnType<typeof vi.fn>
+      originalLimit.mockImplementation((n: number) => {
+        limitCalls.push(n)
+        return chain
+      })
+      if (table === 'cap_gates') {
+        return makeChain({ data: null, error: null })
+      }
+      return chain
+    })
+
+    await GET()
+
+    // Must have limit calls for:
+    // - heartbeatRes(5)
+    // - failedRes(100)
+    // - winsRes(100)
+    // - objectivesRes(200)
+    // - objectiveMissionsRes(1000)
+    // - autoApprovedRes(50)
+    // - dailyCostRes(5000)
+    // = 7 total limit calls
+    expect(limitCalls.length).toBe(7)
+    expect(limitCalls).toContain(5)    // heartbeat
+    expect(limitCalls).toContain(100)  // failedRes and winsRes (both 100)
+    expect(limitCalls).toContain(200)  // objectivesRes
+    expect(limitCalls).toContain(1000) // objectiveMissionsRes
+    expect(limitCalls).toContain(50)   // autoApprovedRes
+    expect(limitCalls).toContain(5000) // dailyCostRes
+  })
+})

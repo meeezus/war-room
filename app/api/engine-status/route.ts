@@ -29,38 +29,48 @@ export async function GET() {
         .eq('event_type', 'heartbeat')
         .order('created_at', { ascending: false })
         .limit(5),
-      // Failed missions (24h)
+      // Failed missions (24h) — capped at 100 for display
       sb.from('missions')
         .select('id, title, assigned_to, evaluation_result')
         .eq('status', 'failed')
-        .gte('completed_at', twentyFourHoursAgo),
-      // Completed missions (24h)
+        .gte('completed_at', twentyFourHoursAgo)
+        .order('completed_at', { ascending: false })
+        .limit(100),
+      // Completed missions (24h) — capped at 100 for display
       sb.from('missions')
         .select('id, title, assigned_to')
         .eq('status', 'completed')
-        .gte('completed_at', twentyFourHoursAgo),
-      // Active objectives
+        .gte('completed_at', twentyFourHoursAgo)
+        .order('completed_at', { ascending: false })
+        .limit(100),
+      // Active objectives — capped at 200 (plan: 50, increased for headroom)
       sb.from('objectives')
         .select('id, title')
-        .eq('status', 'active'),
-      // All missions with objective_id (for stalled detection)
+        .eq('status', 'active')
+        .limit(200),
+      // Missions with objective_id (48h, stalled detection) — capped at 1000 (plan: 500, doubled for burst capacity)
       sb.from('missions')
         .select('objective_id, created_at')
         .not('objective_id', 'is', null)
-        .gte('created_at', fortyEightHoursAgo),
-      // Auto-approved proposals (24h)
+        .gte('created_at', fortyEightHoursAgo)
+        .limit(1000),
+      // Auto-approved proposals (24h) — capped at 50 for display
       sb.from('proposals')
         .select('id, title')
         .eq('approved_by', 'system')
-        .gte('approved_at', twentyFourHoursAgo),
+        .gte('approved_at', twentyFourHoursAgo)
+        .order('approved_at', { ascending: false })
+        .limit(50),
       // Pending proposals count
       sb.from('proposals')
         .select('id', { count: 'exact', head: true })
         .eq('status', 'pending'),
-      // Daily mission spend (sum cost_estimate for missions completed today)
+      // Daily mission spend — capped at 5000 rows for client-side SUM (plan: 1000, increased for headroom)
+      // NOTE: At 5000+ missions/day, migrate to Postgres RPC aggregate to avoid memory bloat
       sb.from('missions')
         .select('cost_estimate')
-        .gte('completed_at', startOfTodayIso),
+        .gte('completed_at', startOfTodayIso)
+        .limit(5000),
       // Budget cap from cap_gates (global gate)
       sb.from('cap_gates')
         .select('daily_budget_usd')

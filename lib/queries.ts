@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import type { AgentStatus, Mission, Step, Event, DashboardStats, Project, ProjectWithMetrics, Board, Task, DynastyStats, Proposal, CouncilSession, ActiveAgent, Discovery, Objective, ObjectiveWithMetrics, ActiveWorker } from '@/lib/types'
+import type { AgentStatus, Mission, Step, Event, DashboardStats, Project, ProjectWithMetrics, Board, Task, DynastyStats, Proposal, CouncilSession, ActiveAgent, Discovery, Objective, ObjectiveWithMetrics, ActiveWorker, OutcomeCard, ResearchFinding, Plan } from '@/lib/types'
 
 // Domain → Daimyo routing (matches engine/config.py DOMAIN_TO_DAIMYO)
 export const DOMAIN_TO_DAIMYO: Record<string, string> = {
@@ -940,4 +940,206 @@ export async function getAgentGrid() {
     .order('name')
   if (error) { console.error('getAgentGrid error:', error); return [] }
   return data ?? []
+}
+
+// ---------------------------------------------------------------------------
+// Operations Hub queries (Sprint 1 Group C)
+// ---------------------------------------------------------------------------
+
+// Get task counts grouped by status for pipeline view
+export async function getTaskPipelineCounts() {
+  if (!supabase) return { proposed: 0, in_progress: 0, review: 0, done: 0, failed: 0 }
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('status')
+
+  if (error || !data) return { proposed: 0, in_progress: 0, review: 0, done: 0, failed: 0 }
+
+  const counts: Record<string, number> = {}
+  for (const task of data) {
+    counts[task.status] = (counts[task.status] || 0) + 1
+  }
+  return {
+    proposed: counts['proposed'] || 0,
+    in_progress: counts['in_progress'] || 0,
+    review: counts['review'] || 0,
+    done: counts['done'] || 0,
+    failed: counts['failed'] || 0,
+  }
+}
+
+// Get outcome counts mapped to Research/Aeon/OPSEC/Messages categories
+export async function getOutcomeCounts(): Promise<Record<string, OutcomeCard>> {
+  if (!supabase) return {
+    research: { category: 'research', headline: 'Unavailable', detail: null, count: 0 },
+    aeon: { category: 'aeon', headline: 'Unavailable', detail: null, count: 0 },
+    opsec: { category: 'opsec', headline: 'Unavailable', detail: null, count: 0 },
+    messages: { category: 'messages', headline: 'Unavailable', detail: null, count: 0 },
+  }
+
+  // Research: try research_findings table (may not exist yet)
+  let researchCount = 0
+  let researchItems: { title: string; timestamp: string; status?: string }[] = []
+  let researchHeadline = 'Research pipeline initializing'
+  try {
+    const [findings, findingsCount] = await Promise.all([
+      supabase.from('research_findings').select('id, title, created_at, status').order('created_at', { ascending: false }).limit(3),
+      supabase.from('research_findings').select('id', { count: 'exact', head: true }),
+    ])
+    if (!findings.error && findings.data) {
+      researchItems = findings.data.map((f: { title: string; created_at: string; status: string }) => ({ title: f.title, timestamp: f.created_at, status: f.status }))
+      researchCount = findingsCount.count || 0
+      researchHeadline = researchCount > 0 ? `${researchCount} findings` : 'No findings yet'
+    }
+  } catch {
+    // Table doesn't exist yet — show initializing state
+  }
+
+  // Aeon: proposals where domain in ('commerce', 'product')
+  const [aeonData, aeonCount] = await Promise.all([
+    supabase.from('proposals').select('id, title, created_at, status, cost_estimate').in('domain', ['commerce', 'product']).order('created_at', { ascending: false }).limit(3),
+    supabase.from('proposals').select('id', { count: 'exact', head: true }).in('domain', ['commerce', 'product']),
+  ])
+  const aeonTotal = aeonCount.count || 0
+
+  // OPSEC: patrol discoveries + awareness proposals + 24h error count
+  const now = new Date()
+  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString()
+  const [opsecProposals, opsecProposalCount, discoveries, discoveryCount, errors24h] = await Promise.all([
+    supabase.from('proposals').select('id, title, created_at, status').in('source', ['patrol', 'awareness']).order('created_at', { ascending: false }).limit(3),
+    supabase.from('proposals').select('id', { count: 'exact', head: true }).in('source', ['patrol', 'awareness']),
+    supabase.from('discoveries').select('id, title, created_at, status').in('status', ['pending', 'new']).order('created_at', { ascending: false }).limit(3),
+    supabase.from('discoveries').select('id', { count: 'exact', head: true }).in('status', ['pending', 'new']),
+    supabase.from('missions').select('id', { count: 'exact' }).eq('status', 'failed').gte('created_at', yesterday),
+  ])
+
+  const opsecItems = [
+    ...(opsecProposals.data || []).map((p: { title: string; created_at: string; status: string }) => ({ title: p.title, timestamp: p.created_at, status: p.status })),
+    ...(discoveries.data || []).map((d: { title: string; created_at: string; status: string }) => ({ title: d.title, timestamp: d.created_at, status: d.status })),
+  ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 3)
+
+  const opsecFindingsCount = (opsecProposalCount.count || 0) + (discoveryCount.count || 0)
+  const opsecErrorCount = errors24h.count || 0
+  const opsecTotalCount = opsecFindingsCount + opsecErrorCount
+
+  // Messages: brief/notification/message events from last 24h
+  const [msgEvents, msgEventCount] = await Promise.all([
+    supabase.from('war_room_events').select('id, title, created_at, event_type').in('event_type', ['brief', 'notification', 'message']).order('created_at', { ascending: false }).limit(3),
+    supabase.from('war_room_events').select('id', { count: 'exact', head: true }).in('event_type', ['brief', 'notification', 'message']).gte('created_at', yesterday),
+  ])
+
+  const msgCount = msgEvents.data?.length || 0
+  const unreadCount = msgEventCount.count || 0
+
+  return {
+    research: {
+      category: 'research' as const,
+      headline: researchHeadline,
+      detail: researchCount === 0 ? 'Research pipeline initializing — findings will appear once scanning tools are wired' : null,
+      count: researchCount,
+      actionLabel: researchCount > 0 ? 'View' : undefined,
+      actionHref: researchCount > 0 ? '/research' : undefined,
+      items: researchItems,
+    },
+    aeon: {
+      category: 'aeon' as const,
+      headline: aeonTotal > 0 ? `${aeonTotal} proposals` : 'No proposals yet',
+      detail: null,
+      count: aeonTotal,
+      actionLabel: aeonTotal > 0 ? 'Review' : undefined,
+      actionHref: aeonTotal > 0 ? '/missions' : undefined,
+      items: (aeonData.data || []).map((p: { title: string; created_at: string; status: string }) => ({ title: p.title, timestamp: p.created_at, status: p.status })),
+    },
+    opsec: {
+      category: 'opsec' as const,
+      headline: opsecErrorCount > 0
+        ? `${opsecErrorCount} errors (24h) · ${opsecFindingsCount} findings`
+        : opsecFindingsCount > 0
+          ? `${opsecFindingsCount} findings`
+          : '0 errors (24h)',
+      detail: null,
+      count: opsecTotalCount,
+      actionLabel: opsecTotalCount > 0 ? 'View' : undefined,
+      actionHref: opsecTotalCount > 0 ? '/discoveries' : undefined,
+      items: opsecItems,
+    },
+    messages: {
+      category: 'messages' as const,
+      headline: msgCount > 0 ? `${msgCount} recent` : 'No briefs yet',
+      detail: null,
+      count: unreadCount,
+      items: (msgEvents.data || []).map((e: { title: string; created_at: string; event_type: string }) => ({ title: e.title, timestamp: e.created_at, status: e.event_type })),
+    },
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Research findings queries (Sprint 2)
+// ---------------------------------------------------------------------------
+
+export async function getResearchFindings(limit = 20, status?: string): Promise<ResearchFinding[]> {
+  if (!supabase) return []
+  let query = supabase
+    .from('research_findings')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (status) {
+    query = query.eq('status', status)
+  }
+  const { data, error } = await query.limit(limit)
+  if (error) { console.error('getResearchFindings error:', error); return [] }
+  return (data || []) as ResearchFinding[]
+}
+
+export async function getResearchFindingsCount(): Promise<{ total: number; new: number; actionable: number }> {
+  if (!supabase) return { total: 0, new: 0, actionable: 0 }
+  const [total, newCount, actionable] = await Promise.all([
+    supabase.from('research_findings').select('id', { count: 'exact', head: true }),
+    supabase.from('research_findings').select('id', { count: 'exact', head: true }).eq('status', 'new'),
+    supabase.from('research_findings').select('id', { count: 'exact', head: true }).eq('status', 'actionable'),
+  ])
+  return {
+    total: total.count ?? 0,
+    new: newCount.count ?? 0,
+    actionable: actionable.count ?? 0,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Plan Runner queries (BEAD-003)
+// ---------------------------------------------------------------------------
+
+export async function getPlans(status?: string): Promise<Plan[]> {
+  if (!supabase) return []
+  let query = supabase
+    .from('plans')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(50)
+  if (status) query = query.eq('status', status)
+  const { data, error } = await query
+  if (error) { console.error('getPlans error:', error); return [] }
+  return (data || []) as Plan[]
+}
+
+export async function getPlan(id: string): Promise<Plan | null> {
+  if (!supabase) return null
+  const { data, error } = await supabase
+    .from('plans')
+    .select('*')
+    .eq('id', id)
+    .single()
+  if (error) { console.error('getPlan error:', error); return null }
+  return data as Plan
+}
+
+export async function getPlanMissions(planId: string) {
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from('missions')
+    .select('id, title, status, assigned_to, wave_index, started_at, completed_at, created_at')
+    .eq('plan_id', planId)
+    .order('wave_index', { ascending: true })
+  if (error) { console.error('getPlanMissions error:', error); return [] }
+  return data || []
 }

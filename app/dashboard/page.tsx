@@ -1,16 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import type { EngineStatus } from "@/lib/types";
+import type { EngineStatus, OutcomeCard, ServiceHealthResponse, SystemFitness } from "@/lib/types";
 import { SidebarNav } from "@/components/sidebar-nav";
-import { StatCard } from "@/components/stat-card";
 import { EventRail } from "@/components/event-rail";
 import { StealthCard } from "@/components/stealth-card";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { getDashboardCounts, getRecentSessions, getRecentLogs } from "@/lib/queries";
-import { cn } from "@/lib/utils";
+import { OuraBar } from "@/components/widgets/oura-bar";
+import { ResearchCard, AeonCard, OpsecCard, MessagesCard } from "@/components/outcomes";
+import { LearningsFeed } from "@/components/outcomes/learnings-feed";
+import { SystemHealthAccordion } from "@/components/widgets/system-health-accordion";
+import { FleetStatus } from "@/components/widgets/fleet-status";
+import { getDashboardCounts, getRecentSessions, getRecentLogs, getOutcomeCounts } from "@/lib/queries";
 
 type Session = {
   id: string;
@@ -73,6 +75,10 @@ export default function DashboardPage() {
   const [counts, setCounts] = useState<Counts>({ activeSessions: 0, agentsOnline: 0, tasksRunning: 0, errors24h: 0 });
   const [sessions, setSessions] = useState<Session[]>([]);
   const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [outcomes, setOutcomes] = useState<Record<string, OutcomeCard> | null>(null);
+  const [health, setHealth] = useState<ServiceHealthResponse | null>(null);
+  const [fitness, setFitness] = useState<SystemFitness | null>(null);
+  const [insights, setInsights] = useState<{ content: string; created_at: string; id: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState("");
 
@@ -84,27 +90,52 @@ export default function DashboardPage() {
     return () => clearInterval(timer);
   }, []);
 
-  useEffect(() => {
-    async function fetchData() {
+  const fetchData = useCallback(async (initial = false) => {
+    try {
+      const [statusRes, countsData, sessionsData, logsData, outcomesData] = await Promise.all([
+        fetch("/api/engine-status").then((r) => r.json()),
+        getDashboardCounts(),
+        getRecentSessions(8),
+        getRecentLogs(8),
+        getOutcomeCounts(),
+      ]);
+      setEngineStatus(statusRes);
+      setCounts(countsData);
+      setSessions(sessionsData as Session[]);
+      setLogs(logsData as LogEntry[]);
+      setOutcomes(outcomesData);
+
+      // Separate fetch for local-only APIs (may fail on Vercel, wrap in try/catch)
       try {
-        const [statusRes, countsData, sessionsData, logsData] = await Promise.all([
-          fetch("/api/engine-status").then((r) => r.json()),
-          getDashboardCounts(),
-          getRecentSessions(8),
-          getRecentLogs(8),
+        const [healthRes, memoryRes] = await Promise.all([
+          fetch("/api/services/health").then((r) => r.json()),
+          fetch("/api/memory/status").then((r) => r.json()),
         ]);
-        setEngineStatus(statusRes);
-        setCounts(countsData);
-        setSessions(sessionsData as Session[]);
-        setLogs(logsData as LogEntry[]);
-      } catch (err) {
-        console.error("Dashboard fetch error:", err);
-      } finally {
-        setLoading(false);
+        setHealth(healthRes);
+        if (memoryRes.fitness) setFitness(memoryRes.fitness);
+        if (memoryRes.insights) setInsights(memoryRes.insights);
+      } catch {
+        // Local APIs unavailable (Vercel) — health/fitness stay null
       }
+    } catch (err) {
+      console.error("Dashboard fetch error:", err);
+    } finally {
+      if (initial) setLoading(false);
     }
-    fetchData();
   }, []);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchData(true);
+  }, [fetchData]);
+
+  // Auto-refresh every 30 seconds (no loading flash)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchData();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
   if (!supabase) {
     return (
@@ -127,17 +158,6 @@ export default function DashboardPage() {
     );
   }
 
-  const healthVariant =
-    engineStatus?.health === "nominal"
-      ? "success"
-      : engineStatus?.health === "degraded"
-      ? "warning"
-      : "danger";
-
-  const authorityDomains = engineStatus?.authority?.domains
-    ? Object.entries(engineStatus.authority.domains)
-    : [];
-
   return (
     <div className="flex h-screen bg-background">
       {/* Left Sidebar */}
@@ -159,6 +179,8 @@ export default function DashboardPage() {
           <span className="text-muted-foreground/40">·</span>
           <span>Gateway 198ms</span>
           <span className="flex-1" />
+          <OuraBar />
+          <span className="text-muted-foreground/40">·</span>
           <ThemeToggle />
           <span className="text-muted-foreground/40">{currentTime}</span>
         </div>
@@ -166,209 +188,34 @@ export default function DashboardPage() {
         <div className="flex flex-1 overflow-hidden">
           {/* Content */}
           <div className="flex-1 overflow-y-auto p-4">
-            {/* Stat Cards Row */}
-            <div className="mb-4 grid grid-cols-4 gap-3">
-              <Link href="/sessions" className="block">
-                <StatCard
-                  label="Active Sessions"
-                  value={counts.activeSessions}
-                  subtext="missions running"
-                  variant={counts.activeSessions > 0 ? "success" : "default"}
-                />
-              </Link>
-              <Link href="/agents" className="block">
-                <StatCard
-                  label="Agents Online"
-                  value={counts.agentsOnline}
-                  subtext="not offline"
-                  variant={counts.agentsOnline > 0 ? "success" : "default"}
-                />
-              </Link>
-              <Link href="/tasks" className="block">
-                <StatCard
-                  label="Tasks Running"
-                  value={counts.tasksRunning}
-                  subtext="in progress"
-                  variant={counts.tasksRunning > 0 ? "default" : "default"}
-                />
-              </Link>
-              <Link href="/missions" className="block">
-                <StatCard
-                  label="Errors (24h)"
-                  value={counts.errors24h}
-                  subtext="failed missions"
-                  variant="danger"
-                />
-              </Link>
+            {/* Outcome Cards - 2x2 grid */}
+            <div className="mb-4 grid grid-cols-2 gap-3">
+              <ResearchCard data={outcomes?.research ?? null} />
+              <AeonCard data={outcomes?.aeon ?? null} />
+            </div>
+            <div className="mb-4 grid grid-cols-2 gap-3">
+              <OpsecCard data={outcomes?.opsec ?? null} />
+              <MessagesCard data={outcomes?.messages ?? null} unreadCount={outcomes?.messages?.count} />
             </div>
 
-            {/* 3-Column Panel Row */}
-            <div className="mb-4 grid grid-cols-3 gap-3">
-              {/* System Health */}
-              <div className="rounded-sm border border-border/50 bg-card p-3">
-                <div className="mb-2 border-b border-border/50 pb-2 font-[family-name:var(--font-space-grotesk)] text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  System Health
-                </div>
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-muted-foreground">Supabase</span>
-                    <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-green-500">Connected</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-muted-foreground">Claude CLI</span>
-                    <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-green-500">Available</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-muted-foreground">Avg Cycle</span>
-                    <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-amber-500">
-                      {Math.round((engineStatus?.avgCycleMs || 0) / 1000)}s
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-muted-foreground">Budget</span>
-                    <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-green-500">OK</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-muted-foreground">Health</span>
-                    <span
-                      className={cn(
-                        "font-[family-name:var(--font-jetbrains-mono)] text-[10px] capitalize",
-                        healthVariant === "success" ? "text-green-500" : healthVariant === "warning" ? "text-amber-500" : "text-red-500"
-                      )}
-                    >
-                      {engineStatus?.health || "unknown"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Engine Status */}
-              <div className="rounded-sm border border-border/50 bg-card p-3">
-                <div className="mb-2 border-b border-border/50 pb-2 font-[family-name:var(--font-space-grotesk)] text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Engine Status
-                </div>
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-muted-foreground">Wins (24h)</span>
-                    <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-green-500">
-                      {engineStatus?.wins?.length ?? 0}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-muted-foreground">Failures (24h)</span>
-                    <span className={cn("font-[family-name:var(--font-jetbrains-mono)] text-[10px]", (engineStatus?.failures?.length ?? 0) > 0 ? "text-red-500" : "text-green-500")}>
-                      {engineStatus?.failures?.length ?? 0}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-muted-foreground">Stalled</span>
-                    <span className={cn("font-[family-name:var(--font-jetbrains-mono)] text-[10px]", (engineStatus?.stalledObjectives?.length ?? 0) > 0 ? "text-amber-500" : "text-muted-foreground/60")}>
-                      {engineStatus?.stalledObjectives?.length ?? 0}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-muted-foreground">With Root Cause</span>
-                    <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/60">
-                      {engineStatus?.failures?.filter((f) => f.rootCause).length ?? 0}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Authority */}
-              <div className="rounded-sm border border-border/50 bg-card p-3">
-                <div className="mb-2 flex items-center justify-between border-b border-border/50 pb-2">
-                  <span className="font-[family-name:var(--font-space-grotesk)] text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Authority
-                  </span>
-                  <span
-                    className={cn(
-                      "font-[family-name:var(--font-jetbrains-mono)] text-[10px]",
-                      engineStatus?.authority?.enabled ? "text-green-500" : "text-muted-foreground/60"
-                    )}
-                  >
-                    {engineStatus?.authority?.enabled ? "enabled" : "disabled"}
-                  </span>
-                </div>
-                <div className="space-y-1.5">
-                  {authorityDomains.length === 0 && (
-                    <div className="text-[11px] text-muted-foreground/60">
-                      No domain data yet. Authority tracks agent success rates per domain to auto-approve trusted work.
-                    </div>
-                  )}
-                  {authorityDomains.slice(0, 4).map(([domain, info]) => (
-                    <div key={domain} className="flex items-center justify-between">
-                      <span className="text-[11px] capitalize text-muted-foreground">{domain}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/60">
-                          {info.tier === "auto-approve" ? "auto" : "propose"}
-                        </span>
-                        <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-green-500">
-                          {Math.round(info.successRate * 100)}%
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            {/* Learnings Feed */}
+            <div className="mb-4">
+              <LearningsFeed fitness={fitness} insights={insights} />
             </div>
 
-            {/* 2-Column Bottom Row */}
-            <div className="grid grid-cols-2 gap-3">
-              {/* Recent Sessions */}
-              <div className="rounded-sm border border-border/50 bg-card p-3">
-                <div className="mb-2 border-b border-border/50 pb-2 font-[family-name:var(--font-space-grotesk)] text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Recent Sessions
-                </div>
-                <div className="space-y-1">
-                  {sessions.length === 0 && (
-                    <div className="text-[11px] text-muted-foreground/60">No sessions</div>
-                  )}
-                  {sessions.map((s) => (
-                    <Link
-                      key={s.id}
-                      href={`/missions/${s.id}`}
-                      className="flex items-center gap-2 rounded px-1 py-1 transition-colors hover:bg-muted/30"
-                    >
-                      <span className={cn("h-1.5 w-1.5 flex-shrink-0 rounded-full", statusDot(s.status))} />
-                      <span className="flex-1 truncate text-[11px]">{s.title || s.id.slice(0, 8)}</span>
-                      <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/60">
-                        {s.assigned_to || "—"}
-                      </span>
-                      <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/40">
-                        {relativeTime(s.started_at || s.completed_at)}
-                      </span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
+            {/* Fleet Status */}
+            <div className="mb-4">
+              <FleetStatus
+                agentsOnline={counts.agentsOnline}
+                tasksRunning={counts.tasksRunning}
+                errors24h={counts.errors24h}
+                activeSessions={counts.activeSessions}
+              />
+            </div>
 
-              {/* Recent Logs */}
-              <div className="rounded-sm border border-border/50 bg-card p-3">
-                <div className="mb-2 border-b border-border/50 pb-2 font-[family-name:var(--font-space-grotesk)] text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Recent Logs
-                </div>
-                <div className="space-y-1">
-                  {logs.length === 0 && (
-                    <div className="text-[11px] text-muted-foreground/60">No log entries</div>
-                  )}
-                  {logs.map((l) => (
-                    <Link
-                      key={l.id}
-                      href="/events"
-                      className="flex items-center gap-2 rounded px-1 py-1 transition-colors hover:bg-muted/30"
-                    >
-                      <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/50">
-                        {l.event_type}
-                      </span>
-                      <span className="flex-1 truncate text-[11px] text-muted-foreground/80">{l.title || "—"}</span>
-                      <span className="font-[family-name:var(--font-jetbrains-mono)] text-[10px] text-muted-foreground/40">
-                        {relativeTime(l.created_at)}
-                      </span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
+            {/* System Health Accordion */}
+            <div className="mb-4">
+              <SystemHealthAccordion health={health} />
             </div>
           </div>
 
