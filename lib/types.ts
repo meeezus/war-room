@@ -453,6 +453,7 @@ export interface Plan {
   flywheel_score: number | null;
   score_breakdown: { money: number; blast_radius: number; novelty: number } | null;
   iteration_feedback: string | null;
+  chat_history?: { role: 'user' | 'assistant'; content: string; timestamp: string }[];
   auto_run: boolean;
   wave_count: number;
   created_at: string;
