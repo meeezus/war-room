@@ -6,6 +6,7 @@ import Link from "next/link";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { StealthCard } from "@/components/stealth-card";
 import { PlanWaveGraph } from "@/components/plan-wave-graph";
+import { PlanChat } from "@/components/plan-chat";
 import { useRealtimePlanMissions } from "@/lib/realtime";
 import { getPlanMissions } from "@/lib/queries";
 import type { Plan, Mission } from "@/lib/types";
@@ -50,6 +51,7 @@ export default function PlanDetailPage() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [iterating, setIterating] = useState(false);
+  const [showChat, setShowChat] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchPlan = useCallback(async () => {
@@ -176,7 +178,9 @@ export default function PlanDetailPage() {
           <span className="truncate text-foreground/60">{plan.title}</span>
         </div>
 
-        {/* Content */}
+        {/* Content + Chat */}
+        <div className="flex flex-1 overflow-hidden">
+        {/* Main content */}
         <div className="flex-1 overflow-y-auto p-4">
           <div className="mx-auto max-w-4xl space-y-4">
             {/* Header */}
@@ -490,6 +494,40 @@ export default function PlanDetailPage() {
               </StealthCard>
             )}
           </div>
+        </div>
+
+        {/* Desktop: Chat side panel */}
+        <div className="w-[350px] border-l border-border/50 flex-shrink-0 hidden lg:flex flex-col">
+          <div className="px-3 py-2 border-b border-border/50">
+            <span className="text-xs uppercase tracking-widest text-muted-foreground font-[family-name:var(--font-space-grotesk)]">
+              Plan Chat
+            </span>
+          </div>
+          <PlanChat
+            planId={plan.id}
+            initialHistory={plan.chat_history || []}
+            onPlanUpdated={fetchPlan}
+          />
+        </div>
+        </div>
+
+        {/* Mobile: Collapsible chat at bottom */}
+        <div className="lg:hidden border-t border-border/50">
+          <button
+            onClick={() => setShowChat(!showChat)}
+            className="w-full p-2 text-center text-sm text-muted-foreground font-[family-name:var(--font-space-grotesk)] hover:text-foreground transition-colors"
+          >
+            {showChat ? "\u25BE Hide Chat" : "\u25B8 Open Chat"}
+          </button>
+          {showChat && (
+            <div className="h-[400px]">
+              <PlanChat
+                planId={plan.id}
+                initialHistory={plan.chat_history || []}
+                onPlanUpdated={fetchPlan}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>
