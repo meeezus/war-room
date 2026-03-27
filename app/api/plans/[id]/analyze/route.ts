@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase-server'
-import { createStubAnalysis } from '@/lib/plan-analyzer'
+import { analyzePlan } from '@/lib/plan-analyzer'
 import { captureError } from '@/lib/sentry'
 
 export const dynamic = 'force-dynamic'
@@ -34,9 +34,14 @@ export async function POST(
       )
     }
 
-    // 2. Create stub analysis based on flywheel score
+    // 2. Run real analysis based on flywheel score
     const score = plan.flywheel_score ?? 6
-    const analysis = createStubAnalysis(score)
+    const analysis = await analyzePlan(
+      plan.title ?? 'Untitled',
+      plan.raw_markdown ?? '',
+      plan.parsed_beads ?? [],
+      score,
+    )
 
     // 3. Update plan with analysis and set status to reviewing
     const { data: updated, error: updateError } = await sb
@@ -56,10 +61,10 @@ export async function POST(
 
     // 4. Emit event
     await sb.from('war_room_events').insert({
-      event_type: 'plan_ingested',
+      event_type: 'plan_analyzed',
       agent_id: 'system',
       title: `Plan analyzed: ${plan.title ?? id}`,
-      description: `Depth: ${analysis.depth}, score: ${score}`,
+      description: `${analysis.depth} analysis complete. ${analysis.pushback.length} concerns, ${analysis.blind_spots.length} blind spots.`,
       metadata: {
         plan_id: id,
         depth: analysis.depth,

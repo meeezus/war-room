@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase-server'
 import { parsePlanMarkdown } from '@/lib/plan-parser'
+import { analyzePlan } from '@/lib/plan-analyzer'
 import { captureError } from '@/lib/sentry'
 
 export const dynamic = 'force-dynamic'
@@ -77,6 +78,27 @@ export async function POST(request: Request) {
         flywheel_score: parsed.flywheelScore,
       },
     })
+
+    // Auto-trigger analysis for plans that need it (score 5+, structured)
+    if (initialStatus === 'analyzing') {
+      analyzePlan(parsed.title, markdown, parsed.beads, parsed.flywheelScore)
+        .then(async (analysis) => {
+          await sb.from('plans').update({
+            analysis,
+            status: 'reviewing',
+            updated_at: new Date().toISOString(),
+          }).eq('id', data.id)
+
+          await sb.from('war_room_events').insert({
+            event_type: 'plan_analyzed',
+            agent_id: 'system',
+            title: `Plan analyzed: ${parsed.title}`,
+            description: `${analysis.depth} analysis complete. ${analysis.pushback.length} concerns, ${analysis.blind_spots.length} blind spots.`,
+            metadata: { plan_id: data.id, depth: analysis.depth },
+          })
+        })
+        .catch((err) => captureError(err, 'plans.ingest.auto-analyze', { planId: data.id }))
+    }
 
     return NextResponse.json(
       {
