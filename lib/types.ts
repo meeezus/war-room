@@ -73,7 +73,7 @@ export interface Event {
     | 'skill_patch_extracted' | 'skill_applied' | 'skill_sunset' | 'cross_pollination'
     | 'daily_briefing'
     | 'awareness_cycle_complete' | 'health_check_failed'
-    | 'plan_ingested' | 'plan_brainstormed' | 'plan_iterated' | 'plan_wave_completed' | 'plan_completed' | 'plan_failed'
+    | 'plan_ingested' | 'plan_brainstormed' | 'plan_iterated' | 'plan_iterate_requested' | 'plan_wave_completed' | 'plan_completed' | 'plan_failed'
   agent_id: string | null
   title: string
   description: string | null
@@ -452,6 +452,7 @@ export interface Plan {
   status: 'draft' | 'brainstorming' | 'analyzing' | 'reviewing' | 'approved' | 'running' | 'completed' | 'failed';
   flywheel_score: number | null;
   score_breakdown: { money: number; blast_radius: number; novelty: number } | null;
+  iteration_feedback: string | null;
   auto_run: boolean;
   wave_count: number;
   created_at: string;

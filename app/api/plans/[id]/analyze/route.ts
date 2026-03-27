@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase-server'
-import { createStubAnalysis } from '@/lib/plan-analyzer'
 import { captureError } from '@/lib/sentry'
 
 export const dynamic = 'force-dynamic'
@@ -34,44 +33,24 @@ export async function POST(
       )
     }
 
-    // 2. Create stub analysis based on flywheel score
-    const score = plan.flywheel_score ?? 6
-    const analysis = createStubAnalysis(score)
+    // 2. Set status to analyzing -- poller handles actual processing
+    await sb.from('plans').update({
+      status: 'analyzing',
+      updated_at: new Date().toISOString(),
+    }).eq('id', id)
 
-    // 3. Update plan with analysis and set status to reviewing
-    const { data: updated, error: updateError } = await sb
-      .from('plans')
-      .update({
-        analysis,
-        status: 'reviewing',
-      })
-      .eq('id', id)
-      .select()
-      .single()
-
-    if (updateError) {
-      captureError(updateError, 'plans/[id]/analyze.POST', { planId: id })
-      return NextResponse.json({ error: updateError.message }, { status: 500 })
-    }
-
-    // 4. Emit event
+    // 3. Emit event
     await sb.from('war_room_events').insert({
       event_type: 'plan_ingested',
       agent_id: 'system',
-      title: `Plan analyzed: ${plan.title ?? id}`,
-      description: `Depth: ${analysis.depth}, score: ${score}`,
-      metadata: {
-        plan_id: id,
-        depth: analysis.depth,
-        flywheel_score: score,
-      },
+      title: `Analysis queued: ${plan.title ?? id}`,
+      metadata: { plan_id: id },
     })
 
     return NextResponse.json({
-      plan: updated,
-      analysis,
-      status: 'reviewing',
-      depth: analysis.depth,
+      success: true,
+      status: 'analyzing',
+      message: 'Queued for processing',
     })
   } catch (err) {
     captureError(err, 'plans/[id]/analyze.POST')

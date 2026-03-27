@@ -432,29 +432,27 @@ describe('PATCH /api/plans/[id]', () => {
 
 import { POST as analyzePOST } from '@/app/api/plans/[id]/analyze/route'
 
-describe('POST /api/plans/[id]/analyze', () => {
+describe('POST /api/plans/[id]/analyze (fire-and-forget)', () => {
   beforeEach(() => {
     resetConfig()
     selectSingleCallIndex = 0
   })
 
-  it('sets stub analysis and updates status to reviewing', async () => {
-    const mockPlan = { id: 'plan-1', flywheel_score: 6, status: 'analyzing', title: 'Test' }
-    const updated = { ...mockPlan, status: 'reviewing', analysis: { depth: 'quick' } }
+  it('sets status to analyzing and returns queued response', async () => {
+    const mockPlan = { id: 'plan-1', flywheel_score: 6, status: 'reviewing', title: 'Test' }
 
     mockConfig.selectSingleResults = [
-      { data: mockPlan, error: null },   // fetch plan
+      { data: mockPlan, error: null },
     ]
-    mockConfig.updateResult = { data: updated, error: null }
+    mockConfig.updateResult = { data: { ...mockPlan, status: 'analyzing' }, error: null }
 
     const req = new Request('http://localhost:3000/api/plans/plan-1/analyze', { method: 'POST' })
     const res = await analyzePOST(req, { params: Promise.resolve({ id: 'plan-1' }) })
     const json = await res.json()
 
     expect(res.status).toBe(200)
-    expect(json).toHaveProperty('analysis')
-    expect(json.analysis.depth).toBe('quick')
-    expect(json.status).toBe('reviewing')
+    expect(json.success).toBe(true)
+    expect(json.status).toBe('analyzing')
   })
 
   it('returns 404 when plan not found', async () => {
@@ -466,39 +464,6 @@ describe('POST /api/plans/[id]/analyze', () => {
     const res = await analyzePOST(req, { params: Promise.resolve({ id: 'nonexistent' }) })
 
     expect(res.status).toBe(404)
-  })
-
-  it('sets depth=none for low scores (3-4)', async () => {
-    const mockPlan = { id: 'plan-1', flywheel_score: 3, status: 'analyzing', title: 'Low' }
-    const updated = { ...mockPlan, status: 'reviewing' }
-
-    mockConfig.selectSingleResults = [
-      { data: mockPlan, error: null },
-    ]
-    mockConfig.updateResult = { data: updated, error: null }
-
-    const req = new Request('http://localhost:3000/api/plans/plan-1/analyze', { method: 'POST' })
-    const res = await analyzePOST(req, { params: Promise.resolve({ id: 'plan-1' }) })
-    const json = await res.json()
-
-    expect(json.analysis.depth).toBe('none')
-    expect(json.status).toBe('reviewing')
-  })
-
-  it('uses council-matrix depth for score 9', async () => {
-    const mockPlan = { id: 'plan-1', flywheel_score: 9, status: 'analyzing', title: 'Big' }
-    const updated = { ...mockPlan, status: 'reviewing' }
-
-    mockConfig.selectSingleResults = [
-      { data: mockPlan, error: null },
-    ]
-    mockConfig.updateResult = { data: updated, error: null }
-
-    const req = new Request('http://localhost:3000/api/plans/plan-1/analyze', { method: 'POST' })
-    const res = await analyzePOST(req, { params: Promise.resolve({ id: 'plan-1' }) })
-    const json = await res.json()
-
-    expect(json.analysis.depth).toBe('council-matrix')
   })
 })
 
