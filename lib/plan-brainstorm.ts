@@ -1,6 +1,28 @@
 import Anthropic from '@anthropic-ai/sdk'
+import { execFile } from 'child_process'
 
 export type BrainstormMode = 'startup' | 'builder'
+
+/**
+ * Call Claude via CLI (uses existing OAuth session — no API key needed).
+ * Falls back to null if claude CLI not available.
+ */
+function callClaudeCli(systemPrompt: string, userPrompt: string): Promise<string | null> {
+  if (process.env.VERCEL) return Promise.resolve(null) // CLI not available on Vercel
+
+  return new Promise((resolve) => {
+    const fullPrompt = `${systemPrompt}\n\n---\n\n${userPrompt}`
+    execFile(
+      'claude',
+      ['-p', '--model', 'claude-sonnet-4-6', '--print', fullPrompt],
+      { timeout: 60000, env: { ...process.env, CLAUDECODE: '' } }, // unset CLAUDECODE to avoid nested session issues
+      (err, stdout) => {
+        if (err || !stdout?.trim()) resolve(null)
+        else resolve(stdout.trim())
+      }
+    )
+  })
+}
 
 // Keywords that signal startup mode — need 2+ matches to trigger
 const STARTUP_SIGNALS = [
@@ -29,19 +51,25 @@ export function detectMode(rawIdea: string): BrainstormMode {
 export async function brainstormPlan(
   rawIdea: string,
 ): Promise<{ markdown: string; mode: BrainstormMode } | null> {
+  const mode = detectMode(rawIdea)
+  const systemPrompt = mode === 'startup'
+    ? STARTUP_SYSTEM_PROMPT
+    : BUILDER_SYSTEM_PROMPT
+
+  // Strategy 1: Use Claude CLI (local, uses existing OAuth — free)
+  const cliResult = await callClaudeCli(systemPrompt, rawIdea)
+  if (cliResult) {
+    return { markdown: cliResult, mode }
+  }
+
+  // Strategy 2: Fall back to API key (Vercel or CLI not available)
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
     return null
   }
 
-  const mode = detectMode(rawIdea)
-  const client = new Anthropic({ apiKey })
-
-  const systemPrompt = mode === 'startup'
-    ? STARTUP_SYSTEM_PROMPT
-    : BUILDER_SYSTEM_PROMPT
-
   try {
+    const client = new Anthropic({ apiKey })
     const response = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 4096,
