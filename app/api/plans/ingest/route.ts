@@ -78,6 +78,47 @@ export async function POST(request: Request) {
       },
     })
 
+    // Auto-trigger brainstorm for rough/one-liner plans (fire and forget)
+    if (needsBrainstorm) {
+      const { brainstormPlan } = await import('@/lib/plan-brainstorm')
+      const { parsePlanMarkdown: reparse } = await import('@/lib/plan-parser')
+
+      brainstormPlan(markdown).then(async (result) => {
+        if (!result) return
+        const reparsed = reparse(result.markdown)
+        const newStatus = reparsed.flywheelScore <= 4 ? 'reviewing' : 'analyzing'
+
+        await sb.from('plans').update({
+          title: reparsed.title || data.title,
+          raw_markdown: result.markdown,
+          parsed_beads: reparsed.beads,
+          flywheel_score: reparsed.flywheelScore,
+          score_breakdown: reparsed.scoreBreakdown,
+          wave_count: reparsed.waveCount,
+          status: newStatus,
+          updated_at: new Date().toISOString(),
+        }).eq('id', data.id)
+
+        await sb.from('war_room_events').insert({
+          event_type: 'plan_brainstormed',
+          agent_id: 'system',
+          title: `Brainstormed (${result.mode}): ${reparsed.title}`,
+          metadata: { plan_id: data.id, mode: result.mode },
+        })
+
+        // Chain: if analyzing, also run analysis
+        if (newStatus === 'analyzing') {
+          const { analyzePlan } = await import('@/lib/plan-analyzer')
+          const analysis = await analyzePlan(reparsed.title, result.markdown, reparsed.beads, reparsed.flywheelScore)
+          await sb.from('plans').update({
+            analysis,
+            status: 'reviewing',
+            updated_at: new Date().toISOString(),
+          }).eq('id', data.id)
+        }
+      }).catch((err) => captureError(err, 'plans.ingest.brainstorm', { planId: data.id }))
+    }
+
     return NextResponse.json(
       {
         plan: data,

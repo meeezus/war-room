@@ -73,7 +73,7 @@ export interface Event {
     | 'skill_patch_extracted' | 'skill_applied' | 'skill_sunset' | 'cross_pollination'
     | 'daily_briefing'
     | 'awareness_cycle_complete' | 'health_check_failed'
-    | 'plan_ingested' | 'plan_wave_completed' | 'plan_completed' | 'plan_failed'
+    | 'plan_ingested' | 'plan_brainstormed' | 'plan_wave_completed' | 'plan_completed' | 'plan_failed'
   agent_id: string | null
   title: string
   description: string | null
