@@ -1,5 +1,22 @@
 import Anthropic from '@anthropic-ai/sdk'
+import { execFile } from 'child_process'
 import type { PlanAnalysis, ParsedBead } from './types'
+
+/** Call Claude via CLI (uses existing OAuth — no API key needed) */
+function callClaudeCli(prompt: string): Promise<string | null> {
+  if (process.env.VERCEL) return Promise.resolve(null)
+  return new Promise((resolve) => {
+    execFile(
+      'claude',
+      ['-p', '--model', 'claude-sonnet-4-6', '--print', prompt],
+      { timeout: 60000, env: { ...process.env, CLAUDECODE: '' } },
+      (err, stdout) => {
+        if (err || !stdout?.trim()) resolve(null)
+        else resolve(stdout.trim())
+      }
+    )
+  })
+}
 
 /**
  * Determine analysis depth based on flywheel score.
@@ -41,24 +58,7 @@ export async function analyzePlan(
     }
   }
 
-  // Read API key at call time (not module load) so env changes are respected
-  const apiKey = process.env.ANTHROPIC_API_KEY
-
-  // No API key: return informative fallback
-  if (!apiKey) {
-    return {
-      depth,
-      pushback: ['Analysis requires ANTHROPIC_API_KEY — review manually'],
-      alternatives: [],
-      blind_spots: [],
-      recommendation: `Score ${score} recommends ${depth} analysis. Add API key to enable.`,
-      analyzed_at: new Date().toISOString(),
-    }
-  }
-
-  const client = new Anthropic({ apiKey })
-
-  // Select model based on depth: sonnet for quick, opus for deeper analysis
+  // Build prompts first (used by both strategies)
   const model = depth === 'quick' ? 'claude-sonnet-4-6' : 'claude-opus-4-6'
 
   const beadSummary = beads.map(b =>
@@ -93,7 +93,45 @@ ${beadSummary}
 ### Full Plan:
 ${markdown.slice(0, 8000)}`
 
+  // Helper to parse analysis JSON from text
+  function parseAnalysisText(text: string): PlanAnalysis | null {
+    const jsonMatch = text.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) return null
+    try {
+      const parsed = JSON.parse(jsonMatch[0])
+      return {
+        depth,
+        pushback: Array.isArray(parsed.pushback) ? parsed.pushback.slice(0, 3) : [],
+        alternatives: Array.isArray(parsed.alternatives) ? parsed.alternatives.slice(0, 3) : [],
+        blind_spots: Array.isArray(parsed.blind_spots) ? parsed.blind_spots.slice(0, 3) : [],
+        recommendation: typeof parsed.recommendation === 'string' ? parsed.recommendation : 'Review manually.',
+        analyzed_at: new Date().toISOString(),
+      }
+    } catch { return null }
+  }
+
+  // Strategy 1: Try Claude CLI (uses existing OAuth — no API key needed)
+  const cliResult = await callClaudeCli(`${systemPrompt}\n\n---\n\n${userPrompt}`)
+  if (cliResult) {
+    const parsed = parseAnalysisText(cliResult)
+    if (parsed) return parsed
+  }
+
+  // Strategy 2: Fall back to API key
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) {
+    return {
+      depth,
+      pushback: ['No Claude CLI or API key available — review manually'],
+      alternatives: [],
+      blind_spots: [],
+      recommendation: `Score ${score} recommends ${depth} analysis.`,
+      analyzed_at: new Date().toISOString(),
+    }
+  }
+
   try {
+    const client = new Anthropic({ apiKey })
     const response = await client.messages.create({
       model,
       max_tokens: 1024,
@@ -102,28 +140,15 @@ ${markdown.slice(0, 8000)}`
     })
 
     const text = response.content[0].type === 'text' ? response.content[0].text : ''
-
-    // Extract JSON from response (may be wrapped in markdown code block)
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
-      return {
-        depth,
-        pushback: ['Analysis returned non-JSON response'],
-        alternatives: [],
-        blind_spots: [],
-        recommendation: text.slice(0, 200),
-        analyzed_at: new Date().toISOString(),
-      }
-    }
-
-    const parsed = JSON.parse(jsonMatch[0])
+    const result = parseAnalysisText(text)
+    if (result) return result
 
     return {
       depth,
-      pushback: Array.isArray(parsed.pushback) ? parsed.pushback.slice(0, 3) : [],
-      alternatives: Array.isArray(parsed.alternatives) ? parsed.alternatives.slice(0, 3) : [],
-      blind_spots: Array.isArray(parsed.blind_spots) ? parsed.blind_spots.slice(0, 3) : [],
-      recommendation: typeof parsed.recommendation === 'string' ? parsed.recommendation : 'Review manually.',
+      pushback: ['Analysis returned non-JSON response'],
+      alternatives: [],
+      blind_spots: [],
+      recommendation: text.slice(0, 200),
       analyzed_at: new Date().toISOString(),
     }
   } catch (err) {
