@@ -411,9 +411,9 @@ export default function PlanDetailPage() {
                 </button>
               )}
 
-              {!isBrainstorming && !isRunning && plan.status !== "completed" && (
+              {plan.status === "reviewing" && (
                 <button
-                  onClick={() => setShowFeedback(!showFeedback)}
+                  onClick={() => setShowFeedback(true)}
                   className="rounded-sm border border-border px-4 py-2 font-[family-name:var(--font-space-grotesk)] text-sm text-muted-foreground transition-colors hover:text-foreground"
                 >
                   Iterate
