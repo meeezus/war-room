@@ -165,7 +165,9 @@ export default function PlanDetailPage() {
               </h1>
               <div className="flex flex-wrap items-center gap-3">
                 <span
-                  className={`rounded border px-2 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-semibold uppercase tracking-wide ${statusClass}`}
+                  key={plan.status}
+                  className={`inline-block rounded border px-2 py-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[10px] font-semibold uppercase tracking-wide transition-transform duration-300 ${statusClass}`}
+                  style={{ animation: 'bead-complete 0.35s ease-out' }}
                 >
                   {plan.status}
                 </span>

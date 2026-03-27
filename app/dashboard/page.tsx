@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { motion, useReducedMotion } from "motion/react";
 import { supabase } from "@/lib/supabase";
 import type { EngineStatus, OutcomeCard, ServiceHealthResponse, SystemFitness } from "@/lib/types";
 import { SidebarNav } from "@/components/sidebar-nav";
@@ -81,6 +82,9 @@ export default function DashboardPage() {
   const [insights, setInsights] = useState<{ content: string; created_at: string; id: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState("");
+  const [glowKey, setGlowKey] = useState(0);
+  const topBarRef = useRef<HTMLDivElement>(null);
+  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
     const fmt = () =>
@@ -121,6 +125,7 @@ export default function DashboardPage() {
       console.error("Dashboard fetch error:", err);
     } finally {
       if (initial) setLoading(false);
+      else setGlowKey((k) => k + 1); // trigger top-bar glow on refresh
     }
   }, []);
 
@@ -166,7 +171,11 @@ export default function DashboardPage() {
       {/* Main Area */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top Bar */}
-        <div className="flex h-10 flex-shrink-0 items-center gap-4 border-b border-border/50 px-5 font-[family-name:var(--font-jetbrains-mono)] text-[11px] text-muted-foreground">
+        <div
+          key={glowKey}
+          ref={topBarRef}
+          className={`flex h-10 flex-shrink-0 items-center gap-4 border-b border-border/50 px-5 font-[family-name:var(--font-jetbrains-mono)] text-[11px] text-muted-foreground${glowKey > 0 ? " top-bar-glow" : ""}`}
+        >
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-500 shadow-[0_0_6px] shadow-green-500" />
           <span>Engine Live</span>
           <span className="text-muted-foreground/40">·</span>
@@ -189,34 +198,71 @@ export default function DashboardPage() {
           {/* Content */}
           <div className="flex-1 overflow-y-auto p-4">
             {/* Outcome Cards - 2x2 grid */}
-            <div className="mb-4 grid grid-cols-2 gap-3">
-              <ResearchCard data={outcomes?.research ?? null} />
-              <AeonCard data={outcomes?.aeon ?? null} />
+            <div className="mb-4 grid grid-cols-2 gap-3" data-stagger="outcomes">
+              {[
+                <ResearchCard key="research" data={outcomes?.research ?? null} />,
+                <AeonCard key="aeon" data={outcomes?.aeon ?? null} />,
+              ].map((card, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={prefersReducedMotion ? false : { opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: idx * 0.08 }}
+                >
+                  {card}
+                </motion.div>
+              ))}
             </div>
-            <div className="mb-4 grid grid-cols-2 gap-3">
-              <OpsecCard data={outcomes?.opsec ?? null} />
-              <MessagesCard data={outcomes?.messages ?? null} unreadCount={outcomes?.messages?.count} />
+            <div className="mb-4 grid grid-cols-2 gap-3" data-stagger="outcomes-2">
+              {[
+                <OpsecCard key="opsec" data={outcomes?.opsec ?? null} />,
+                <MessagesCard key="messages" data={outcomes?.messages ?? null} unreadCount={outcomes?.messages?.count} />,
+              ].map((card, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={prefersReducedMotion ? false : { opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: (idx + 2) * 0.08 }}
+                >
+                  {card}
+                </motion.div>
+              ))}
             </div>
 
             {/* Learnings Feed */}
-            <div className="mb-4">
+            <motion.div
+              className="mb-4"
+              initial={prefersReducedMotion ? false : { opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.32 }}
+            >
               <LearningsFeed fitness={fitness} insights={insights} />
-            </div>
+            </motion.div>
 
             {/* Fleet Status */}
-            <div className="mb-4">
+            <motion.div
+              className="mb-4"
+              initial={prefersReducedMotion ? false : { opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.40 }}
+            >
               <FleetStatus
                 agentsOnline={counts.agentsOnline}
                 tasksRunning={counts.tasksRunning}
                 errors24h={counts.errors24h}
                 activeSessions={counts.activeSessions}
               />
-            </div>
+            </motion.div>
 
             {/* System Health Accordion */}
-            <div className="mb-4">
+            <motion.div
+              className="mb-4"
+              initial={prefersReducedMotion ? false : { opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.48 }}
+            >
               <SystemHealthAccordion health={health} />
-            </div>
+            </motion.div>
           </div>
 
           {/* Right Event Rail */}

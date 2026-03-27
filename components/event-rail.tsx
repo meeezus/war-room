@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNowStrict } from "date-fns";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 
 interface EventItem {
   id: string;
@@ -31,6 +32,7 @@ const eventColors: Record<string, string> = {
 export function EventRail() {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [todayCount, setTodayCount] = useState(0);
+  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
     if (!supabase) return;
@@ -91,32 +93,37 @@ export function EventRail() {
             No events yet
           </div>
         )}
-        {events.map((event) => (
-          <div
-            key={event.id}
-            className="flex gap-2.5 px-4 py-2 transition-colors hover:bg-foreground/[0.02]"
-          >
-            <span
-              className={cn(
-                "mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full",
-                eventColors[event.event_type] ?? "bg-muted-foreground/40"
-              )}
-            />
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-[11px] leading-[1.4] text-muted-foreground">
-                <span className="text-muted-foreground/60">
-                  {event.event_type}:
-                </span>{" "}
-                {event.title}
+        <AnimatePresence initial={false}>
+          {events.map((event) => (
+            <motion.div
+              key={event.id}
+              initial={prefersReducedMotion ? false : { opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.2 }}
+              className="flex gap-2.5 px-4 py-2 transition-colors hover:bg-foreground/[0.02]"
+            >
+              <span
+                className={cn(
+                  "mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full",
+                  eventColors[event.event_type] ?? "bg-muted-foreground/40"
+                )}
+              />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[11px] leading-[1.4] text-muted-foreground">
+                  <span className="text-muted-foreground/60">
+                    {event.event_type}:
+                  </span>{" "}
+                  {event.title}
+                </div>
+                <div className="mt-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[9px] text-muted-foreground/50">
+                  {formatDistanceToNowStrict(new Date(event.created_at), {
+                    addSuffix: true,
+                  })}
+                </div>
               </div>
-              <div className="mt-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[9px] text-muted-foreground/50">
-                {formatDistanceToNowStrict(new Date(event.created_at), {
-                  addSuffix: true,
-                })}
-              </div>
-            </div>
-          </div>
-        ))}
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
     </div>
   );

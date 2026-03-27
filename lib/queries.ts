@@ -1022,10 +1022,15 @@ export async function getOutcomeCounts(): Promise<Record<string, OutcomeCard>> {
   const opsecErrorCount = errors24h.count || 0
   const opsecTotalCount = opsecFindingsCount + opsecErrorCount
 
-  // Messages: brief/notification/message events from last 24h
+  // Messages: expanded event types, filtered to today
+  const commsEventTypes = ['brief', 'notification', 'message', 'plan_completed', 'plan_failed', 'plan_approved', 'toji_scan_complete', 'research_scan_complete', 'patrol_complete']
+  const todayMidnight = new Date()
+  todayMidnight.setHours(0, 0, 0, 0)
+  const todayISO = todayMidnight.toISOString()
+
   const [msgEvents, msgEventCount] = await Promise.all([
-    supabase.from('war_room_events').select('id, title, created_at, event_type').in('event_type', ['brief', 'notification', 'message']).order('created_at', { ascending: false }).limit(3),
-    supabase.from('war_room_events').select('id', { count: 'exact', head: true }).in('event_type', ['brief', 'notification', 'message']).gte('created_at', yesterday),
+    supabase.from('war_room_events').select('id, title, created_at, event_type').in('event_type', commsEventTypes).order('created_at', { ascending: false }).limit(3),
+    supabase.from('war_room_events').select('id', { count: 'exact', head: true }).in('event_type', commsEventTypes).gte('created_at', todayISO),
   ])
 
   const msgCount = msgEvents.data?.length || 0
@@ -1065,7 +1070,7 @@ export async function getOutcomeCounts(): Promise<Record<string, OutcomeCard>> {
     },
     messages: {
       category: 'messages' as const,
-      headline: msgCount > 0 ? `${msgCount} recent` : 'No briefs yet',
+      headline: unreadCount > 0 ? `${unreadCount} today` : msgCount > 0 ? `${msgCount} recent` : 'No briefs yet',
       detail: null,
       count: unreadCount,
       items: (msgEvents.data || []).map((e: { title: string; created_at: string; event_type: string }) => ({ title: e.title, timestamp: e.created_at, status: e.event_type })),

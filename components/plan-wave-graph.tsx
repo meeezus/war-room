@@ -17,8 +17,8 @@ interface PlanWaveGraphProps {
 // ---------------------------------------------------------------------------
 
 const STATUS_DOT_COLOR: Record<string, string> = {
-  completed: "bg-green-500",
-  running: "bg-amber-500 animate-pulse",
+  completed: "bg-green-500 bead-complete",
+  running: "bg-amber-500 bead-pulse",
   queued: "bg-gray-500",
   failed: "bg-red-500",
 };
@@ -106,7 +106,8 @@ export function PlanWaveGraph({ beads, missionStatuses }: PlanWaveGraphProps) {
             {i < waves.length - 1 && (
               <div
                 data-wave-arrow
-                className="flex min-w-[32px] items-center justify-center pt-10 text-muted-foreground/30"
+                className="wave-arrow-fade flex min-w-[32px] items-center justify-center pt-10 text-muted-foreground/30"
+                style={{ animationDelay: `${(i + 1) * 120}ms` }}
               >
                 <span className="text-lg">&#8594;</span>
               </div>

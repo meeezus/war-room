@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS plans (
   parsed_beads JSONB DEFAULT '[]',
   analysis JSONB,  -- flywheel analysis results (pushback, alternatives, blind spots)
   status TEXT NOT NULL DEFAULT 'draft'
-    CHECK (status IN ('draft', 'analyzing', 'reviewing', 'approved', 'running', 'completed', 'failed')),
+    CHECK (status IN ('draft', 'brainstorming', 'analyzing', 'reviewing', 'approved', 'running', 'completed', 'failed')),
   flywheel_score INT,
   score_breakdown JSONB,  -- { money: 1-3, blast_radius: 1-3, novelty: 1-3 }
   auto_run BOOLEAN DEFAULT false,
