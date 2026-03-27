@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // ---------------------------------------------------------------------------
-// Plan Iterate API Route Tests
+// Plan Iterate API Route Tests (fire-and-forget)
+//
+// The iterate route saves feedback + sets status='brainstorming', then returns.
+// No brainstormPlan/analyzePlan calls. Poller picks up the work.
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
@@ -80,39 +83,6 @@ vi.mock('@/lib/sentry', () => ({
   captureError: vi.fn(),
 }))
 
-const mockBrainstormPlan = vi.fn()
-vi.mock('@/lib/plan-brainstorm', () => ({
-  brainstormPlan: (...args: unknown[]) => mockBrainstormPlan(...args),
-}))
-
-vi.mock('@/lib/plan-parser', () => ({
-  parsePlanMarkdown: (md: string) => ({
-    title: 'Updated Plan Title',
-    beads: [
-      { id: 'BEAD-001', title: 'First bead', wave_index: 0 },
-      { id: 'BEAD-002', title: 'Second bead', wave_index: 1 },
-    ],
-    flywheelScore: 4,
-    scoreBreakdown: { money: 1, blast_radius: 2, novelty: 1 },
-    waveCount: 2,
-  }),
-}))
-
-vi.mock('@/lib/vault-sync', () => ({
-  syncPlanToVault: vi.fn().mockResolvedValue('/path/to/vault/file.md'),
-}))
-
-vi.mock('@/lib/plan-analyzer', () => ({
-  analyzePlan: vi.fn().mockResolvedValue({
-    depth: 'quick',
-    pushback: ['Consider edge cases'],
-    alternatives: [],
-    blind_spots: [],
-    recommendation: 'Proceed',
-    analyzed_at: new Date().toISOString(),
-  }),
-}))
-
 import { POST } from '@/app/api/plans/[id]/iterate/route'
 
 // ---------------------------------------------------------------------------
@@ -153,13 +123,8 @@ describe('POST /api/plans/[id]/iterate', () => {
 
   beforeEach(() => {
     resetConfig()
-    mockBrainstormPlan.mockReset()
     mockConfig.selectSingleResult = { data: MOCK_PLAN, error: null }
-    mockConfig.updateResult = { data: { ...MOCK_PLAN, status: 'reviewing' }, error: null }
-    mockBrainstormPlan.mockResolvedValue({
-      markdown: '# Updated Plan\n\n## BEAD-001: First\nDo this\n\n## BEAD-002: Second\nDo that',
-      mode: 'builder',
-    })
+    mockConfig.updateResult = { data: { ...MOCK_PLAN, status: 'brainstorming' }, error: null }
   })
 
   it('returns 400 when feedback is missing', async () => {
@@ -183,73 +148,35 @@ describe('POST /api/plans/[id]/iterate', () => {
     expect(res.status).toBe(404)
   })
 
-  it('calls brainstormPlan with combined context including original + feedback', async () => {
+  it('saves iteration_feedback and sets status to brainstorming', async () => {
     const req = makeRequest({ feedback: 'Add more tests' })
     await POST(req, { params: mockParams })
 
-    expect(mockBrainstormPlan).toHaveBeenCalledTimes(1)
-    const context = mockBrainstormPlan.mock.calls[0][0] as string
-    expect(context).toContain('Original idea:')
-    expect(context).toContain(MOCK_PLAN.raw_markdown)
-    expect(context).toContain('Add more tests')
-    expect(context).toContain('feedback')
+    const update = mockConfig.updateCalls[0] as Record<string, unknown>
+    expect(update.iteration_feedback).toBe('Add more tests')
+    expect(update.status).toBe('brainstorming')
   })
 
-  it('includes previous bead titles in context', async () => {
-    const req = makeRequest({ feedback: 'Refine beads' })
-    await POST(req, { params: mockParams })
-
-    const context = mockBrainstormPlan.mock.calls[0][0] as string
-    expect(context).toContain('Old bead one')
-  })
-
-  it('updates plan status to brainstorming before calling brainstorm', async () => {
-    const req = makeRequest({ feedback: 'Improve it' })
-    await POST(req, { params: mockParams })
-
-    // First update should set status to brainstorming
-    const firstUpdate = mockConfig.updateCalls[0] as Record<string, unknown>
-    expect(firstUpdate.status).toBe('brainstorming')
-  })
-
-  it('updates plan with brainstormed result on success', async () => {
+  it('returns success with brainstorming status', async () => {
     const req = makeRequest({ feedback: 'Change things' })
     const res = await POST(req, { params: mockParams })
     expect(res.status).toBe(200)
 
     const json = await res.json()
     expect(json.success).toBe(true)
-    expect(json.beadCount).toBe(2)
-    expect(json.waveCount).toBe(2)
+    expect(json.status).toBe('brainstorming')
+    expect(json.message).toBeDefined()
   })
 
-  it('emits plan_iterated event', async () => {
+  it('emits plan_iterate_requested event', async () => {
     const req = makeRequest({ feedback: 'Make changes' })
     await POST(req, { params: mockParams })
 
-    // Should write to war_room_events
     expect(mockConfig.fromCalls).toContain('war_room_events')
     const eventInsert = mockConfig.insertCalls.find(
-      (c: unknown) => (c as Record<string, unknown>).event_type === 'plan_iterated'
+      (c: unknown) => (c as Record<string, unknown>).event_type === 'plan_iterate_requested'
     )
     expect(eventInsert).toBeDefined()
-  })
-
-  it('returns 500 when brainstorm returns null', async () => {
-    mockBrainstormPlan.mockResolvedValue(null)
-    const req = makeRequest({ feedback: 'Something broke' })
-    const res = await POST(req, { params: mockParams })
-    expect(res.status).toBe(500)
-    const json = await res.json()
-    expect(json.error).toMatch(/iterate failed/i)
-  })
-
-  it('sets status to reviewing for low flywheel scores', async () => {
-    const req = makeRequest({ feedback: 'Low stakes change' })
-    const res = await POST(req, { params: mockParams })
-    const json = await res.json()
-    // parsePlanMarkdown mock returns flywheelScore 4 (<=4 -> reviewing)
-    expect(json.status).toBe('reviewing')
   })
 
   it('includes feedback_length in event metadata', async () => {
@@ -258,7 +185,7 @@ describe('POST /api/plans/[id]/iterate', () => {
     await POST(req, { params: mockParams })
 
     const eventInsert = mockConfig.insertCalls.find(
-      (c: unknown) => (c as Record<string, unknown>).event_type === 'plan_iterated'
+      (c: unknown) => (c as Record<string, unknown>).event_type === 'plan_iterate_requested'
     ) as Record<string, unknown>
     expect((eventInsert.metadata as Record<string, unknown>).feedback_length).toBe(feedback.length)
   })
