@@ -14,8 +14,10 @@ type PlanStatus = Plan["status"] | "all";
 
 const FILTER_TABS: { key: PlanStatus; label: string }[] = [
   { key: "all", label: "All" },
-  { key: "running", label: "Running" },
+  { key: "brainstorming", label: "Brainstorming" },
+  { key: "analyzing", label: "Analyzing" },
   { key: "reviewing", label: "Reviewing" },
+  { key: "running", label: "Running" },
   { key: "completed", label: "Completed" },
   { key: "draft", label: "Draft" },
 ];
