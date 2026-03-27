@@ -47,6 +47,9 @@ export default function PlanDetailPage() {
   const [showRaw, setShowRaw] = useState(false);
   const [approving, setApproving] = useState(false);
   const [brainstorming, setBrainstorming] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const [iterating, setIterating] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchPlan = useCallback(async () => {
@@ -69,9 +72,11 @@ export default function PlanDetailPage() {
     fetchPlan();
   }, [fetchPlan]);
 
-  // Auto-refresh every 5s when brainstorming, analyzing, or running
+  // Auto-refresh when brainstorming (3s), analyzing (3s), or running (5s)
   useEffect(() => {
-    if (plan?.status === "brainstorming" || plan?.status === "analyzing" || plan?.status === "running") {
+    if (plan?.status === "brainstorming" || plan?.status === "analyzing") {
+      intervalRef.current = setInterval(fetchPlan, 3000);
+    } else if (plan?.status === "running") {
       intervalRef.current = setInterval(fetchPlan, 5000);
     }
     return () => {
@@ -406,6 +411,15 @@ export default function PlanDetailPage() {
                 </button>
               )}
 
+              {!isBrainstorming && !isRunning && plan.status !== "completed" && (
+                <button
+                  onClick={() => setShowFeedback(!showFeedback)}
+                  className="rounded-sm border border-border px-4 py-2 font-[family-name:var(--font-space-grotesk)] text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Iterate
+                </button>
+              )}
+
               <button
                 disabled
                 className="rounded-sm border border-border px-4 py-2 font-[family-name:var(--font-space-grotesk)] text-sm text-muted-foreground opacity-40"
@@ -420,6 +434,52 @@ export default function PlanDetailPage() {
                 View Raw Plan
               </button>
             </div>
+
+            {/* Iterate Feedback Area */}
+            {showFeedback && (
+              <div className="mt-3">
+                <textarea
+                  value={feedback}
+                  onChange={(e) => setFeedback(e.target.value)}
+                  placeholder="Add your feedback... what should change? What's missing?"
+                  className="w-full h-24 p-3 rounded-sm border border-border/50 bg-card text-sm text-foreground font-[family-name:var(--font-space-grotesk)] placeholder:text-muted-foreground/40 resize-none focus:outline-none focus:border-primary/50"
+                />
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={async () => {
+                      setIterating(true);
+                      try {
+                        const res = await fetch(`/api/plans/${plan.id}/iterate`, {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ feedback }),
+                        });
+                        if (res.ok) {
+                          setFeedback("");
+                          setShowFeedback(false);
+                          fetchPlan();
+                        }
+                      } finally {
+                        setIterating(false);
+                      }
+                    }}
+                    disabled={!feedback.trim() || iterating}
+                    className="px-4 py-2 rounded-sm bg-primary text-primary-foreground text-sm font-medium font-[family-name:var(--font-space-grotesk)] disabled:opacity-40"
+                  >
+                    {iterating ? "Iterating..." : "Submit Feedback"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowFeedback(false);
+                      setFeedback("");
+                    }}
+                    className="px-4 py-2 rounded-sm text-sm text-muted-foreground font-[family-name:var(--font-space-grotesk)]"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Raw Markdown (collapsible) */}
             {showRaw && (
