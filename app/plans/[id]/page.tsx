@@ -219,7 +219,7 @@ export default function PlanDetailPage() {
               </h2>
               {beadCount > 0 ? (
                 <ul className="space-y-1.5">
-                  {plan.parsed_beads.map((bead) => (
+                  {(plan.parsed_beads ?? []).map((bead) => (
                     <li
                       key={bead.id}
                       className="flex items-start gap-2 text-sm text-foreground/80"

@@ -71,7 +71,7 @@ export default function PlansPage() {
       const res = await fetch("/api/plans");
       if (res.ok) {
         const data = await res.json();
-        setPlans(data);
+        setPlans(Array.isArray(data) ? data : (data.plans ?? []));
       }
     } finally {
       setLoading(false);
