@@ -23,7 +23,6 @@ const sections: NavSection[] = [
     title: "",
     items: [
       { label: "Overview", href: "/dashboard", icon: "\u25C9" },
-      { label: "Agents", href: "/agents", icon: "\u25CE" },
       { label: "Tasks", href: "/tasks", icon: "\u2630" },
       { label: "Sessions", href: "/sessions", icon: "\u25B9" },
     ],

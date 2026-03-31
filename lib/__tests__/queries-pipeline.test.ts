@@ -3,7 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // ---------------------------------------------------------------------------
 // Supabase mock — must be hoisted before module imports
 // ---------------------------------------------------------------------------
-const { mockFrom, mockSelect, mockIn, mockEq, mockOrder, mockLimit, mockGte } = vi.hoisted(() => {
+const { mockFrom, mockSelect, mockIn, mockEq, mockOrder, mockLimit, mockGte, mockNot } = vi.hoisted(() => {
+  const mockNot = vi.fn()
   const mockGte = vi.fn()
   const mockLimit = vi.fn()
   const mockOrder = vi.fn()
@@ -16,12 +17,13 @@ const { mockFrom, mockSelect, mockIn, mockEq, mockOrder, mockLimit, mockGte } = 
   mockLimit.mockResolvedValue({ data: [], error: null, count: 0 })
   mockOrder.mockReturnValue({ limit: mockLimit })
   mockGte.mockResolvedValue({ data: [], error: null, count: 0 })
-  mockEq.mockReturnValue({ gte: mockGte, order: mockOrder })
-  mockIn.mockReturnValue({ order: mockOrder, eq: mockEq })
-  mockSelect.mockReturnValue({ in: mockIn, eq: mockEq, order: mockOrder })
+  mockNot.mockReturnValue({ order: mockOrder, eq: mockEq, in: mockIn, gte: mockGte })
+  mockEq.mockReturnValue({ gte: mockGte, order: mockOrder, not: mockNot })
+  mockIn.mockReturnValue({ order: mockOrder, eq: mockEq, not: mockNot })
+  mockSelect.mockReturnValue({ in: mockIn, eq: mockEq, order: mockOrder, not: mockNot })
   mockFrom.mockReturnValue({ select: mockSelect })
 
-  return { mockFrom, mockSelect, mockIn, mockEq, mockOrder, mockLimit, mockGte }
+  return { mockFrom, mockSelect, mockIn, mockEq, mockOrder, mockLimit, mockGte, mockNot }
 })
 
 vi.mock('@/lib/supabase', () => ({
@@ -100,9 +102,10 @@ describe('getOutcomeCounts', () => {
     mockLimit.mockResolvedValue({ data: [], error: null, count: 0 })
     mockOrder.mockReturnValue({ limit: mockLimit })
     mockGte.mockResolvedValue({ data: [], error: null, count: 0 })
-    mockEq.mockReturnValue({ gte: mockGte, order: mockOrder })
-    mockIn.mockReturnValue({ order: mockOrder, eq: mockEq, gte: mockGte })
-    mockSelect.mockReturnValue({ in: mockIn, eq: mockEq, order: mockOrder })
+    mockNot.mockReturnValue({ order: mockOrder, eq: mockEq, in: mockIn, gte: mockGte })
+    mockEq.mockReturnValue({ gte: mockGte, order: mockOrder, not: mockNot })
+    mockIn.mockReturnValue({ order: mockOrder, eq: mockEq, gte: mockGte, not: mockNot })
+    mockSelect.mockReturnValue({ in: mockIn, eq: mockEq, order: mockOrder, not: mockNot })
     mockFrom.mockReturnValue({ select: mockSelect })
   })
 
