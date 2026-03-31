@@ -72,7 +72,6 @@ describe('SidebarNav', () => {
     it('renders nav labels with text', () => {
       render(<SidebarNav />)
       expect(screen.getByText('Overview')).toBeTruthy()
-      expect(screen.getByText('Agents')).toBeTruthy()
       expect(screen.getByText('Tasks')).toBeTruthy()
       expect(screen.getByText('Sessions')).toBeTruthy()
     })
@@ -199,8 +198,8 @@ describe('SidebarNav', () => {
       const overviewLink = container.querySelector('a[href="/dashboard"]')
       expect(overviewLink?.getAttribute('title')).toBe('Overview')
 
-      const agentsLink = container.querySelector('a[href="/agents"]')
-      expect(agentsLink?.getAttribute('title')).toBe('Agents')
+      const tasksLink = container.querySelector('a[href="/tasks"]')
+      expect(tasksLink?.getAttribute('title')).toBe('Tasks')
     })
   })
 

@@ -3,7 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // ---------------------------------------------------------------------------
 // Supabase mock — hoisted before module imports
 // ---------------------------------------------------------------------------
-const { mockFrom, mockSelect, mockIn, mockEq, mockOrder, mockLimit, mockGte, mockNeq } = vi.hoisted(() => {
+const { mockFrom, mockSelect, mockIn, mockEq, mockOrder, mockLimit, mockGte, mockNeq, mockNot } = vi.hoisted(() => {
+  const mockNot = vi.fn()
   const mockNeq = vi.fn()
   const mockGte = vi.fn()
   const mockLimit = vi.fn()
@@ -18,12 +19,13 @@ const { mockFrom, mockSelect, mockIn, mockEq, mockOrder, mockLimit, mockGte, moc
   mockOrder.mockReturnValue({ limit: mockLimit })
   mockGte.mockResolvedValue({ data: [], error: null, count: 0 })
   mockNeq.mockReturnValue({ order: mockOrder })
-  mockEq.mockReturnValue({ gte: mockGte, order: mockOrder, in: mockIn })
-  mockIn.mockReturnValue({ order: mockOrder, eq: mockEq, gte: mockGte })
-  mockSelect.mockReturnValue({ in: mockIn, eq: mockEq, order: mockOrder })
+  mockNot.mockReturnValue({ order: mockOrder, eq: mockEq, in: mockIn, gte: mockGte })
+  mockEq.mockReturnValue({ gte: mockGte, order: mockOrder, in: mockIn, not: mockNot })
+  mockIn.mockReturnValue({ order: mockOrder, eq: mockEq, gte: mockGte, not: mockNot })
+  mockSelect.mockReturnValue({ in: mockIn, eq: mockEq, order: mockOrder, not: mockNot })
   mockFrom.mockReturnValue({ select: mockSelect })
 
-  return { mockFrom, mockSelect, mockIn, mockEq, mockOrder, mockLimit, mockGte, mockNeq }
+  return { mockFrom, mockSelect, mockIn, mockEq, mockOrder, mockLimit, mockGte, mockNeq, mockNot }
 })
 
 vi.mock('@/lib/supabase', () => ({
@@ -43,9 +45,10 @@ describe('OPSEC outcome count — active discoveries only', () => {
     mockLimit.mockResolvedValue({ data: [], error: null, count: 0 })
     mockOrder.mockReturnValue({ limit: mockLimit })
     mockGte.mockResolvedValue({ data: [], error: null, count: 0 })
-    mockEq.mockReturnValue({ gte: mockGte, order: mockOrder, in: mockIn })
-    mockIn.mockReturnValue({ order: mockOrder, eq: mockEq, gte: mockGte })
-    mockSelect.mockReturnValue({ in: mockIn, eq: mockEq, order: mockOrder })
+    mockNot.mockReturnValue({ order: mockOrder, eq: mockEq, in: mockIn, gte: mockGte })
+    mockEq.mockReturnValue({ gte: mockGte, order: mockOrder, in: mockIn, not: mockNot })
+    mockIn.mockReturnValue({ order: mockOrder, eq: mockEq, gte: mockGte, not: mockNot })
+    mockSelect.mockReturnValue({ in: mockIn, eq: mockEq, order: mockOrder, not: mockNot })
     mockFrom.mockReturnValue({ select: mockSelect })
   })
 
@@ -72,9 +75,10 @@ describe('Aeon outcome card — actionHref', () => {
     mockLimit.mockResolvedValue({ data: [], error: null, count: 0 })
     mockOrder.mockReturnValue({ limit: mockLimit })
     mockGte.mockResolvedValue({ data: [], error: null, count: 0 })
-    mockEq.mockReturnValue({ gte: mockGte, order: mockOrder, in: mockIn })
-    mockIn.mockReturnValue({ order: mockOrder, eq: mockEq, gte: mockGte })
-    mockSelect.mockReturnValue({ in: mockIn, eq: mockEq, order: mockOrder })
+    mockNot.mockReturnValue({ order: mockOrder, eq: mockEq, in: mockIn, gte: mockGte })
+    mockEq.mockReturnValue({ gte: mockGte, order: mockOrder, in: mockIn, not: mockNot })
+    mockIn.mockReturnValue({ order: mockOrder, eq: mockEq, gte: mockGte, not: mockNot })
+    mockSelect.mockReturnValue({ in: mockIn, eq: mockEq, order: mockOrder, not: mockNot })
     mockFrom.mockReturnValue({ select: mockSelect })
   })
 
@@ -85,6 +89,7 @@ describe('Aeon outcome card — actionHref', () => {
       order: mockOrder,
       eq: mockEq,
       gte: mockGte,
+      not: mockNot,
     }))
     mockSelect.mockImplementation(() => ({
       in: (...args: unknown[]) => {
@@ -93,12 +98,14 @@ describe('Aeon outcome card — actionHref', () => {
           order: mockOrder,
           eq: mockEq,
           gte: mockGte,
+          not: mockNot,
           // Direct resolve for head:true count queries
           then: (resolve: (v: unknown) => void) => resolve({ data: [], error: null, count: 5 }),
         }
       },
       eq: mockEq,
       order: mockOrder,
+      not: mockNot,
     }))
 
     const result = await getOutcomeCounts()

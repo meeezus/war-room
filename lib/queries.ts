@@ -1024,10 +1024,10 @@ export async function getOutcomeCounts(): Promise<Record<string, OutcomeCard>> {
     // Table doesn't exist yet — show initializing state
   }
 
-  // Aeon: proposals where domain in ('commerce', 'product')
+  // Aeon: proposals where domain in ('commerce', 'product'), excluding patrol/awareness noise
   const [aeonData, aeonCount] = await Promise.all([
-    supabase.from('proposals').select('id, title, created_at, status, cost_estimate').in('domain', ['commerce', 'product']).order('created_at', { ascending: false }).limit(3),
-    supabase.from('proposals').select('id', { count: 'exact', head: true }).in('domain', ['commerce', 'product']),
+    supabase.from('proposals').select('id, title, created_at, status, cost_estimate').in('domain', ['commerce', 'product']).not('source', 'in', '("patrol","awareness")').order('created_at', { ascending: false }).limit(3),
+    supabase.from('proposals').select('id', { count: 'exact', head: true }).in('domain', ['commerce', 'product']).not('source', 'in', '("patrol","awareness")'),
   ])
   const aeonTotal = aeonCount.count || 0
 
@@ -1061,12 +1061,13 @@ export async function getOutcomeCounts(): Promise<Record<string, OutcomeCard>> {
   const unreadCount = msgEventCount.count || 0
 
   // Plans: reviewing + running + approved
-  const [plansActive, plansActiveCount] = await Promise.all([
+  const [plansActive, plansActiveCount, plansReviewingCount] = await Promise.all([
     supabase.from('plans').select('id, title, created_at, status').in('status', ['reviewing', 'running', 'approved']).order('created_at', { ascending: false }).limit(3),
     supabase.from('plans').select('id', { count: 'exact', head: true }).in('status', ['reviewing', 'running', 'approved']),
+    supabase.from('plans').select('id', { count: 'exact', head: true }).eq('status', 'reviewing'),
   ])
   const plansCount = plansActiveCount.count || 0
-  const reviewingCount = (plansActive.data || []).filter((p: { status: string }) => p.status === 'reviewing').length
+  const reviewingCount = plansReviewingCount.count || 0
   let plansHeadline = 'No active plans'
   if (plansCount > 0) {
     const parts: string[] = []
@@ -1112,8 +1113,6 @@ export async function getOutcomeCounts(): Promise<Record<string, OutcomeCard>> {
       headline: msgCount > 0 ? `${msgCount} recent` : 'No briefs yet',
       detail: null,
       count: unreadCount,
-      actionLabel: 'View Events',
-      actionHref: '/events',
       items: (msgEvents.data || []).map((e: { title: string; created_at: string; event_type: string }) => ({ title: e.title, timestamp: e.created_at, status: e.event_type })),
     },
     plans: {
