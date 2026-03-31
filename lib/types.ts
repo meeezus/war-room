@@ -449,7 +449,7 @@ export interface Plan {
   raw_markdown: string;
   parsed_beads: ParsedBead[];
   analysis: PlanAnalysis | null;
-  status: 'draft' | 'brainstorming' | 'analyzing' | 'reviewing' | 'approved' | 'running' | 'completed' | 'failed';
+  status: 'draft' | 'brainstorming' | 'analyzing' | 'polishing' | 'reviewing' | 'approved' | 'running' | 'completed' | 'failed';
   flywheel_score: number | null;
   score_breakdown: { money: number; blast_radius: number; novelty: number } | null;
   iteration_feedback: string | null;
