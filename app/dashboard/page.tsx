@@ -8,7 +8,7 @@ import { EventRail } from "@/components/event-rail";
 import { StealthCard } from "@/components/stealth-card";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { OuraBar } from "@/components/widgets/oura-bar";
-import { ResearchCard, AeonCard, OpsecCard, MessagesCard } from "@/components/outcomes";
+import { ResearchCard, AeonCard, OpsecCard, MessagesCard, PlansCard } from "@/components/outcomes";
 import { LearningsFeed } from "@/components/outcomes/learnings-feed";
 import { SystemHealthAccordion } from "@/components/widgets/system-health-accordion";
 import { FleetStatus } from "@/components/widgets/fleet-status";
@@ -193,9 +193,10 @@ export default function DashboardPage() {
               <ResearchCard data={outcomes?.research ?? null} />
               <AeonCard data={outcomes?.aeon ?? null} />
             </div>
-            <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
               <OpsecCard data={outcomes?.opsec ?? null} />
               <MessagesCard data={outcomes?.messages ?? null} unreadCount={outcomes?.messages?.count} />
+              <PlansCard data={outcomes?.plans ?? null} />
             </div>
 
             {/* Learnings Feed */}

@@ -123,11 +123,11 @@ export async function POST(
       ].join('')
 
       // Create task
-      await sb.from('tasks').insert({
+      const { error: taskErr } = await sb.from('tasks').insert({
         mission_id: mission.id,
         title: bead.title,
         description: taskDescription,
-        kind: 'implementation',
+        kind: 'code',
         daimyo,
         owner: daimyo,
         model,
@@ -135,6 +135,10 @@ export async function POST(
         timeout_minutes: timeoutMinutes,
         working_dir: bead.repo ? `~/Code/${bead.repo}` : null,
       })
+
+      if (taskErr) {
+        console.error(`Failed to create task for mission ${mission.id} (bead ${bead.id}):`, taskErr)
+      }
     }
 
     // 4. Emit plan_approved event
