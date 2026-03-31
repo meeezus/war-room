@@ -70,7 +70,7 @@ export function PlanWaveGraph({ beads, missionStatuses }: PlanWaveGraphProps) {
                   return (
                     <StealthCard
                       key={bead.id}
-                      className="relative p-3"
+                      className="relative min-h-[44px] p-3"
                       hover={false}
                     >
                       {/* Status dot */}

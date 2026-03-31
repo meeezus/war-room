@@ -47,7 +47,7 @@ export default function TasksPage() {
 
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex h-12 flex-shrink-0 items-center gap-4 border-b border-border/50 px-5">
+        <div className="flex h-12 flex-shrink-0 items-center gap-2 sm:gap-4 border-b border-border/50 pl-14 pr-4 sm:px-5 lg:pl-5">
           <h1 className="font-[family-name:var(--font-space-grotesk)] text-[14px] font-semibold tracking-tight">
             Task Board
           </h1>

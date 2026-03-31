@@ -122,7 +122,7 @@ export default function SpawnPage() {
     <div className="flex h-screen bg-background text-foreground font-[family-name:var(--font-space-grotesk)]">
       <SidebarNav />
 
-      <main className="flex-1 overflow-y-auto p-8">
+      <main className="flex-1 overflow-y-auto p-4 pt-14 sm:p-8 lg:pt-8">
         <div className="max-w-2xl mx-auto">
           <h1 className="text-lg font-semibold tracking-wide mb-6">Spawn Agent Task</h1>
 

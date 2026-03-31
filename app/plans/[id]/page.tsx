@@ -170,9 +170,9 @@ export default function PlanDetailPage() {
 
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar */}
-        <div className="flex h-10 flex-shrink-0 items-center gap-4 border-b border-border/50 px-5 font-[family-name:var(--font-jetbrains-mono)] text-[11px] text-muted-foreground">
-          <Link href="/plans" className="transition-colors hover:text-foreground">
-            Tenshu / Plans
+        <div className="flex h-10 flex-shrink-0 items-center gap-2 sm:gap-4 border-b border-border/50 pl-14 pr-4 sm:px-5 lg:pl-5 font-[family-name:var(--font-jetbrains-mono)] text-[11px] text-muted-foreground">
+          <Link href="/plans" className="shrink-0 transition-colors hover:text-foreground">
+            <span className="hidden sm:inline">Tenshu / </span>Plans
           </Link>
           <span className="text-muted-foreground/40">/</span>
           <span className="truncate text-foreground/60">{plan.title}</span>
@@ -181,7 +181,7 @@ export default function PlanDetailPage() {
         {/* Content + Chat */}
         <div className="flex flex-1 overflow-hidden">
         {/* Main content */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4">
           <div className="mx-auto max-w-4xl space-y-4">
             {/* Header */}
             <div className="space-y-2">
@@ -376,7 +376,7 @@ export default function PlanDetailPage() {
             </div>
 
             {/* Controls */}
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 sm:gap-3">
               {isBrainstorming && (
                 <button
                   disabled

@@ -38,9 +38,9 @@ export default function AgentsPage() {
       {/* Main Area */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top Bar */}
-        <div className="flex h-10 flex-shrink-0 items-center gap-4 border-b border-border/50 px-5 font-[family-name:var(--font-jetbrains-mono)] text-[11px] text-muted-foreground">
-          <span>Tenshu</span>
-          <span className="text-muted-foreground/40">/</span>
+        <div className="flex h-10 flex-shrink-0 items-center gap-2 sm:gap-4 border-b border-border/50 pl-14 pr-4 sm:px-5 lg:pl-5 font-[family-name:var(--font-jetbrains-mono)] text-[11px] text-muted-foreground">
+          <span className="hidden sm:inline">Tenshu</span>
+          <span className="hidden sm:inline text-muted-foreground/40">/</span>
           <span className="text-foreground/60">Agents</span>
           <span className="flex-1" />
           <span className="tabular-nums">{agents.length} total</span>

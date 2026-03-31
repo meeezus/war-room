@@ -151,7 +151,7 @@ export default function CronPage() {
   return (
     <div className="flex h-screen bg-background text-foreground">
       <SidebarNav />
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-4 pt-14 sm:p-6 lg:pt-6">
         {/* Header */}
         <div className="mb-6">
           <h1 className="font-[family-name:var(--font-space-grotesk)] text-xl font-semibold tracking-tight mb-1">

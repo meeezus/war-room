@@ -93,16 +93,16 @@ export default function PlansPage() {
 
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar */}
-        <div className="flex h-10 flex-shrink-0 items-center gap-4 border-b border-border/50 px-5 font-[family-name:var(--font-jetbrains-mono)] text-[11px] text-muted-foreground">
-          <span>Tenshu</span>
-          <span className="text-muted-foreground/40">/</span>
+        <div className="flex h-10 flex-shrink-0 items-center gap-2 sm:gap-4 border-b border-border/50 pl-14 pr-4 sm:px-5 lg:pl-5 font-[family-name:var(--font-jetbrains-mono)] text-[11px] text-muted-foreground">
+          <span className="hidden sm:inline">Tenshu</span>
+          <span className="hidden sm:inline text-muted-foreground/40">/</span>
           <span className="text-foreground/60">Plans</span>
           <span className="flex-1" />
           <span className="tabular-nums">{plans.length} total</span>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4">
           <div className="mx-auto max-w-5xl space-y-4">
             {/* Header */}
             <div className="flex items-baseline gap-3">
@@ -111,13 +111,13 @@ export default function PlansPage() {
               </h1>
             </div>
 
-            {/* Filter tabs */}
-            <div className="flex gap-1">
+            {/* Filter tabs -- scrollable on mobile */}
+            <div className="flex gap-1 overflow-x-auto pb-1 -mx-1 px-1">
               {FILTER_TABS.map((tab) => (
                 <button
                   key={tab.key}
                   onClick={() => setFilter(tab.key)}
-                  className={`rounded-sm px-3 py-1.5 font-[family-name:var(--font-jetbrains-mono)] text-xs transition-colors ${
+                  className={`shrink-0 rounded-sm px-3 py-1.5 font-[family-name:var(--font-jetbrains-mono)] text-xs transition-colors ${
                     filter === tab.key
                       ? "bg-foreground/10 text-foreground"
                       : "text-muted-foreground hover:text-foreground/60"
@@ -171,9 +171,11 @@ export default function PlansPage() {
                           {plan.title}
                         </p>
                         <p className="mt-0.5 font-[family-name:var(--font-jetbrains-mono)] text-[11px] text-muted-foreground/60">
-                          {beadCount} {beadCount === 1 ? "bead" : "beads"}{" "}
-                          &middot; {plan.wave_count}{" "}
-                          {plan.wave_count === 1 ? "wave" : "waves"} &middot;{" "}
+                          <span className="hidden sm:inline">
+                            {beadCount} {beadCount === 1 ? "bead" : "beads"}{" "}
+                            &middot; {plan.wave_count}{" "}
+                            {plan.wave_count === 1 ? "wave" : "waves"} &middot;{" "}
+                          </span>
                           {relativeTime(plan.created_at)}
                         </p>
                       </div>
