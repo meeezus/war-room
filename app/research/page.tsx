@@ -208,7 +208,7 @@ export default function ResearchPage() {
   return (
     <div className="flex min-h-screen bg-background">
       <SidebarNav />
-      <main className="flex-1 p-6 overflow-auto">
+      <main className="flex-1 p-4 pt-14 sm:p-6 lg:pt-6 overflow-auto">
         <Breadcrumb segments={[{ label: 'Tenshu', href: '/dashboard' }, { label: 'Research' }]} />
 
         <h1 className="font-[family-name:var(--font-space-grotesk)] text-xl font-bold text-foreground mt-4 mb-6">
@@ -216,7 +216,7 @@ export default function ResearchPage() {
         </h1>
 
         {/* Source filter tabs */}
-        <div className="flex items-center gap-1 mb-3 flex-wrap">
+        <div className="flex items-center gap-1 mb-3 overflow-x-auto pb-1">
           {SOURCES.map(source => (
             <button
               key={source}
@@ -233,7 +233,7 @@ export default function ResearchPage() {
         </div>
 
         {/* Status filter tabs */}
-        <div className="flex items-center gap-1 mb-6 flex-wrap">
+        <div className="flex items-center gap-1 mb-6 overflow-x-auto pb-1">
           {STATUS_TABS.map(status => (
             <button
               key={status}

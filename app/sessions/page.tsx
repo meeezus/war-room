@@ -43,7 +43,7 @@ export default function SessionsPage() {
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Header */}
-        <div className="border-b border-border/50 px-6 py-4">
+        <div className="border-b border-border/50 pl-14 pr-4 py-4 sm:px-6 lg:pl-6">
           <div className="flex items-center justify-between">
             <h1 className="font-[family-name:var(--font-space-grotesk)] text-[18px] font-bold tracking-tight text-foreground">
               Sessions

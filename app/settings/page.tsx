@@ -79,7 +79,7 @@ export default function SettingsPage() {
 
       <main className="flex flex-1 flex-col overflow-hidden">
         {/* Header */}
-        <div className="border-b border-border/50 px-6 py-4">
+        <div className="border-b border-border/50 pl-14 pr-4 py-4 sm:px-6 lg:pl-6">
           <h1 className="font-[family-name:var(--font-space-grotesk)] text-[18px] font-semibold tracking-tight">
             System Settings
           </h1>

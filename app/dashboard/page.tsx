@@ -166,34 +166,34 @@ export default function DashboardPage() {
       {/* Main Area */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top Bar */}
-        <div className="flex h-10 flex-shrink-0 items-center gap-4 border-b border-border/50 px-5 font-[family-name:var(--font-jetbrains-mono)] text-[11px] text-muted-foreground">
+        <div className="flex h-10 flex-shrink-0 items-center gap-2 sm:gap-4 border-b border-border/50 pl-14 pr-4 sm:px-5 lg:pl-5 font-[family-name:var(--font-jetbrains-mono)] text-[11px] text-muted-foreground">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-500 shadow-[0_0_6px] shadow-green-500" />
-          <span>Engine Live</span>
-          <span className="text-muted-foreground/40">·</span>
-          <span>
+          <span className="hidden sm:inline">Engine Live</span>
+          <span className="hidden sm:inline text-muted-foreground/40">&middot;</span>
+          <span className="hidden sm:inline">
             Cycle{" "}
             <span className="text-amber-500">
               {Math.round((engineStatus?.avgCycleMs || 0) / 1000)}s
             </span>
           </span>
-          <span className="text-muted-foreground/40">·</span>
-          <span>Gateway 198ms</span>
+          <span className="hidden sm:inline text-muted-foreground/40">&middot;</span>
+          <span className="hidden sm:inline">Gateway 198ms</span>
           <span className="flex-1" />
           <OuraBar />
-          <span className="text-muted-foreground/40">·</span>
+          <span className="text-muted-foreground/40 hidden sm:inline">&middot;</span>
           <ThemeToggle />
           <span className="text-muted-foreground/40">{currentTime}</span>
         </div>
 
         <div className="flex flex-1 overflow-hidden">
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-4">
-            {/* Outcome Cards - 2x2 grid */}
-            <div className="mb-4 grid grid-cols-2 gap-3">
+          <div className="flex-1 overflow-y-auto p-3 sm:p-4">
+            {/* Outcome Cards - 2x2 grid (stacks on mobile) */}
+            <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
               <ResearchCard data={outcomes?.research ?? null} />
               <AeonCard data={outcomes?.aeon ?? null} />
             </div>
-            <div className="mb-4 grid grid-cols-2 gap-3">
+            <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
               <OpsecCard data={outcomes?.opsec ?? null} />
               <MessagesCard data={outcomes?.messages ?? null} unreadCount={outcomes?.messages?.count} />
             </div>
@@ -219,8 +219,10 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Right Event Rail */}
-          <EventRail />
+          {/* Right Event Rail -- hidden on mobile */}
+          <div className="hidden lg:flex">
+            <EventRail />
+          </div>
         </div>
 
       </div>

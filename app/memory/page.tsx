@@ -9,7 +9,7 @@ export default function MemoryPage() {
       <SidebarNav />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto p-6 md:p-10">
+        <div className="max-w-4xl mx-auto p-4 pt-14 sm:p-6 md:p-10 lg:pt-10">
 
           {/* Header */}
           <div className="mb-8">
