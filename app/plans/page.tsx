@@ -17,6 +17,7 @@ const FILTER_TABS: { key: PlanStatus; label: string }[] = [
   { key: "brainstorming", label: "Brainstorming" },
   { key: "analyzing", label: "Analyzing" },
   { key: "reviewing", label: "Reviewing" },
+  { key: "approved", label: "Approved" },
   { key: "running", label: "Running" },
   { key: "completed", label: "Completed" },
   { key: "draft", label: "Draft" },

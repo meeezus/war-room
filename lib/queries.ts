@@ -136,39 +136,67 @@ export async function getProjects(): Promise<Project[]> {
   return data as Project[]
 }
 
+// Row shape returned by the PostgREST 12 aggregate query
+type TaskStatusAggregate = {
+  project_id: string | null
+  status: string
+  count: number
+  max: string | null  // MAX(updated_at) aliased as "max" by PostgREST
+}
+
 export async function getProjectsWithMetrics(): Promise<ProjectWithMetrics[]> {
   if (!supabase) return []
 
-  // Fetch projects, tasks, and pending proposals in parallel
-  const [projectsRes, tasksRes, proposalsRes] = await Promise.all([
+  // Fetch projects, task status aggregates, and pending proposals in parallel.
+  // The tasks query uses database-level COUNT + GROUP BY instead of loading every
+  // task row and filtering client-side, which keeps memory usage proportional to
+  // the number of distinct (project_id, status) pairs rather than total task count.
+  const [projectsRes, taskMetricsRes, proposalsRes] = await Promise.all([
     supabase.from('projects').select('*').order('priority', { ascending: true }),
-    supabase.from('tasks').select('id, project_id, status, updated_at'),
+    supabase.from('tasks').select('project_id, status, count(), updated_at.max()'),
     supabase.from('proposals').select('id, project_id').eq('status', 'pending'),
   ])
 
   const projects = (projectsRes.data as Project[]) ?? []
-  const tasks = (tasksRes.data ?? []) as { id: number; project_id: string | null; status: string; updated_at: string }[]
+  const taskMetrics = (taskMetricsRes.data ?? []) as unknown as TaskStatusAggregate[]
   const pendingProposals = (proposalsRes.data ?? []) as { id: string; project_id: string | null }[]
 
   const STATUS_ORDER: Record<string, number> = { inprogress: 0, queue: 1, onhold: 2, done: 3 }
 
   return projects.map(project => {
-    const projectTasks = tasks.filter(t => t.project_id === project.id)
-    const taskCounts = {
-      todo: projectTasks.filter(t => t.status === 'todo').length,
-      assigned: projectTasks.filter(t => t.status === 'assigned').length,
-      queued: projectTasks.filter(t => t.status === 'queued').length,
-      in_progress: projectTasks.filter(t => t.status === 'in_progress').length,
-      review: projectTasks.filter(t => t.status === 'review').length,
-      done: projectTasks.filter(t => t.status === 'done').length,
-      blocked: projectTasks.filter(t => t.status === 'blocked').length,
-      failed: projectTasks.filter(t => t.status === 'failed').length,
-      someday: projectTasks.filter(t => t.status === 'someday').length,
+    const projectMetrics = taskMetrics.filter(m => m.project_id === project.id)
+
+    // Build count map from aggregated rows — O(statuses) not O(tasks)
+    const countByStatus: Record<string, number> = {}
+    for (const m of projectMetrics) {
+      countByStatus[m.status] = m.count
     }
-    const totalTasks = projectTasks.filter(t => t.status !== 'someday').length
+
+    const taskCounts = {
+      todo: countByStatus['todo'] ?? 0,
+      assigned: countByStatus['assigned'] ?? 0,
+      queued: countByStatus['queued'] ?? 0,
+      in_progress: countByStatus['in_progress'] ?? 0,
+      review: countByStatus['review'] ?? 0,
+      done: countByStatus['done'] ?? 0,
+      blocked: countByStatus['blocked'] ?? 0,
+      failed: countByStatus['failed'] ?? 0,
+      someday: countByStatus['someday'] ?? 0,
+    }
+
+    const totalTasks = Object.entries(countByStatus)
+      .filter(([status]) => status !== 'someday')
+      .reduce((sum, [, n]) => sum + n, 0)
+
     const activeTasks = taskCounts.todo + taskCounts.assigned + taskCounts.in_progress + taskCounts.review + taskCounts.blocked
-    const lastActivity = projectTasks.length > 0
-      ? projectTasks.reduce((latest, t) => t.updated_at > latest ? t.updated_at : latest, projectTasks[0].updated_at)
+
+    // MAX(updated_at) is returned per (project_id, status) row — take the latest across all statuses
+    const lastActivity = projectMetrics.length > 0
+      ? projectMetrics.reduce<string | null>((latest, m) => {
+          if (!m.max) return latest
+          if (!latest) return m.max
+          return m.max > latest ? m.max : latest
+        }, null)
       : null
 
     return {
@@ -975,6 +1003,7 @@ export async function getOutcomeCounts(): Promise<Record<string, OutcomeCard>> {
     aeon: { category: 'aeon', headline: 'Unavailable', detail: null, count: 0 },
     opsec: { category: 'opsec', headline: 'Unavailable', detail: null, count: 0 },
     messages: { category: 'messages', headline: 'Unavailable', detail: null, count: 0 },
+    plans: { category: 'plans', headline: 'Unavailable', detail: null, count: 0 },
   }
 
   // Research: try research_findings table (may not exist yet)
@@ -1031,6 +1060,21 @@ export async function getOutcomeCounts(): Promise<Record<string, OutcomeCard>> {
   const msgCount = msgEvents.data?.length || 0
   const unreadCount = msgEventCount.count || 0
 
+  // Plans: reviewing + running + approved
+  const [plansActive, plansActiveCount] = await Promise.all([
+    supabase.from('plans').select('id, title, created_at, status').in('status', ['reviewing', 'running', 'approved']).order('created_at', { ascending: false }).limit(3),
+    supabase.from('plans').select('id', { count: 'exact', head: true }).in('status', ['reviewing', 'running', 'approved']),
+  ])
+  const plansCount = plansActiveCount.count || 0
+  const reviewingCount = (plansActive.data || []).filter((p: { status: string }) => p.status === 'reviewing').length
+  let plansHeadline = 'No active plans'
+  if (plansCount > 0) {
+    const parts: string[] = []
+    if (reviewingCount > 0) parts.push(`${reviewingCount} need review`)
+    parts.push(`${plansCount} active`)
+    plansHeadline = parts.join(' · ')
+  }
+
   return {
     research: {
       category: 'research' as const,
@@ -1068,7 +1112,18 @@ export async function getOutcomeCounts(): Promise<Record<string, OutcomeCard>> {
       headline: msgCount > 0 ? `${msgCount} recent` : 'No briefs yet',
       detail: null,
       count: unreadCount,
+      actionLabel: 'View Events',
+      actionHref: '/events',
       items: (msgEvents.data || []).map((e: { title: string; created_at: string; event_type: string }) => ({ title: e.title, timestamp: e.created_at, status: e.event_type })),
+    },
+    plans: {
+      category: 'plans' as const,
+      headline: plansHeadline,
+      detail: null,
+      count: plansCount,
+      actionLabel: 'View Plans',
+      actionHref: '/plans',
+      items: (plansActive.data || []).map((p: { title: string; created_at: string; status: string }) => ({ title: p.title, timestamp: p.created_at, status: p.status })),
     },
   }
 }

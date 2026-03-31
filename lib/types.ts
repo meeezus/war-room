@@ -427,7 +427,7 @@ export interface SystemFitness {
   computedAt: string;
 }
 
-export type OutcomeCategory = 'research' | 'aeon' | 'opsec' | 'messages';
+export type OutcomeCategory = 'research' | 'aeon' | 'opsec' | 'messages' | 'plans';
 
 export interface OutcomeCard {
   category: OutcomeCategory;
