@@ -122,28 +122,15 @@ describe('Plans card — correct count', () => {
 })
 
 // ---------------------------------------------------------------------------
-// AC 4: Messages card does NOT link to /events
+// AC 4: Messages card links to /events (restored — better than nothing)
 // ---------------------------------------------------------------------------
-describe('Messages card — no /events link', () => {
+describe('Messages card — links to /events', () => {
   beforeEach(resetMockChain)
 
-  it('messages card actionHref is NOT /events', async () => {
+  it('messages card always has actionHref /events', async () => {
     const result = await getOutcomeCounts()
-
-    // The messages card must not link to /events
-    if (result.messages.actionHref) {
-      expect(result.messages.actionHref).not.toBe('/events')
-    }
-  })
-
-  it('messages card has no actionLabel when empty', async () => {
-    const result = await getOutcomeCounts()
-
-    // When there are no messages, there should be no action button
-    // (or if there is one, it must NOT point to /events)
-    if (result.messages.actionLabel) {
-      expect(result.messages.actionHref).not.toBe('/events')
-    }
+    expect(result.messages.actionHref).toBe('/events')
+    expect(result.messages.actionLabel).toBe('View All')
   })
 })
 

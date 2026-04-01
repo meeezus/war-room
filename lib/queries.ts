@@ -1113,6 +1113,8 @@ export async function getOutcomeCounts(): Promise<Record<string, OutcomeCard>> {
       headline: msgCount > 0 ? `${msgCount} recent` : 'No briefs yet',
       detail: null,
       count: unreadCount,
+      actionLabel: 'View All',
+      actionHref: '/events',
       items: (msgEvents.data || []).map((e: { title: string; created_at: string; event_type: string }) => ({ title: e.title, timestamp: e.created_at, status: e.event_type })),
     },
     plans: {
